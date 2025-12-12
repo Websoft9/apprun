@@ -1,0 +1,41 @@
+{
+  // GitHub Copilot Configuration
+  "github.copilot.enable": {
+    "*": true
+  },
+  "github.copilot.advanced": {
+    "debug.overrideEngine": "gpt-4"
+  },
+
+  // Enable GitHub Copilot Chat
+  "github.copilot.chat.enabled": true,
+
+  // Workspace agent discovery - support both agents and chatmodes
+  "github.copilot.chat.workspaceAgent.enabled": true,
+
+  // Files and folders for context
+  "github.copilot.chat.codeGeneration.useInstructionFiles": true,
+
+  // BMad Method configuration
+  "files.associations": {
+    "*.agent.md": "markdown",
+    "*.chatmode.md": "markdown"
+  },
+
+  // Search configuration for BMad agents
+  "search.exclude": {
+    "**/.bmad-user-memory": true,
+    "**/node_modules": true
+  },
+
+  // Files to watch for changes
+  "files.watcherExclude": {
+    "**/.bmad-user-memory/**": true
+  },
+
+  // Include chatmodes in search
+  "search.include": {
+    "**/.github/chatmodes/**": true,
+    "**/.github/agents/**": true
+  }
+}

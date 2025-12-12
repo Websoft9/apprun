@@ -1,0 +1,105 @@
+# Workflow Status - BaaS Platform Project
+
+# This tracks progress through BMM methodology Analysis, Planning, and Solutioning phases.
+# Implementation phase is tracked separately in sprint-status.yaml
+
+# STATUS DEFINITIONS:
+# ==================
+# Initial Status (before completion):
+#   - required: Must be completed to progress
+#   - optional: Can be completed but not required
+#   - recommended: Strongly suggested but not required
+#   - conditional: Required only if certain conditions met (e.g., if_has_ui)
+#
+# Completion Status:
+#   - {file-path}: File created/found (e.g., "docs/product-brief.md")
+#   - skipped: Optional/conditional workflow that was skipped
+
+generated: "2025-12-12"
+project: "apprun"
+project_type: "BaaS Platform"
+selected_track: "bmad-method"
+field_type: "greenfield"
+workflow_path: "method-greenfield.yaml"
+
+# Workflow Items - BMad Method for Greenfield Projects
+workflow_status:
+  # Phase 0: Discovery (Optional)
+  discovery:
+    product-brief:
+      status: "in-progress"
+      agent: "analyst"
+      command: "product-brief"
+      required: false
+      note: "Strategic product planning for BaaS platform"
+
+  # Phase 1: Planning
+  planning:
+    prd:
+      status: "pending"
+      agent: "pm"
+      command: "prd"
+      required: true
+      note: "Product Requirements Document with FRs and NFRs"
+
+    create-ux-design:
+      status: "pending"
+      agent: "ux-designer"
+      command: "create-ux-design"
+      required: false
+      conditional: "if_has_ui"
+      note: "UI/UX design if platform has user interfaces"
+
+  # Phase 2: Solutioning
+  solutioning:
+    create-architecture:
+      status: "pending"
+      agent: "architect"
+      command: "create-architecture"
+      required: true
+      note: "Complete system architecture for BaaS platform"
+
+    create-epics-and-stories:
+      status: "pending"
+      agent: "pm"
+      command: "create-epics-and-stories"
+      required: true
+      note: "Break down PRD into implementable epics and stories"
+
+    test-design:
+      status: "pending"
+      agent: "tea"
+      command: "test-design"
+      required: false
+      recommended: true
+      note: "System-level testability assessment"
+
+    validate-architecture:
+      status: "pending"
+      agent: "architect"
+      command: "validate-architecture"
+      required: false
+      optional: true
+      note: "Quality check for architecture completeness"
+
+    implementation-readiness:
+      status: "pending"
+      agent: "architect"
+      command: "implementation-readiness"
+      required: true
+      note: "Validates PRD + Architecture + Epics + UX"
+
+  # Phase 3: Implementation
+  implementation:
+    sprint-planning:
+      status: "pending"
+      agent: "sm"
+      command: "sprint-planning"
+      required: true
+      note: "Creates sprint plan for development"
+
+# Next recommended action
+next_action:
+  workflow: "product-brief"
+  agent: "analyst"
+  reason: "Start with product brief to establish strategic foundation for BaaS platform"
