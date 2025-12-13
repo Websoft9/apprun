@@ -15,31 +15,33 @@
 #   - {file-path}: File created/found (e.g., "docs/product-brief.md")
 #   - skipped: Optional/conditional workflow that was skipped
 
-generated: "2025-12-12"
+generated: "2025-12-13"
 project: "apprun"
 project_type: "BaaS Platform"
-selected_track: "bmad-method"
+selected_track: "enterprise-method"
 field_type: "greenfield"
-workflow_path: "method-greenfield.yaml"
+workflow_path: "enterprise-method-greenfield.yaml"
 
-# Workflow Items - BMad Method for Greenfield Projects
+# Workflow Items - Enterprise Method for Greenfield Projects
 workflow_status:
   # Phase 0: Discovery (Optional)
   discovery:
     product-brief:
-      status: "in-progress"
+      status: "completed"
       agent: "analyst"
       command: "product-brief"
       required: false
+      file: "docs/analysis/product-brief-apprun-2025-12-12.md"
       note: "Strategic product planning for BaaS platform"
 
   # Phase 1: Planning
   planning:
     prd:
-      status: "pending"
-      agent: "pm"
+      status: "completed"
+      agent: "analyst"
       command: "prd"
       required: true
+      file: "docs/prd-apprun-2025-12-13.md"
       note: "Product Requirements Document with FRs and NFRs"
 
     create-ux-design:
@@ -53,10 +55,11 @@ workflow_status:
   # Phase 2: Solutioning
   solutioning:
     create-architecture:
-      status: "pending"
-      agent: "architect"
+      status: "completed"
+      agent: "analyst"
       command: "create-architecture"
       required: true
+      file: "docs/architecture/technical-architecture-apprun-2025-12-13.md"
       note: "Complete system architecture for BaaS platform"
 
     create-epics-and-stories:
