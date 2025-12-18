@@ -1,0 +1,127 @@
+version: '3.8'
+
+# apprun POC 验证环境
+# 用途：技术验证，快速搭建测试环境
+# 资源：轻量级配置，适合单机开发
+
+services:
+  # ==========================================
+  # 数据层
+  # ==========================================
+  
+  postgres:
+    image: postgres:15-alpine
+    container_name: apprun-poc-postgres
+    environment:
+      POSTGRES_DB: apprun_poc
+      POSTGRES_USER: apprun
+      POSTGRES_PASSWORD: apprun123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U apprun"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - apprun-poc
+
+  # ==========================================
+  # 数据 API 层
+  # ==========================================
+  
+  postgrest:
+    image: postgrest/postgrest:v12.0.2
+    container_name: apprun-poc-postgrest
+    ports:
+      - "3000:3000"
+    environment:
+      PGRST_DB_URI: postgres://apprun:apprun123@postgres:5432/apprun_poc
+      PGRST_DB_SCHEMA: public
+      PGRST_DB_ANON_ROLE: web_anon
+      PGRST_JWT_SECRET: super-secret-jwt-token-with-at-least-32-characters-long
+      PGRST_OPENAPI_SERVER_PROXY_URI: http://localhost:3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - apprun-poc
+
+  # ==========================================
+  # 认证服务
+  # ==========================================
+  
+  kratos-migrate:
+    image: oryd/kratos:v1.0.0
+    container_name: apprun-poc-kratos-migrate
+    environment:
+      - DSN=postgres://apprun:apprun123@postgres:5432/apprun_poc?sslmode=disable
+    volumes:
+      - ./kratos:/etc/config/kratos
+    command: migrate sql -e --yes
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - apprun-poc
+
+  kratos:
+    image: oryd/kratos:v1.0.0
+    container_name: apprun-poc-kratos
+    ports:
+      - "4433:4433"  # Public API
+      - "4434:4434"  # Admin API
+    environment:
+      - DSN=postgres://apprun:apprun123@postgres:5432/apprun_poc?sslmode=disable
+      - SERVE_PUBLIC_BASE_URL=http://localhost:4433
+      - SERVE_ADMIN_BASE_URL=http://localhost:4434
+      - LOG_LEVEL=debug
+    volumes:
+      - ./kratos:/etc/config/kratos
+    command: serve -c /etc/config/kratos/kratos.yml --dev --watch-courier
+    depends_on:
+      - kratos-migrate
+    restart: unless-stopped
+    networks:
+      - apprun-poc
+
+  # ==========================================
+  # apprun 核心服务（待开发）
+  # ==========================================
+  
+  # apprun-core:
+  #   build: ./apprun-core
+  #   container_name: apprun-poc-core
+  #   ports:
+  #     - "8080:8080"
+  #   environment:
+  #     DATABASE_URL: postgres://apprun:apprun123@postgres:5432/apprun_poc
+  #     POSTGREST_URL: http://postgrest:3000
+  #     KRATOS_PUBLIC_URL: http://kratos:4433
+  #     KRATOS_ADMIN_URL: http://kratos:4434
+  #     LOG_LEVEL: debug
+  #   depends_on:
+  #     - postgres
+  #     - postgrest
+  #     - kratos
+  #   restart: unless-stopped
+  #   networks:
+  #     - apprun-poc
+
+# ==========================================
+# 网络
+# ==========================================
+
+networks:
+  apprun-poc:
+    driver: bridge
+
+# ==========================================
+# 持久化存储
+# ==========================================
+
+volumes:
+  postgres_data:
