@@ -31,7 +31,7 @@ workflow_status:
       agent: "analyst"
       command: "product-brief"
       required: false
-      file: "docs/analysis/product-brief-apprun-2025-12-12.md"
+      file: "docs/analysis/product-brief.md"
       note: "Strategic product planning for BaaS platform"
 
   # Phase 1: Planning
@@ -41,7 +41,7 @@ workflow_status:
       agent: "analyst"
       command: "prd"
       required: true
-      file: "docs/prd-apprun-2025-12-13.md"
+      file: "docs/prd.md"
       note: "Product Requirements Document with FRs and NFRs"
 
     create-ux-design:
@@ -103,6 +103,6 @@ workflow_status:
 
 # Next recommended action
 next_action:
-  workflow: "product-brief"
-  agent: "analyst"
-  reason: "Start with product brief to establish strategic foundation for BaaS platform"
+  workflow: "create-epics-and-stories"
+  agent: "pm"
+  reason: "Create Epic and User story based on PRD"

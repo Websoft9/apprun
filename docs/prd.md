@@ -1,7 +1,7 @@
 ---
 stepsCompleted: [1, 2, 3, 4, 6, 7, 8, 9, 10]
 inputDocuments: 
-  - "docs/analysis/product-brief-apprun-2025-12-12.md"
+  - "docs/analysis/product-brief.md"
 documentCounts:
   briefs: 1
   research: 0
