@@ -1,0 +1,14 @@
+.git
+.gitignore
+README.md
+docs
+poc
+.github
+.bmad
+*.md
+Dockerfile*
+docker-compose.yml
+__pycache__
+*.pyc
+.vscode
+.idea

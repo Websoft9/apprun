@@ -1,85 +1,136 @@
-package server
 package main
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"log"
+	"net/http"
 	"os"
 
-	"gofr.dev/pkg/gofr"
+	"apprun/ent"
+	"apprun/internal/config"
 
-	"github.com/Websoft9/apprun/core/internal/config"
-	"github.com/Websoft9/apprun/core/internal/handlers/auth"
-	"github.com/Websoft9/apprun/core/internal/handlers/datamodel"
-	"github.com/Websoft9/apprun/core/internal/handlers/workflow"
-	"github.com/Websoft9/apprun/core/internal/middleware"
-	"github.com/Websoft9/apprun/core/internal/models"
-	"github.com/Websoft9/apprun/core/internal/services"
+	_ "github.com/lib/pq"
 )
 
 func main() {
-	// 1. 创建 GoFr 应用
-	app := gofr.New()
+	// 从环境变量构建数据库连接字符串
+	dbHost := getEnv("APP_DATABASE_HOST", "localhost")
+	dbPort := getEnv("APP_DATABASE_PORT", "5432")
+	dbUser := getEnv("APP_DATABASE_USER", "postgres")
+	dbPassword := getEnv("APP_DATABASE_PASSWORD", "postgres")
+	dbName := getEnv("APP_DATABASE_DBNAME", "apprun")
 
-	// 2. 加载配置
-	cfg := config.Load()
+	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		dbHost, dbPort, dbUser, dbPassword, dbName)
 
-	// 3. 数据库自动迁移
-	app.Migrate(func(gApp *gofr.Gofr) error {
-		return models.AutoMigrate(gApp.GORM())
-	})
+	log.Printf("Connecting to database at %s:%s/%s", dbHost, dbPort, dbName)
 
-	// 4. 初始化服务层
-	authService := services.NewAuthService()
-	eventService := services.NewEventService(cfg.TemporalHost)
-	workflowService := services.NewWorkflowService(cfg.TemporalHost)
+	// 初始化数据库连接
+	client, err := ent.Open("postgres", dsn)
+	if err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
+	defer client.Close()
 
-	// 5. 应用全局中间件（可选，用于受保护的路由）
-	// app.Use(middleware.AuthMiddleware(cfg.JWTSecret))
-	// app.Use(middleware.TenantMiddleware())
-
-	// 6. 注册公共路由（无需认证）
-	app.POST("/auth/register", auth.Register(authService))
-	app.POST("/auth/login", auth.Login(authService))
-	app.POST("/auth/refresh", auth.RefreshToken(authService))
-
-	// 7. 健康检查路由（GoFr 自动提供 /.well-known/health-check）
-	app.GET("/health", func(ctx *gofr.Context) (interface{}, error) {
-		return map[string]string{
-			"status":  "healthy",
-			"version": "1.0.0",
-		}, nil
-	})
-
-	// 8. 创建受保护的路由组
-	protectedRoutes := func(a *gofr.App) {
-		// 应用认证和租户中间件
-		a.Use(middleware.AuthMiddleware(cfg.JWTSecret))
-		a.Use(middleware.TenantMiddleware())
-
-		// 用户管理 API
-		a.GET("/api/v1/users", datamodel.GetUsers)
-		a.POST("/api/v1/users", datamodel.CreateUser)
-		a.GET("/api/v1/users/:id", datamodel.GetUser)
-		a.PUT("/api/v1/users/:id", datamodel.UpdateUser)
-		a.DELETE("/api/v1/users/:id", datamodel.DeleteUser)
-
-		// 工作流 API
-		a.POST("/api/v1/workflows", workflow.StartWorkflow(workflowService))
-		a.GET("/api/v1/workflows/:id", workflow.GetWorkflow(workflowService))
-		a.POST("/api/v1/workflows/:id/signal", workflow.SignalWorkflow(workflowService))
-		a.DELETE("/api/v1/workflows/:id", workflow.CancelWorkflow(workflowService))
+	// 运行数据库迁移
+	if err := client.Schema.Create(context.Background()); err != nil {
+		log.Fatalf("Failed to create schema: %v", err)
 	}
 
-	// 应用受保护的路由组
-	protectedRoutes(app)
+	// 初始化配置系统
+	if err := config.InitConfig(client); err != nil {
+		log.Fatalf("Failed to init config: %v", err)
+	}
 
-	// 9. 订阅事件（NATS）
-	eventService.SubscribeToEvents(app)
+	// 加载配置
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
+	}
 
-	// 10. 启动服务
-	// 自动暴露：
-	// - HTTP API: :8080
-	// - 健康检查: /.well-known/health-check
-	// - Prometheus 指标: /metrics
-	app.Logger.Infof("Starting apprun-core on port %s", os.Getenv("APP_PORT"))
-	app.Run()
+	log.Printf("Config loaded successfully: App=%s, Version=%s", cfg.App.Name, cfg.App.Version)
+
+	// 定义handler函数
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "Hello, apprun! This is a demo using native Go net/http.")
+	})
+
+	// GET /config - 返回所有配置项（JSON数组），并标记哪些项可修改
+	http.HandleFunc("/config", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			handleGetConfig(w, r)
+		case http.MethodPut:
+			handlePutConfig(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
+	// 启动HTTP服务器，监听8080端口
+	fmt.Println("Server starting on :8080...")
+	log.Fatal(http.ListenAndServe(":8080", nil))
+}
+
+// handleGetConfig 处理 GET /config 请求
+func handleGetConfig(w http.ResponseWriter, r *http.Request) {
+	items, err := config.GetAllConfigItems()
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to get config: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(items); err != nil {
+		log.Printf("Failed to encode config items: %v", err)
+	}
+}
+
+// handlePutConfig 处理 PUT /config 请求
+func handlePutConfig(w http.ResponseWriter, r *http.Request) {
+	var updates map[string]interface{}
+	if err := json.NewDecoder(r.Body).Decode(&updates); err != nil {
+		http.Error(w, fmt.Sprintf("Invalid request body: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	if len(updates) == 0 {
+		http.Error(w, "No updates provided", http.StatusBadRequest)
+		return
+	}
+
+	// 更新配置
+	if err := config.UpdateConfig(updates); err != nil {
+		status := http.StatusInternalServerError
+		if err.Error() == "config key not allowed to be modified" {
+			status = http.StatusForbidden
+		} else if err.Error() == "config validation failed after update" {
+			status = http.StatusBadRequest
+		}
+		http.Error(w, err.Error(), status)
+		return
+	}
+
+	// 返回更新后的配置
+	items, err := config.GetAllConfigItems()
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to get updated config: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(items); err != nil {
+		log.Printf("Failed to encode updated config: %v", err)
+	}
+}
+
+// getEnv 获取环境变量，如果不存在则返回默认值
+func getEnv(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
 }

@@ -1,0 +1,16 @@
+app:
+  name: apprun
+  version: "1.0.0"
+
+database:
+  driver: postgres
+  host: localhost
+  port: 5432
+  user: postgres
+  password: "postgres"
+  dbname: apprun
+
+poc:
+  enabled: true
+  database: "postgres://user:pass@localhost:5432/apprun_poc"
+  apikey: "poc-api-key-123456"

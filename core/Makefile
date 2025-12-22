@@ -46,6 +46,10 @@ mod-tidy: ## Tidy Go dependencies
 	@echo "Tidying dependencies..."
 	@$(GO) mod tidy
 
+generate: ## Generate Ent code
+	@echo "Generating Ent code..."
+	@$(GO) generate ./ent
+
 docker-build: ## Build Docker image
 	@echo "Building Docker image..."
 	@docker build -t $(APP_NAME):latest .

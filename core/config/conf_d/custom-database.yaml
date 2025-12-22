@@ -1,0 +1,4 @@
+# 用户自定义数据库配置示例
+database:
+  host: custom-db-host
+  port: 5433

@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: apprun
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - APP_DATABASE_DRIVER=postgres
+      - APP_DATABASE_HOST=postgres
+      - APP_DATABASE_PORT=5432
+      - APP_DATABASE_USER=postgres
+      - APP_DATABASE_PASSWORD=password
+      - APP_DATABASE_DBNAME=apprun
+      - APP_POC_APIKEY=poc-api-key-12345678901234
+    depends_on:
+      - postgres
+    volumes:
+      - ../core/config:/root/config
+
+volumes:
+  postgres_data:
