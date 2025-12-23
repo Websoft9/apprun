@@ -82,6 +82,7 @@ func InitConfig(client *ent.Client) error {
 }
 
 // LoadConfig 使用Viper加载配置，支持多领域文件动态扫描和数据库集成
+// 优先级：环境变量 > DB > conf_d/*.yaml > 领域配置文件 > default.yaml > 结构体默认值
 func LoadConfig() (*Config, error) {
 	if viperInstance == nil {
 		viperInstance = viper.New()
@@ -92,7 +93,10 @@ func LoadConfig() (*Config, error) {
 	v.SetConfigType("yaml")
 	v.AddConfigPath("./config")
 
-	// 1. 加载 default.yaml
+	// 步骤1: 设置结构体默认值（最低优先级）
+	setDefaultsFromTags()
+
+	// 步骤2: 加载 default.yaml
 	v.SetConfigName("default")
 	if err := v.ReadInConfig(); err != nil {
 		log.Printf("Warning: could not read default config: %v", err)
@@ -100,7 +104,7 @@ func LoadConfig() (*Config, error) {
 		log.Println("Loaded default.yaml")
 	}
 
-	// 2. 动态扫描并加载领域配置文件（按字母排序）
+	// 步骤3: 动态扫描并加载领域配置文件（按字母排序）
 	configDir := "./config"
 	if entries, err := os.ReadDir(configDir); err == nil {
 		var domainFiles []string
@@ -127,7 +131,7 @@ func LoadConfig() (*Config, error) {
 		}
 	}
 
-	// 3. 加载 conf_d 目录下的配置文件
+	// 步骤4: 加载 conf_d 目录下的配置文件
 	confDPath := filepath.Join(configDir, "conf_d")
 	if entries, err := os.ReadDir(confDPath); err == nil {
 		var confDFiles []string
@@ -148,10 +152,15 @@ func LoadConfig() (*Config, error) {
 		}
 	}
 
-	// 4. 设置默认值（通过反射从struct tags提取）
-	setDefaultsFromTags()
+	// 步骤5: 配置环境变量支持（在DB加载前设置，确保最高优先级）
+	// 环境变量前缀为 W9_，路径分隔符 . 转换为 _
+	// 示例: app.name → W9_APP_NAME
+	v.SetEnvPrefix("W9")
+	v.AutomaticEnv()
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
-	// 5. 从数据库加载动态配置（如果数据库已初始化）
+	// 步骤6: 从数据库加载动态配置（如果数据库已初始化）
+	// 注意：只有当环境变量不存在时，才使用DB中的值
 	if entClient != nil {
 		provider := &DBProvider{client: entClient}
 		if data, err := provider.Get(nil); err != nil {
@@ -161,31 +170,34 @@ func LoadConfig() (*Config, error) {
 			if err := json.Unmarshal(data, &dbConfig); err != nil {
 				log.Printf("Warning: failed to unmarshal DB config: %v", err)
 			} else {
-				// 合并数据库配置（优先级最高）
+				// 合并数据库配置，但不覆盖环境变量
 				for key, value := range dbConfig {
-					v.Set(key, value)
+					// 检查是否有对应的环境变量
+					envKey := "W9_" + strings.ToUpper(strings.ReplaceAll(key, ".", "_"))
+					if os.Getenv(envKey) == "" {
+						// 环境变量不存在，使用DB值
+						v.Set(key, value)
+					} else {
+						log.Printf("Environment variable %s overrides DB value for key: %s", envKey, key)
+					}
 				}
-				log.Println("Loaded config from database")
+				log.Println("Loaded config from database (ENV variables have higher priority)")
 			}
 		}
 	}
 
-	// 6. 环境变量支持
-	v.SetEnvPrefix("APP")
-	v.AutomaticEnv()
-	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-
-	// 7. 反序列化到结构体
+	// 步骤7: 反序列化到结构体
 	var config Config
 	if err := v.Unmarshal(&config); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
-	// 8. 校验配置
+	// 步骤8: 校验配置
 	if err := validate.Struct(&config); err != nil {
 		return nil, fmt.Errorf("config validation failed: %w", err)
 	}
 
+	log.Println("Configuration loaded successfully with priority: ENV > DB > conf_d > domain files > default.yaml > struct tags")
 	return &config, nil
 }
 

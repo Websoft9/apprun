@@ -3,8 +3,8 @@ package config
 // Config 结构体定义配置项，包含校验、默认值和DB存储标记
 type Config struct {
 	App struct {
-		Name    string `validate:"required,min=1" default:"apprun" db:"false"` // 校验必需，默认值，不存储DB
-		Version string `validate:"required" default:"1.0.0" db:"false"`        // 校验必需，默认值，不存储DB
+		Name    string `validate:"required,min=1" default:"apprun" db:"true"` // 校验必需，默认值，可存储DB
+		Version string `validate:"required" default:"1.0.0" db:"false"`       // 校验必需，默认值，不存储DB
 	} `validate:"required"`
 
 	Database struct {

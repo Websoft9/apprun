@@ -8,7 +8,7 @@ apprun的配置中心采用**混合策略**（文件系统 + 数据库），结�
 
 - **文件系统**：存储默认/静态配置（YAML），作为fallback。
 - **数据库**：存储动态配置（Ent表），支持API修改。
-- **优先级**：DB > 文件 > 默认值。
+- **优先级**：环境变量 > DB > conf_d/*.yaml > 领域配置文件 > default.yml > 结构体
 - **反射机制**：基于Go结构体标签自动处理配置项。
 
 ## 核心组件
@@ -51,6 +51,19 @@ func (Configitem) Fields() []ent.Field {
     }
 }
 ```
+
+## 环境变量映射规则
+
+所有配置项都支持环境变量覆盖，规则如下：
+
+1. **前缀**：所有环境变量必须以 `W9_` 开头
+2. **路径转换**：配置路径中的点号 `.` 转换为下划线 `_`
+3. **大小写**：环境变量使用大写
+
+示例：
+- `app.name` → `W9_APP_NAME`
+- `database.host` → `W9_DATABASE_HOST`
+- `poc.apikey` → `W9_POC_APIKEY`
 
 ## API设计
 - **GET /config**：返回所有配置项（JSON数组），并标记哪些项是可更改的（`db:"true"`，即存储到数据库）。
@@ -97,6 +110,7 @@ func (Configitem) Fields() []ent.Field {
   ```
   - **优势**：DB配置统一为Viper源，支持热重载（通过`WatchRemoteConfig`）。
   - **错误处理**：DB不可用时，降级使用文件配置。
+
 
 ## 实现流程
 1. **加载**：
