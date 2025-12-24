@@ -18,6 +18,7 @@ apprun的配置中心采用**混合策略**（文件系统 + 数据库），结�
 - **反射**：遍历结构体，提取`db`标签决定存储策略。
 
 ## 结构体定义（types.go）
+
 ```go
 type Config struct {
     App struct {

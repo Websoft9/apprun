@@ -36,13 +36,14 @@ workflow_status:
 
   # Phase 1: Planning
   planning:
-    prd:
-      status: "completed"
-      agent: "analyst"
-      command: "prd"
-      required: true
-      file: "docs/prd.md"
-      note: "Product Requirements Document with FRs and NFRs"
+    - name: prd
+    status: completed
+    date_started: "2025-12-24"
+    date_completed: "2025-12-24"
+    agent: PM
+    output_file: "docs/prd.md"
+    version: "5.0-bmad-compliant"
+    notes: "BMad compliant PRD: removed specific tech names, capability-oriented descriptions, deferred tech decisions to architecture phase, added NFR-STD for development standards"
 
     create-ux-design:
       status: "pending"
