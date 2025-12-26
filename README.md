@@ -1,31 +1,84 @@
 # apprun
 
-一个轻量级的配置中心服务，使用 Go 开发。
+A lightweight BaaS (Backend as a Service) framework for developers, built with Go following the [BMad Method](https://github.com/bmad-code-org/BMAD-METHOD).
 
-## 快速开始
+---
 
-## 标准 BMad 流程
+## 🚀 What is apprun?
 
+**apprun** is a modular, cloud-neutral BaaS platform that provides:
+
+- **Authentication & Authorization**: Built-in user management with Ory Kratos integration
+- **Data Management**: RESTful APIs with PostgreSQL and Ent ORM
+- **Storage Service**: File storage with pluggable backends (Local/S3)
+- **Workflow Engine**: Flexible business process automation
+- **Real-time Features**: WebSocket support for live updates
+- **Multi-tenant**: Project-based resource isolation
+
+**Key Features**:
+- 🔒 Security-first design with RBAC
+- 🌍 i18n/l10n support (English, Chinese, Japanese)
+- 🔌 Plugin architecture for extensibility
+- ☁️ Cloud-neutral deployment
+- 📦 Production-ready with monitoring & logging
+
+---
+
+## 📦 Deployment
+
+### Prerequisites
+- Go 1.21+
+- PostgreSQL 14+
+- Redis 7+ (optional, for caching)
+
+### Quick Start
+
+```bash
+# Clone repository
+git clone https://github.com/Websoft9/apprun.git
+cd apprun/core
+
+# Configure environment
+cp config/default.yaml config/local.yaml
+# Edit config/local.yaml with your settings
+
+# Run server
+make run
 ```
-阶段 1: 需求分析
-└── ✅ PRD (docs/prd.md)
 
-阶段 2: 架构设计
-└── ✅ Architecture Docs (已完成)
-    ├── tech-architecture.md
-    ├── deployment-architecture.md
-    └── data-architecture.md
+### Production Deployment
+- Docker: TBD
+- Kubernetes: TBD
+- Cloud Providers: TBD
 
-阶段 3: Epic 规划 ← 🔴 当前应该在这里
-└── 📝 Epic 文档 (待创建)
-    ├── epic-overview.md           # Epic 总览和路线图
-    ├── epic-01-authentication.md  # 详细 Epic 文档
-    └── sprint-plan.md             # Sprint 迭代计划
+---
 
-阶段 4: 开发实施 ← 你提到的 4 个动作在这里
-└── Implementation Tasks
-    ├── Setup Project Scaffolding   # 基于 Epic 任务
-    ├── Create Database Schema Doc  # 基于 Epic 数据设计
-    ├── Configure CI/CD             # 基于 Epic DevOps 需求
-    └── Begin MVP Development       # 基于 Epic User Stories
-```
+## 🤝 Contributing
+
+We follow the **BMad Method** for development:
+
+1. **Read Documentation**: Check [`docs/`](./docs/) for project standards
+2. **Find Issues**: Look for issues tagged `good-first-issue`
+3. **Follow Standards**: Read [`docs/standards/`](./docs/standards/) before coding
+4. **Create PR**: Follow the [DevOps Process](./docs/standards/devops-process.md)
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines.
+
+---
+
+## 📚 Documentation
+
+- [Product Requirements](./docs/prd.md)
+- [Architecture](./docs/architecture/)
+- [API Standards](./docs/standards/api-design.md)
+- [Sprint Artifacts](./docs/sprint-artifacts/)
+
+---
+
+## 📄 License
+
+[MIT License](./LICENSE)
+
+---
+
+**Maintained by**: Websoft9
