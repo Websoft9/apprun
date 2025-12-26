@@ -19,6 +19,7 @@
 
 | 文档 | 分类 | 适用场景 | 核心内容 |
 |-----|------|---------|---------|
+| **[architecture-standards.md](./architecture-standards.md)** | 技术规范 | 架构设计原则、模块化、扩展性、演进路径 | 解耦原则、分层架构、插件化、非侵入式设计、隔离策略、单体到微服务演进 |
 | **[api-design.md](./api-design.md)** | 技术规范 | 设计 RESTful API、定义响应格式、错误码 | API 版本管理、URL 命名、HTTP 方法、统一响应格式、错误码规范、分页排序、认证授权 |
 | **[coding-standards.md](./coding-standards.md)** | 技术规范 | 编写 Go 代码、命名变量、组织项目结构、定义 Ent Schema | 命名规范、代码结构、错误处理、注释规范、并发编程、Ent ORM 规范、代码审查清单 |
 | **[testing-standards.md](./testing-standards.md)** | 技术规范 | 编写单元测试、集成测试、E2E 测试 | 测试策略（测试金字塔、覆盖率）、单元测试（AAA 模式、Mock）、集成测试、E2E 测试、性能测试、测试工具 |
@@ -32,6 +33,9 @@
 
 | 问题 | 查阅文档 |
 |-----|---------|
+| 如何设计模块架构？ | [architecture-standards.md](./architecture-standards.md) Section 1 |
+| 如何实现插件化？ | [architecture-standards.md](./architecture-standards.md) Section 2 |
+| 如何保证多租户隔离？ | [architecture-standards.md](./architecture-standards.md) Section 5 |
 | 如何设计 API？ | [api-design.md](./api-design.md) |
 | 如何命名变量/函数？ | [coding-standards.md](./coding-standards.md) Section 1 |
 | 如何处理错误？ | [coding-standards.md](./coding-standards.md) Section 3 |
