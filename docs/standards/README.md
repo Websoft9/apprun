@@ -45,6 +45,12 @@
 | 如何格式化货币/日期/数字？ | [localization-standards.md](./localization-standards.md) Section 4-5 |
 | 如何编写测试？ | [testing-standards.md](./testing-standards.md) Section 2-4 |
 | 如何使用 Mock？ | [testing-standards.md](./testing-standards.md) Section 2.4 |
+| **如何保证安全？** | **[coding-standards.md](./coding-standards.md) Section 10** |
+| **如何加密敏感数据？** | **[coding-standards.md](./coding-standards.md) Section 10.4** |
+| **如何管理密钥？** | **[coding-standards.md](./coding-standards.md) Section 10.5** |
+| **如何实现 API 认证？** | **[api-design.md](./api-design.md) Section 6** |
+| **如何配置 Rate Limiting？** | **[api-design.md](./api-design.md) Section 6.4.1** |
+| **如何配置 CORS？** | **[api-design.md](./api-design.md) Section 6.4.2** |
 | 如何创建分支？ | [devops-process.md](./devops-process.md) Section 2.1 |
 | 如何写 Commit Message？ | [devops-process.md](./devops-process.md) Section 2.2 |
 | 如何创建 PR？ | [devops-process.md](./devops-process.md) Section 3.1-3.2 |

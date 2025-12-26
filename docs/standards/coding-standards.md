@@ -784,6 +784,210 @@ dbPassword := os.Getenv("DB_PASSWORD")
 jwtSecret := os.Getenv("JWT_SECRET")
 ```
 
+### 10.4 数据加密
+
+#### **传输加密**
+
+```go
+// ✅ 推荐：强制使用 HTTPS
+func main() {
+    // 生产环境只允许 HTTPS
+    if config.Env == "production" {
+        log.Fatal(http.ListenAndServeTLS(":443", "cert.pem", "key.pem", router))
+    }
+    
+    // 开发环境可以使用 HTTP
+    log.Fatal(http.ListenAndServe(":8080", router))
+}
+
+// ✅ 推荐：禁用不安全的 TLS 版本
+tlsConfig := &tls.Config{
+    MinVersion: tls.VersionTLS12,  // 最低 TLS 1.2
+    CipherSuites: []uint16{
+        tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+        tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+    },
+}
+```
+
+#### **存储加密**
+
+```go
+// ✅ 推荐：加密敏感字段
+import "golang.org/x/crypto/bcrypt"
+
+// 密码加密
+func HashPassword(password string) (string, error) {
+    hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+    return string(hash), err
+}
+
+func VerifyPassword(hashedPassword, password string) bool {
+    err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+    return err == nil
+}
+
+// API Key 加密（使用 AES）
+import "crypto/aes"
+import "crypto/cipher"
+
+func EncryptAPIKey(key string, secret []byte) ([]byte, error) {
+    block, err := aes.NewCipher(secret)
+    if err != nil {
+        return nil, err
+    }
+    
+    gcm, err := cipher.NewGCM(block)
+    if err != nil {
+        return nil, err
+    }
+    
+    nonce := make([]byte, gcm.NonceSize())
+    // 生产环境使用 crypto/rand
+    if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+        return nil, err
+    }
+    
+    return gcm.Seal(nonce, nonce, []byte(key), nil), nil
+}
+```
+
+### 10.5 密钥管理
+
+#### **环境变量管理**
+
+```bash
+# .env.example（提交到版本控制）
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=apprun
+DB_USER=postgres
+DB_PASSWORD=         # 不填写实际值
+JWT_SECRET=          # 不填写实际值
+ENCRYPTION_KEY=      # 不填写实际值
+
+# .env（不提交，添加到 .gitignore）
+DB_PASSWORD=actual_password_here
+JWT_SECRET=actual_secret_here
+ENCRYPTION_KEY=actual_key_here
+```
+
+```go
+// ✅ 推荐：密钥加载和验证
+func LoadConfig() (*Config, error) {
+    config := &Config{
+        DBPassword:    os.Getenv("DB_PASSWORD"),
+        JWTSecret:     os.Getenv("JWT_SECRET"),
+        EncryptionKey: os.Getenv("ENCRYPTION_KEY"),
+    }
+    
+    // 验证必需的密钥
+    if config.JWTSecret == "" {
+        return nil, errors.New("JWT_SECRET is required")
+    }
+    
+    if len(config.EncryptionKey) != 32 {
+        return nil, errors.New("ENCRYPTION_KEY must be 32 bytes")
+    }
+    
+    return config, nil
+}
+```
+
+#### **密钥轮换**
+
+```go
+// ✅ 推荐：支持多密钥验证（密钥轮换）
+type KeyManager struct {
+    currentKey  string
+    previousKey string  // 旧密钥，用于验证
+}
+
+func (km *KeyManager) Sign(data string) (string, error) {
+    // 使用当前密钥签名
+    return signWithKey(data, km.currentKey)
+}
+
+func (km *KeyManager) Verify(data, signature string) bool {
+    // 先用当前密钥验证
+    if verifyWithKey(data, signature, km.currentKey) {
+        return true
+    }
+    
+    // 如果失败，用旧密钥验证（支持轮换期）
+    if km.previousKey != "" {
+        return verifyWithKey(data, signature, km.previousKey)
+    }
+    
+    return false
+}
+```
+
+### 10.6 安全日志
+
+```go
+// ✅ 推荐：记录安全相关事件
+func AuditLog(ctx context.Context, action string, details map[string]interface{}) {
+    user := getUserFromContext(ctx)
+    
+    log.Info().
+        Str("user_id", user.ID).
+        Str("action", action).
+        Fields(details).
+        Str("ip", getIPFromContext(ctx)).
+        Time("timestamp", time.Now()).
+        Msg("security_audit")
+}
+
+// 使用示例
+AuditLog(ctx, "user.login", map[string]interface{}{
+    "method": "password",
+    "success": true,
+})
+
+AuditLog(ctx, "file.delete", map[string]interface{}{
+    "file_id": fileID,
+    "project_id": projectID,
+})
+
+AuditLog(ctx, "permission.denied", map[string]interface{}{
+    "resource": "project:123",
+    "action": "delete",
+})
+```
+
+```go
+// ✅ 推荐：敏感操作失败次数限制
+type RateLimiter struct {
+    attempts map[string]int
+    mu       sync.Mutex
+}
+
+func (rl *RateLimiter) CheckLoginAttempts(userID string) error {
+    rl.mu.Lock()
+    defer rl.mu.Unlock()
+    
+    if rl.attempts[userID] >= 5 {
+        return errors.New("too many failed login attempts, account locked")
+    }
+    
+    return nil
+}
+
+func (rl *RateLimiter) RecordFailedLogin(userID string) {
+    rl.mu.Lock()
+    defer rl.mu.Unlock()
+    
+    rl.attempts[userID]++
+    
+    // 记录安全日志
+    log.Warn().
+        Str("user_id", userID).
+        Int("attempts", rl.attempts[userID]).
+        Msg("failed_login_attempt")
+}
+```
+
 ---
 
 ## 11. 性能优化
@@ -925,11 +1129,16 @@ func (Project) Edges() []ent.Edge {
 
 ### 13.3 安全检查
 
-- [ ] 输入验证
-- [ ] SQL 注入防护
-- [ ] XSS 防护
+- [ ] 输入验证（长度、格式、白名单）
+- [ ] SQL 注入防护（使用 ORM 参数化查询）
+- [ ] XSS 防护（输出转义）
 - [ ] 敏感信息不记录日志
 - [ ] 密钥使用环境变量
+- [ ] 传输加密（HTTPS/TLS 1.2+）
+- [ ] 敏感数据存储加密（密码、API Key）
+- [ ] 安全日志记录（登录、权限、敏感操作）
+- [ ] 失败重试限制（防暴力破解）
+- [ ] 权限验证（认证 + 授权）
 
 ---
 

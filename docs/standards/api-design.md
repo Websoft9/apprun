@@ -453,6 +453,184 @@ Authorization: Bearer <token>
 
 > 📖 **权限模型详解**：[认证模块规范 - 权限模型](./auth-module.md#5-权限模型规范)
 
+### 6.4 API 安全
+
+#### **6.4.1 Rate Limiting（速率限制）**
+
+```http
+# 响应头显示限流信息
+HTTP/1.1 200 OK
+X-RateLimit-Limit: 1000        # 每小时限制
+X-RateLimit-Remaining: 999     # 剩余次数
+X-RateLimit-Reset: 1640000000  # 重置时间戳
+
+# 超限响应
+HTTP/1.1 429 Too Many Requests
+Retry-After: 3600
+
+{
+  "success": false,
+  "code": 429,
+  "message": "Rate limit exceeded",
+  "error": {
+    "code": "RATE_LIMIT_EXCEEDED",
+    "message": "每小时最多 1000 次请求"
+  }
+}
+```
+
+**实现规范**：
+```go
+// 按用户限流
+type RateLimiter struct {
+    // key: user_id, value: request count
+}
+
+func RateLimitMiddleware(limit int, window time.Duration) func(http.Handler) http.Handler {
+    limiter := NewRateLimiter(limit, window)
+    
+    return func(next http.Handler) http.Handler {
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+            userID := getUserIDFromContext(r.Context())
+            
+            if !limiter.Allow(userID) {
+                w.Header().Set("Retry-After", fmt.Sprintf("%d", int(window.Seconds())))
+                response.Error(w, 429, "RATE_LIMIT_EXCEEDED", "Rate limit exceeded")
+                return
+            }
+            
+            next.ServeHTTP(w, r)
+        })
+    }
+}
+```
+
+**限流策略**：
+| 用户类型 | 限制 | 说明 |
+|---------|------|------|
+| 免费用户 | 1000/小时 | 基础限制 |
+| 付费用户 | 10000/小时 | 提高限额 |
+| 管理员 | 无限制 | 内部使用 |
+
+#### **6.4.2 CORS 配置**
+
+```go
+// ✅ 推荐：明确配置 CORS
+func CORSMiddleware() func(http.Handler) http.Handler {
+    return func(next http.Handler) http.Handler {
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+            origin := r.Header.Get("Origin")
+            
+            // 白名单验证
+            if isAllowedOrigin(origin) {
+                w.Header().Set("Access-Control-Allow-Origin", origin)
+                w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+                w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+                w.Header().Set("Access-Control-Max-Age", "3600")
+                w.Header().Set("Access-Control-Allow-Credentials", "true")
+            }
+            
+            // 处理预检请求
+            if r.Method == "OPTIONS" {
+                w.WriteHeader(http.StatusNoContent)
+                return
+            }
+            
+            next.ServeHTTP(w, r)
+        })
+    }
+}
+
+func isAllowedOrigin(origin string) bool {
+    allowedOrigins := []string{
+        "https://app.example.com",
+        "https://admin.example.com",
+    }
+    
+    // 开发环境允许 localhost
+    if config.Env == "development" {
+        allowedOrigins = append(allowedOrigins, "http://localhost:3000")
+    }
+    
+    for _, allowed := range allowedOrigins {
+        if origin == allowed {
+            return true
+        }
+    }
+    return false
+}
+```
+
+#### **6.4.3 API Key 安全**
+
+```bash
+# ❌ 错误：在 URL 中传递 API Key
+GET /api/v1/users?api_key=sk_live_1234567890abcdef
+
+# ✅ 正确：在 Header 中传递
+GET /api/v1/users
+X-API-Key: sk_live_1234567890abcdef
+```
+
+**API Key 管理规范**：
+```go
+// API Key 格式：{prefix}_{env}_{random}
+// sk_live_xxxxxxxxxxxx  (Secret Key - Live)
+// sk_test_xxxxxxxxxxxx  (Secret Key - Test)
+// pk_live_xxxxxxxxxxxx  (Public Key - Live)
+
+type APIKey struct {
+    ID        string
+    UserID    string
+    Key       string    // 存储加密后的值
+    Prefix    string    // sk_live, sk_test
+    CreatedAt time.Time
+    ExpiresAt *time.Time
+    LastUsed  *time.Time
+}
+
+// 验证 API Key
+func ValidateAPIKey(key string) (*User, error) {
+    // 1. 提取 prefix
+    parts := strings.Split(key, "_")
+    if len(parts) != 3 {
+        return nil, errors.New("invalid API key format")
+    }
+    
+    // 2. 查询数据库（使用加密后的 key）
+    hashedKey := hashAPIKey(key)
+    apiKey, err := repo.FindAPIKeyByHash(hashedKey)
+    if err != nil {
+        return nil, errors.New("invalid API key")
+    }
+    
+    // 3. 检查过期
+    if apiKey.ExpiresAt != nil && apiKey.ExpiresAt.Before(time.Now()) {
+        return nil, errors.New("API key expired")
+    }
+    
+    // 4. 更新最后使用时间
+    apiKey.LastUsed = time.Now()
+    repo.UpdateAPIKey(apiKey)
+    
+    // 5. 返回用户信息
+    return repo.FindUserByID(apiKey.UserID)
+}
+```
+
+#### **6.4.4 请求签名（可选）**
+
+```bash
+# 用于高安全场景（银行、支付）
+POST /api/v1/transactions
+Authorization: Bearer <token>
+X-Signature: sha256=5d41402abc4b2a76b9719d911017c592
+X-Timestamp: 1640000000
+
+# 签名计算
+signature = HMAC-SHA256(secret, method + path + timestamp + body)
+```
+
 ---
 
 ## 7. 分页与过滤
