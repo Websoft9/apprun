@@ -81,4 +81,4 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines.
 
 ---
 
-**Maintained by**: Websoft9
+**Maintained by**: [Websoft9](https://www.websoft9.com)

@@ -14,6 +14,9 @@
 实现通用技术规范的基础代码，为后续业务 Epic 开发提供标准化工具和框架。
 
 ### 验收标准
+- [ ] 本地开发环境可一键启动
+- [ ] CI/CD 自动化流程就绪
+- [ ] 生产部署方案可用
 - [ ] 统一响应工具包可用
 - [ ] 错误处理框架可用
 - [ ] Ent Schema 规范配置完成
@@ -27,6 +30,8 @@
 
 | Story | 描述 | 优先级 | 工期 | 状态 |
 |-------|------|--------|------|------|
+| Story 9 | 本地开发环境搭建 | P0 | 1 天 | Planning |
+| Story 10 | 生产部署配置 | P0 | 2 天 | Planning |
 | Story 1 | 统一响应工具包 | P0 | 2 天 | Planning |
 | Story 2 | 错误处理框架 | P0 | 2 天 | Planning |
 | Story 3 | Ent Schema 规范配置 | P0 | 1 天 | Planning |
@@ -36,12 +41,540 @@
 | Story 7 | i18n 基础设施 | P1 | 2 天 | Planning |
 | Story 8 | l10n 基础设施 | P1 | 2 天 | Planning |
 
-**总工期**: 13 天（P0: 6 天，P1: 7 天）  
-**依赖关系**: Story 2 依赖 Story 1，Story 6 依赖 Story 1-2，Story 8 依赖 Story 7
+**总工期**: 16 天（P0: 9 天，P1: 7 天）  
+**依赖关系**: Story 10 依赖 Story 9，Story 2 依赖 Story 1，Story 6 依赖 Story 1-2，Story 8 依赖 Story 7
 
 ---
 
 ## Stories
+
+### Story 9: 本地开发环境搭建
+
+**优先级**: P0 ⚡ **最高优先级**  
+**工作量**: 1 天  
+**负责人**: DevOps/Backend Dev  
+**依赖**: 无（第一个完成）
+
+#### 用户故事
+作为开发者，我希望能快速搭建本地开发环境，以便在 5 分钟内开始编码。
+
+#### 验收标准
+- [ ] 创建 `docker-compose.dev.yml`（开发环境）
+- [ ] PostgreSQL 容器配置
+- [ ] Redis 容器配置（可选）
+- [ ] 环境变量模板 `.env.example`
+- [ ] 快速启动脚本 `scripts/dev-setup.sh`
+- [ ] 开发文档 `docs/development.md`
+- [ ] 开发者能在 5 分钟内启动环境
+
+#### 实现任务
+- [ ] 创建 `docker-compose.dev.yml`
+- [ ] 创建 `.env.example`（包含所有必需的环境变量）
+- [ ] 创建 `scripts/dev-setup.sh`（一键启动脚本）
+- [ ] 创建 `docs/development.md`（开发指南）
+- [ ] 更新根目录 `Makefile`（添加 `make dev-up` 命令）
+- [ ] 添加数据库初始化脚本
+- [ ] 测试完整的启动流程
+
+#### 技术细节
+
+```yaml
+# docker-compose.dev.yml
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: apprun-postgres-dev
+    environment:
+      POSTGRES_DB: apprun_dev
+      POSTGRES_USER: apprun
+      POSTGRES_PASSWORD: apprun_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U apprun"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: apprun-redis-dev
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  postgres_data:
+  redis_data:
+```
+
+```bash
+# .env.example
+# Database
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=apprun_dev
+DB_USER=apprun
+DB_PASSWORD=apprun_dev_password
+DB_SSL_MODE=disable
+
+# Redis
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=
+
+# Server
+SERVER_PORT=8080
+SERVER_ENV=development
+
+# JWT
+JWT_SECRET=your-jwt-secret-here-min-32-chars
+
+# Encryption
+ENCRYPTION_KEY=your-32-byte-encryption-key-here
+```
+
+```bash
+#!/bin/bash
+# scripts/dev-setup.sh
+
+set -e
+
+echo "🚀 Starting apprun development environment..."
+
+# 检查 Docker
+if ! command -v docker &> /dev/null; then
+    echo "❌ Docker not found. Please install Docker first."
+    exit 1
+fi
+
+# 检查 Docker Compose
+if ! docker compose version &> /dev/null; then
+    echo "❌ Docker Compose not found. Please install Docker Compose V2."
+    exit 1
+fi
+
+# 复制环境变量文件
+if [ ! -f .env ]; then
+    echo "📝 Creating .env from .env.example..."
+    cp .env.example .env
+    echo "⚠️  Please update .env with your settings"
+fi
+
+# 启动 Docker 容器
+echo "🐳 Starting Docker containers..."
+docker compose -f docker-compose.dev.yml up -d
+
+# 等待数据库就绪
+echo "⏳ Waiting for PostgreSQL..."
+until docker exec apprun-postgres-dev pg_isready -U apprun > /dev/null 2>&1; do
+    sleep 1
+done
+
+echo "✅ Development environment is ready!"
+echo ""
+echo "📚 Next steps:"
+echo "  1. cd core"
+echo "  2. go run cmd/server/main.go"
+echo "  3. Visit http://localhost:8080"
+echo ""
+echo "🛠️  Useful commands:"
+echo "  - make dev-up      # Start containers"
+echo "  - make dev-down    # Stop containers"
+echo "  - make dev-logs    # View logs"
+echo "  - make dev-clean   # Remove all data"
+```
+
+```makefile
+# Makefile (根目录)
+.PHONY: dev-up dev-down dev-logs dev-clean
+
+# 启动开发环境
+dev-up:
+	@chmod +x scripts/dev-setup.sh
+	@./scripts/dev-setup.sh
+
+# 停止开发环境
+dev-down:
+	docker compose -f docker-compose.dev.yml down
+
+# 查看日志
+dev-logs:
+	docker compose -f docker-compose.dev.yml logs -f
+
+# 清理开发环境（包括数据）
+dev-clean:
+	docker compose -f docker-compose.dev.yml down -v
+	rm -f .env
+```
+
+#### 测试用例
+- 执行 `make dev-up` 成功启动所有容器
+- PostgreSQL 健康检查通过
+- Redis 健康检查通过
+- 可以连接数据库
+- 可以运行 Go 应用
+
+---
+
+### Story 10: 生产部署配置
+
+**优先级**: P0 ⚡ **第二优先级**  
+**工作量**: 2 天  
+**负责人**: DevOps/Backend Dev  
+**依赖**: Story 9（本地环境）
+
+#### 用户故事
+作为运维人员，我希望有一键部署方案，以便快速在云服务器上部署生产环境。
+
+#### 验收标准
+- [ ] 创建 `docker-compose.prod.yml`（生产环境）
+- [ ] 创建生产环境 Dockerfile
+- [ ] CI/CD 自动构建 Docker 镜像
+- [ ] 部署脚本 `scripts/deploy.sh`
+- [ ] HTTPS/TLS 配置（Nginx 反向代理）
+- [ ] 健康检查和自动重启
+- [ ] 部署文档 `docs/deployment.md`
+- [ ] 能在 15 分钟内完成生产部署
+
+#### 实现任务
+- [ ] 创建 `Dockerfile`（多阶段构建）
+- [ ] 创建 `docker-compose.prod.yml`
+- [ ] 创建 Nginx 配置 `docker/nginx/nginx.conf`
+- [ ] 创建 `.env.prod.example`（生产环境变量模板）
+- [ ] 创建 `scripts/deploy.sh`（一键部署脚本）
+- [ ] 创建 `docs/deployment.md`（部署指南）
+- [ ] 配置 GitHub Actions 自动构建镜像
+- [ ] 测试完整的部署流程
+
+#### 技术细节
+
+```dockerfile
+# Dockerfile (多阶段构建)
+# Stage 1: Build
+FROM golang:1.21-alpine AS builder
+
+WORKDIR /build
+
+# 安装依赖
+RUN apk add --no-cache git make
+
+# 复制 go mod 文件
+COPY core/go.mod core/go.sum ./
+RUN go mod download
+
+# 复制源代码
+COPY core/ ./
+
+# 构建
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo \
+    -ldflags '-extldflags "-static"' \
+    -o server ./cmd/server
+
+# Stage 2: Runtime
+FROM alpine:latest
+
+RUN apk --no-cache add ca-certificates tzdata
+
+WORKDIR /app
+
+# 从构建阶段复制二进制文件
+COPY --from=builder /build/server .
+COPY --from=builder /build/config ./config
+
+# 暴露端口
+EXPOSE 8080
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
+
+# 运行
+CMD ["./server"]
+```
+
+```yaml
+# docker-compose.prod.yml
+version: '3.9'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: apprun-app
+    restart: unless-stopped
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - SERVER_PORT=8080
+      - SERVER_ENV=production
+      - JWT_SECRET=${JWT_SECRET}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - apprun-network
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: apprun-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - apprun-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: apprun-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--no-auth-warning", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - apprun-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: apprun-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/ssl:/etc/nginx/ssl:ro
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      - app
+    networks:
+      - apprun-network
+
+volumes:
+  postgres_data:
+  redis_data:
+  nginx_logs:
+
+networks:
+  apprun-network:
+    driver: bridge
+```
+
+```nginx
+# docker/nginx/nginx.conf
+events {
+    worker_connections 1024;
+}
+
+http {
+    upstream apprun {
+        server app:8080;
+    }
+
+    server {
+        listen 80;
+        server_name _;
+
+        # HTTP 重定向到 HTTPS
+        return 301 https://$host$request_uri;
+    }
+
+    server {
+        listen 443 ssl http2;
+        server_name _;
+
+        # SSL 证书（使用 Let's Encrypt 或自签名）
+        ssl_certificate /etc/nginx/ssl/cert.pem;
+        ssl_certificate_key /etc/nginx/ssl/key.pem;
+
+        # SSL 配置
+        ssl_protocols TLSv1.2 TLSv1.3;
+        ssl_ciphers HIGH:!aNULL:!MD5;
+
+        # 日志
+        access_log /var/log/nginx/access.log;
+        error_log /var/log/nginx/error.log;
+
+        # 代理配置
+        location / {
+            proxy_pass http://apprun;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection 'upgrade';
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_cache_bypass $http_upgrade;
+
+            # 超时配置
+            proxy_connect_timeout 60s;
+            proxy_send_timeout 60s;
+            proxy_read_timeout 60s;
+        }
+
+        # 健康检查（不记录日志）
+        location /health {
+            proxy_pass http://apprun;
+            access_log off;
+        }
+    }
+}
+```
+
+```bash
+#!/bin/bash
+# scripts/deploy.sh
+
+set -e
+
+echo "🚀 Deploying apprun to production..."
+
+# 检查环境变量文件
+if [ ! -f .env.prod ]; then
+    echo "❌ .env.prod not found. Please create it from .env.prod.example"
+    exit 1
+fi
+
+# 加载环境变量
+export $(grep -v '^#' .env.prod | xargs)
+
+# 停止旧容器
+echo "🛑 Stopping old containers..."
+docker compose -f docker-compose.prod.yml down
+
+# 拉取最新代码
+echo "📥 Pulling latest code..."
+git pull origin main
+
+# 构建新镜像
+echo "🔨 Building Docker images..."
+docker compose -f docker-compose.prod.yml build --no-cache
+
+# 启动新容器
+echo "🐳 Starting containers..."
+docker compose -f docker-compose.prod.yml up -d
+
+# 等待服务就绪
+echo "⏳ Waiting for services..."
+sleep 10
+
+# 健康检查
+echo "🏥 Running health check..."
+until curl -f http://localhost/health > /dev/null 2>&1; do
+    echo "Waiting for app..."
+    sleep 5
+done
+
+echo "✅ Deployment successful!"
+echo ""
+echo "📊 Service status:"
+docker compose -f docker-compose.prod.yml ps
+echo ""
+echo "🌐 Application is running at:"
+echo "  - HTTP: http://your-domain.com"
+echo "  - HTTPS: https://your-domain.com"
+echo ""
+echo "📝 View logs: docker compose -f docker-compose.prod.yml logs -f"
+```
+
+```yaml
+# .github/workflows/docker-build.yml
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v2
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v4
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+
+    - name: Build and push
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: ${{ github.event_name != 'pull_request' }}
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+```
+
+#### 测试用例
+- Docker 镜像成功构建
+- 执行 `scripts/deploy.sh` 成功部署
+- 所有容器健康检查通过
+- HTTPS 访问正常
+- 健康检查端点响应正常
+- 容器自动重启工作正常
+
+---
 
 ### Story 1: 统一响应工具包
 
