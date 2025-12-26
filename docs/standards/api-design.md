@@ -409,34 +409,49 @@ const (
 ### 6.1 认证方式
 
 ```http
-# Bearer Token（推荐）
+# Bearer Token（推荐用于 API 客户端）
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+# Session Cookie（Web 端自动携带）
+Cookie: ory_kratos_session=<session_value>
 
 # API Key（用于服务端调用）
 X-API-Key: sk_live_1234567890abcdef
 ```
 
-### 6.2 认证流程
+### 6.2 认证流程概述
 
+**Web 端**：
 ```
-1. 用户登录 → Kratos
-2. Kratos 生成 Session Token
-3. 客户端在请求中携带 Token
-4. apprun 验证 Token → 查询用户信息
-5. 检查用户权限 → 执行业务逻辑
+1. 用户通过 Kratos 登录 → 生成 Session Cookie
+2. 浏览器自动携带 Cookie 访问 apprun API
+3. apprun 验证 Session → 执行业务逻辑
 ```
 
-### 6.3 权限控制
+**API 客户端**：
+```
+1. 用户登录 → 获取 Kratos Session
+2. 调用 POST /api/v1/auth/token 换取 JWT
+3. 携带 JWT 访问 API → apprun 验证 JWT
+```
+
+> 📖 **详细认证与授权规范**：[认证模块规范](./auth-module.md)
+
+### 6.3 权限控制示例
 
 ```bash
 # 项目级权限检查
 GET /api/v1/projects/123/files
-# 需要验证：用户是否是项目成员 && 是否有读取权限
+Authorization: Bearer <token>
+# 验证：用户是否是项目成员 && 是否有读取权限
 
 # 资源级权限检查
 DELETE /api/v1/files/456
-# 需要验证：用户是否有删除该文件的权限
+Authorization: Bearer <token>
+# 验证：用户是否有删除该文件的权限
 ```
+
+> 📖 **权限模型详解**：[认证模块规范 - 权限模型](./auth-module.md#5-权限模型规范)
 
 ---
 
@@ -753,6 +768,8 @@ openapi2postmanv2 -s openapi.yaml -o postman_collection.json
 - **字段名**: 使用 snake_case（如 `user_id`, `created_at`）
 - **枚举值**: 使用 lowercase（如 `active`, `pending`）
 - **布尔字段**: 使用 `is_*` 或 `has_*` 前缀（如 `is_active`, `has_permission`）
+
+> 后端 Go 代码使用 CamelCase，API JSON 输出强制转换为 snake_case
 
 ### 13.2 API 设计检查清单
 

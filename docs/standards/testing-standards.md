@@ -628,128 +628,11 @@ func AssertErrorContains(t *testing.T, err error, substr string) {
 }
 ```
 
----
-
-## 7. CI/CD 集成
-
-### 7.1 GitHub Actions
-
-```yaml
-# .github/workflows/test.yml
-name: Tests
-
-on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main, develop ]
-
-jobs:
-  unit-tests:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.24'
-      
-      - name: Run unit tests
-        run: |
-          go test -v -race -coverprofile=coverage.out ./...
-          go tool cover -func=coverage.out
-      
-      - name: Upload coverage
-        uses: codecov/codecov-action@v3
-        with:
-          files: ./coverage.out
-  
-  integration-tests:
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:14
-        env:
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
-          POSTGRES_DB: testdb
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-      
-      redis:
-        image: redis:7
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
-    
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.24'
-      
-      - name: Run integration tests
-        env:
-          DATABASE_URL: postgresql://test:test@localhost:5432/testdb?sslmode=disable
-          REDIS_URL: redis://localhost:6379/0
-        run: |
-          go test -v -tags=integration ./tests/integration/...
-  
-  e2e-tests:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.24'
-      
-      - name: Run E2E tests
-        run: |
-          cd tests/e2e
-          docker-compose up -d
-          go test -v ./scenarios/...
-          docker-compose down
-```
-
-### 7.2 测试标签
-
-```go
-// 使用 build tags 区分测试类型
-
-// +build integration
-
-// tests/integration/db_test.go
-package integration
-
-func TestDatabase(t *testing.T) {
-    // 集成测试代码
-}
-```
-
-```bash
-# 运行不同类型的测试
-go test -v ./...                        # 单元测试
-go test -v -tags=integration ./...     # 集成测试
-go test -v -short ./...                 # 快速测试（跳过慢速测试）
-```
+**CI/CD 流程说明**: 详细的 CI/CD 配置和测试执行流程请参考 [DevOps 流程规范](./devops-process.md#4-测试流程)。
 
 ---
 
-## 8. 测试最佳实践
+## 7. 测试最佳实践
 
 ### 8.1 测试独立性
 
@@ -853,9 +736,9 @@ func TestUserService_CreateUser(t *testing.T) {
 
 ---
 
-## 9. 测试检查清单
+## 8. 测试检查清单
 
-### 9.1 单元测试检查
+### 8.1 单元测试检查
 
 - [ ] 测试命名清晰（Test<Function>_<Scenario>）
 - [ ] 使用 AAA 模式（Arrange, Act, Assert）
@@ -875,7 +758,7 @@ func TestUserService_CreateUser(t *testing.T) {
 - [ ] 验证事务边界
 - [ ] 集成测试覆盖率 ≥ 40%
 
-### 9.3 E2E 测试检查
+### 8.3 E2E 测试检查
 
 - [ ] 测试完整用户流程
 - [ ] 使用真实服务（Docker Compose）

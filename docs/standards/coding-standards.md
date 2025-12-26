@@ -834,9 +834,75 @@ func ProcessItems(items []Item) {
 
 ---
 
-## 12. 代码审查清单
+## 12. Ent ORM 规范
 
-### 12.1 通用检查
+### 12.1 字段定义规范
+
+**所有 Ent Schema 字段必须显式定义 JSON tag，使用 snake_case 格式**
+
+```go
+// ent/schema/user.go
+
+func (User) Fields() []ent.Field {
+    return []ent.Field{
+        // ✅ 推荐：显式定义 JSON tag 和 StorageKey
+        field.String("name").
+            StorageKey("name").
+            StructTag(`json:"name"`),
+        
+        field.String("email").
+            StorageKey("email").
+            StructTag(`json:"email"`),
+        
+        field.Time("created_at").
+            StorageKey("created_at").
+            StructTag(`json:"created_at"`).
+            Default(time.Now),
+        
+        // 敏感字段：不在 JSON 中输出
+        field.String("password_hash").
+            StorageKey("password_hash").
+            StructTag(`json:"-"`),
+        
+        // 可选字段：使用 omitempty
+        field.String("phone").
+            Optional().
+            StorageKey("phone").
+            StructTag(`json:"phone,omitempty"`),
+    }
+}
+```
+
+### 12.2 关系字段规范
+
+```go
+func (Project) Edges() []ent.Edge {
+    return []ent.Edge{
+        edge.From("owner", User.Type).
+            Ref("projects").
+            Unique().
+            StructTag(`json:"owner"`),
+        
+        edge.To("members", User.Type).
+            StructTag(`json:"members"`),
+    }
+}
+```
+
+### 12.3 Ent Schema 检查清单
+
+- [ ] 所有字段有显式的 `json` tag
+- [ ] JSON tag 使用 snake_case 格式
+- [ ] StorageKey 与数据库列名一致
+- [ ] 敏感字段使用 `json:"-"`
+- [ ] 可选字段使用 `omitempty`
+- [ ] 关系字段有适当的 JSON tag
+
+---
+
+## 13. 代码审查清单
+
+### 13.1 通用检查
 
 - [ ] 代码遵循 Go 命名规范
 - [ ] 所有导出的函数和类型有注释
@@ -847,8 +913,9 @@ func ProcessItems(items []Item) {
 - [ ] 并发安全（使用锁或 Channel）
 - [ ] 单元测试覆盖
 - [ ] 无 golangci-lint 警告
+- [ ] Ent Schema 字段符合 JSON tag 规范
 
-### 12.2 性能检查
+### 13.2 性能检查
 
 - [ ] 避免不必要的内存分配
 - [ ] 数据库查询优化（N+1 问题）
@@ -856,7 +923,7 @@ func ProcessItems(items []Item) {
 - [ ] 并发数量控制
 - [ ] 大文件流式处理
 
-### 12.3 安全检查
+### 13.3 安全检查
 
 - [ ] 输入验证
 - [ ] SQL 注入防护
@@ -865,6 +932,7 @@ func ProcessItems(items []Item) {
 - [ ] 密钥使用环境变量
 
 ---
+
 
 ## 附录
 
@@ -896,6 +964,96 @@ linters-settings:
     local-prefixes: github.com/websoft9/apprun
 ```
 
+#### Ent Schema JSON Tag 检查脚本
+
+```bash
+#!/bin/bash
+# scripts/check-ent-json-tags.sh
+
+set -e
+
+echo "🔍 检查 Ent Schema JSON tag 规范..."
+
+schema_files=$(find ent/schema -name "*.go" 2>/dev/null || true)
+
+if [ -z "$schema_files" ]; then
+    echo "⚠️  未找到 Ent Schema 文件，跳过检查"
+    exit 0
+fi
+
+errors=0
+
+for file in $schema_files; do
+    # 检查是否有未定义 JSON tag 的字段
+    if grep -q "field\." "$file" && ! grep -q 'StructTag.*json:' "$file"; then
+        echo "❌ $file: 发现字段缺少 JSON tag 定义"
+        errors=$((errors + 1))
+    fi
+    
+    # 检查 JSON tag 格式（应为 snake_case）
+    if grep -P 'StructTag.*json:"[^"]*[A-Z][^"]*"' "$file" > /dev/null 2>&1; then
+        echo "❌ $file: JSON tag 应使用 snake_case 格式"
+        errors=$((errors + 1))
+    fi
+done
+
+if [ $errors -eq 0 ]; then
+    echo "✅ 所有 Ent Schema JSON tag 检查通过"
+else
+    echo "❌ 发现 $errors 个 JSON tag 规范问题"
+    exit 1
+fi
+```
+
+#### CI/CD GitHub Actions 配置
+
+```yaml
+# .github/workflows/ci.yml
+
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: 1.21
+    
+    - name: Run golangci-lint
+      uses: golangci/golangci-lint-action@v3
+      with:
+        version: latest
+        args: --config=.golangci.yml
+    
+    - name: Check Ent Schema JSON tags
+      run: |
+        chmod +x scripts/check-ent-json-tags.sh
+        ./scripts/check-ent-json-tags.sh
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: 1.21
+    
+    - name: Run tests
+      run: go test -v -race -coverprofile=coverage.out ./...
+```
+
 #### EditorConfig
 
 ```ini
@@ -920,7 +1078,7 @@ indent_size = 2
 ### B. Makefile 示例
 
 ```makefile
-.PHONY: fmt lint test build
+.PHONY: fmt lint ent-check test build
 
 fmt:
 	gofmt -s -w .
@@ -929,9 +1087,14 @@ fmt:
 lint:
 	golangci-lint run
 
+ent-check:
+	./scripts/check-ent-json-tags.sh
+
 test:
 	go test -v -race -coverprofile=coverage.out ./...
 	go tool cover -html=coverage.out -o coverage.html
+
+check: lint ent-check test
 
 build:
 	go build -o bin/server ./cmd/server
