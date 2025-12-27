@@ -1,6 +1,6 @@
 # apprun Makefile
 
-.PHONY: help build test test-all test-unit test-integration test-e2e clean docker-build docker-up docker-down
+.PHONY: help build test test-all test-unit test-integration test-e2e clean docker-build docker-up docker-down validate-stories sync-index
 
 # 默认目标
 help:
@@ -16,6 +16,8 @@ help:
 	@echo "  docker-build   - Build Docker images"
 	@echo "  docker-up      - Start Docker services"
 	@echo "  docker-down    - Stop Docker services"
+	@echo "  validate-stories - Validate all Story documents"
+	@echo "  sync-index     - Sync global Stories index"
 	@echo "  clean          - Clean build artifacts"
 
 # 构建
@@ -81,4 +83,21 @@ test-config: test-unit
 	@echo "Running config module tests..."
 	@tests/scripts/setup-test-db.sh
 	@tests/integration/config/test-api.sh
+
+# 验证 Story 文档
+validate-stories:
+	@echo "🔍 Validating Story documents..."
+	@for file in docs/sprint-artifacts/sprint-*/story-*.md; do \
+		if [ -f "$$file" ]; then \
+			./scripts/validate-story.sh "$$file" || exit 1; \
+		fi \
+	done
+	@echo ""
+	@echo "✅ All Story documents validated successfully"
 	@tests/scripts/cleanup.sh
+
+# 同步全局 Stories 索引
+sync-index:
+	@echo "🔄 Syncing global Stories index..."
+	@./scripts/sync-story-index.sh
+	@echo "✅ Global Stories index synced"

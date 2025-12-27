@@ -1,0 +1,18 @@
+#!/bin/bash
+# Pre-commit hook to auto-sync global Stories index
+# This ensures the Sprint-Story-Module Mapping table is always up-to-date
+
+# Check if any Story files changed
+if git diff --cached --name-only | grep -q "docs/sprint-artifacts/sprint-.*/story-.*\.md"; then
+    echo "📚 Detected Story file changes, syncing global index..."
+    
+    # Run sync script
+    if make sync-index; then
+        # Stage the updated README
+        git add docs/sprint-artifacts/README.md
+        echo "✅ Global index synced and staged"
+    else
+        echo "❌ Failed to sync global index"
+        exit 1
+    fi
+fi

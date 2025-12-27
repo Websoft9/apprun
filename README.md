@@ -1,6 +1,6 @@
 # apprun
 
-A lightweight BaaS (Backend as a Service) framework for developers, built with Go following the [BMad Method](https://github.com/bmad-code-org/BMAD-METHOD).
+A lightweight BaaS (Backend as a Service) framework for developers, SDD (spec-driven-development), built with Go following the [BMad Method](https://github.com/bmad-code-org/BMAD-METHOD).
 
 ---
 
