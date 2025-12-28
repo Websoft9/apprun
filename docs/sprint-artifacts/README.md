@@ -45,6 +45,8 @@ Story (Executable Tasks)
 | Sprint-0 | Story 07: 重构现有 Handlers | Infrastructure | Planning |
 | Sprint-0 | Story 08: i18n 国际化Infrastructure | Infrastructure | Planning |
 | Sprint-0 | Story 09: l10n 本地化实施 | Infrastructure | Planning |
+| Sprint-0 | Story 10: Configuration Center Foundation |  | Ready |
+| Sprint-0 | Story 10:  |  |  |
 <!-- MAPPING_TABLE_END -->
 
 ---

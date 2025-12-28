@@ -1,6 +1,14 @@
 # Production deployment configuration using pre-built image
 # Prerequisites: Image must be available at ghcr.io/websoft9/apprun:latest
 # Usage: docker compose up -d
+#
+# Environment Variables (all have defaults):
+#   - APP_HTTP_PORT (default: 8080)
+#   - APP_HTTPS_PORT (default: 8443)
+#   - POSTGRES_PASSWORD (default: postgres, CHANGE IN PRODUCTION!)
+#   - POSTGRES_DB (default: apprun)
+#   - SSL_CERT_PATH (optional, for HTTPS)
+#   - SSL_KEY_PATH (optional, for HTTPS)
 
 services:
   app:
@@ -10,17 +18,21 @@ services:
     ports:
       - "${APP_HTTP_PORT:-8080}:8080"
       - "${APP_HTTPS_PORT:-8443}:8443"
-    env_file:
-      - .env.prod
     environment:
       - SERVER_ENV=production
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
+      - POSTGRES_USER=${POSTGRES_USER:-apprun}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-apprun}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - SSL_CERT_FILE=${SSL_CERT_FILE:-}
+      - SSL_KEY_FILE=${SSL_KEY_FILE:-}
     volumes:
-      - ${SSL_CERT_PATH}:/etc/ssl/certs/server.crt:ro
-      - ${SSL_KEY_PATH}:/etc/ssl/private/server.key:ro
+      - ${SSL_CERT_PATH:-/dev/null}:/etc/ssl/certs/server.crt:ro
+      - ${SSL_KEY_PATH:-/dev/null}:/etc/ssl/private/server.key:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -40,13 +52,13 @@ services:
     container_name: apprun-postgres
     restart: always
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER:-apprun}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-apprun}
     volumes:
       - postgres_prod_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-apprun}"]
       interval: 10s
       timeout: 5s
       retries: 5

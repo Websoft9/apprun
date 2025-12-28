@@ -1407,6 +1407,74 @@ make clean              # 清理构建产物
 
 ---
 
+## 14. 配置管理规范
+
+### 14.1 配置优先级（6层）
+
+从高到低：
+
+1. **环境变量**（无前缀，最高优先级）
+2. **数据库配置**（`configitems` 表，`db:"true"` 字段）
+3. **用户配置**（`config/conf_d/*.yaml`，按字母顺序）
+4. **领域配置**（`config/database.yaml` 等）
+5. **默认配置**（`config/default.yaml`）
+6. **结构体默认值**（`default` tag，最低优先级）
+
+### 14.2 环境变量映射
+
+**规则**: 无前缀，`section.field` → `SECTION_FIELD`
+
+```bash
+# 示例
+database.host     → DATABASE_HOST
+app.name          → APP_NAME
+server.http_port  → SERVER_HTTP_PORT
+```
+
+### 14.3 结构体标签
+
+```go
+type Config struct {
+    Database struct {
+        Host string `yaml:"host" default:"localhost" db:"false"` // 不从DB加载
+        Port int    `yaml:"port" default:"5432" db:"false"`
+    } `yaml:"database"`
+    
+    App struct {
+        Name string `yaml:"name" default:"apprun" db:"true"` // 可从DB加载
+    } `yaml:"app"`
+}
+```
+
+**标签说明**:
+- `default` - 程序内置默认值
+- `validate` - 校验规则（如 `required`, `min=1`）
+- `db:"false"` - 禁止从数据库加载（防止循环依赖）
+- `db:"true"` - 允许从数据库动态配置
+
+### 14.4 数据库配置保护
+
+**强制规则**: 数据库连接配置**必须**标记 `db:"false"`
+
+```go
+// ✅ 正确：防止循环依赖
+type Config struct {
+    Database struct {
+        Host     string `db:"false"`
+        Password string `db:"false"`
+    }
+}
+
+// ❌ 错误：会导致循环依赖
+type Config struct {
+    Database struct {
+        Host string `db:"true"` // 危险！
+    }
+}
+```
+
+---
+
 **文档维护**: Winston (Architect Agent)  
 **审核状态**: 待开发团队评审  
 **下一步**: 测试规范文档 (testing-standards.md)
