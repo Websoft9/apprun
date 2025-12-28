@@ -3,7 +3,10 @@
 FROM golang:1.24-alpine AS builder
 
 # Set GOPROXY for faster downloads
-ENV GOPROXY=https://goproxy.cn,https://proxy.golang.org,direct
+ENV GOPROXY=https://goproxy.cn,https://proxy.golang.org,direct \
+    CGO_ENABLED=0 \
+    GOOS=linux \
+    GOARCH=amd64
 
 WORKDIR /build
 
@@ -17,10 +20,12 @@ RUN go mod download
 # Copy source code
 COPY core/ ./
 
-# Build static binary
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
-    -a -installsuffix cgo \
-    -ldflags '-extldflags "-static" -s -w' \
+# Build static binary with cache optimization
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    go build \
+    -trimpath \
+    -ldflags='-s -w -extldflags "-static"' \
+    -p=$(nproc) \
     -o /apprun ./cmd/server/main.go
 
 # Stage 2: Production - Minimal runtime image
