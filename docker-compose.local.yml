@@ -1,0 +1,77 @@
+# Production-like environment for local testing
+# Builds image locally from Dockerfile
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: apprun:local
+    container_name: apprun-app-local
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+      - "8443:8443"
+    environment:
+      - SERVER_ENV=production
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=apprun
+      - POSTGRES_PASSWORD=local_prod_password
+      - POSTGRES_DB=apprun_prod_local
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - apprun-prod-local
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: apprun-postgres-local
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: apprun
+      POSTGRES_PASSWORD: local_prod_password
+      POSTGRES_DB: apprun_prod_local
+    volumes:
+      - postgres_prod_local_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U apprun"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - apprun-prod-local
+
+  redis:
+    image: redis:7-alpine
+    container_name: apprun-redis-local
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_prod_local_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - apprun-prod-local
+
+volumes:
+  postgres_prod_local_data:
+  redis_prod_local_data:
+
+networks:
+  apprun-prod-local:
+    driver: bridge

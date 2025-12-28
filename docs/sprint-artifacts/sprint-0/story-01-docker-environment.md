@@ -2,107 +2,98 @@
 # Sprint 0: Infrastructure
 
 **Priority**: P0  
-**Effort**: 2 days  
+**Effort**: 3 days  
 **Owner**: DevOps/Backend Dev  
 **Dependencies**: -  
 **Status**: Planning  
 **Module**: Infrastructure  
 **Issue**: #TBD  
-**Related**: [Deployment Architecture](../../architecture/deployment-architecture.md)
 
 ---
 
 ## User Story
 
-As a developer and DevOps engineer, I want a unified Docker environment configuration that can switch between development and production modes via environment variables, enabling "configure once, run anywhere".
+As a developer and DevOps engineer, I want a flexible Docker environment with local Go development, optional TLS, and production deployment via pre-built images.
+
+---
+
+## Design Principles
+
+1. **Local-first Development**: `go run` for daily work, Docker for dependencies only
+2. **On-demand Build**: Local image builds only for integration testing
+3. **CI/CD Automation**: Auto-build and publish on git push
+4. **Simple Deployment**: Users pull pre-built images from registry
 
 ---
 
 ## Acceptance Criteria
 
-- [ ] Create `docker/Dockerfile` (multi-stage: builder, dev, prod)
-- [ ] Create `docker/docker-compose.yml` (environment-driven)
-- [ ] Create `.env.dev` and `.env.prod.example`
-- [ ] Create `docker/nginx/nginx.conf` (HTTPS support)
-- [ ] Create `Makefile` with dev/prod commands
-- [ ] Create `scripts/prod-deploy.sh`
-- [ ] Update `docs/product/setup/*.md`
-- [ ] Dev mode starts in < 5 minutes
-- [ ] Prod deployment completes in < 15 minutes
+- [ ] Create `docker/Dockerfile`, 3x `docker-compose.yml`, `.env` files
+- [ ] Add TLS support: `SSL_CERT_FILE`, `SSL_KEY_FILE` env vars
+- [ ] Create `.github/workflows/docker-build.yml` (GHCR auto-publish)
+- [ ] Create `Makefile`: `dev-up`, `run-local`, `build-local`, `test-local`
+- [ ] Create reverse proxy examples: Nginx, Caddy, Traefik
+- [ ] Update 4x setup docs
+- [ ] Dev deps start < 1min, prod deploy < 2min, image < 30MB
 
 ---
 
 ## Technical Design
 
-### Dockerfile (Multi-stage)
+### Dockerfile Structure
+```
+golang:1.21-alpine (builder) → alpine:latest (prod)
+- Static binary, non-root user, health check
+- Expose: 8080 (HTTP), 8443 (HTTPS)
+- Size target: < 30MB
+```
 
-| Stage | Purpose | Base Image |
-|-------|---------|------------|
-| builder | Compile Go binary | golang:1.21-alpine |
-| dev | Hot reload development | golang:1.21-alpine |
-| prod | Minimal runtime (~20MB) | alpine:latest |
+### TLS Support
+```go
+// Optional TLS via environment variables
+if os.Getenv("SSL_CERT_FILE") != "" {
+    http.ListenAndServeTLS(":8443", cert, key, handler)
+} else {
+    http.ListenAndServe(":8080", handler)
+}
+```
 
-**Features**: Static binary, non-root user, health check
+### Docker Compose Files
 
-### docker-compose.yml
-
-| Service | Dev Mode | Prod Mode |
-|---------|----------|-----------|
-| app | Run locally | Built from prod stage |
-| postgres | Port 5432 exposed | Internal only |
-| redis | Port 6379 exposed | Internal only |
-| nginx | Not started | HTTPS enabled |
-
-**Environment Variables**:
-- `BUILD_TARGET`: dev / prod
-- `SERVER_ENV`: development / production
-- `APP_PROFILE`: default / production
+| File | Purpose | App |
+|------|---------|-----|
+| `dev.yml` | Local development | No (use `go run`) |
+| `prod-local.yml` | Integration test | Build locally |
+| `prod.yml` | Production | Pull from GHCR |
 
 ### Makefile Commands
 
 | Command | Action |
 |---------|--------|
 | `make dev-up` | Start postgres + redis |
-| `make dev-down` | Stop dev services |
-| `make prod-deploy` | Full production deployment |
-| `make prod-down` | Stop prod services |
+| `make build-local` | Build image locally |
+| `make test-local` | Run integration tests |
 
 ---
 
-## Implementation Tasks
-
 ## Test Cases
 
-### Development
-- [ ] `make dev-up` succeeds
-- [ ] Ports 5432/6379 accessible
-- [ ] `go run cmd/server/main.go` connects
-
-### Production
-- [ ] `make prod-deploy` succeeds
-- [ ] Health checks pass
-- [ ] HTTPS works
-- [ ] Ports not exposed externally
+- [ ] Dev: `make dev-up` starts in < 1min, ports 5432/6379 accessible
+- [ ] Local: `make build-local` completes < 3min, image < 30MB
+- [ ] Prod: Remote image deploys < 2min, health checks pass
+- [ ] TLS: HTTP :8080 and HTTPS :8443 both work
 
 ---
 
 ## Deliverables
 
-- `docker/Dockerfile`
-- `docker/docker-compose.yml`
-- `.env.dev`, `.env.prod.example`
-- `docker/nginx/nginx.conf`
-- `Makefile`
-- `scripts/prod-deploy.sh`
-- `docs/product/setup/local-deployment.md`
-- `docs/product/setup/production-deployment.md`
-
-
----
-
-## Related Docs
+**Docker**: `Dockerfile`, 3x `docker-compose.yml`, 2x `.env`  
+**CI/CD**: `.github/workflows/docker-build.yml`  
+**Tools**: `Makefile`, `scripts/generate-self-signed-cert.sh`  
+**Examples**: `examples/reverse-proxy/` (nginx, caddy, traefik)  
+**Docs**: `docs/product/setup/` (4 files)
 
 ---
 
 **Created**: 2025-12-27  
-**Updated**: 2025-12-27
+**Updated**: 2025-12-28

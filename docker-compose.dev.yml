@@ -1,0 +1,46 @@
+# Development dependencies only (postgres + redis)
+# App runs locally with: go run core/cmd/server/main.go
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: apprun-postgres-dev
+    environment:
+      POSTGRES_USER: apprun
+      POSTGRES_PASSWORD: dev_password_123
+      POSTGRES_DB: apprun_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U apprun"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - apprun-dev
+
+  redis:
+    image: redis:7-alpine
+    container_name: apprun-redis-dev
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_dev_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - apprun-dev
+
+volumes:
+  postgres_dev_data:
+  redis_dev_data:
+
+networks:
+  apprun-dev:
+    driver: bridge

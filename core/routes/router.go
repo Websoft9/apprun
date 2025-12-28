@@ -17,6 +17,12 @@ func SetupRoutes() *chi.Mux {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
+	// Health check at root
+	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"status":"ok","service":"apprun"}`))
+	})
+
 	// Create handlers
 	configHandler := handlers.NewConfigHandler()
 
@@ -26,12 +32,6 @@ func SetupRoutes() *chi.Mux {
 		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte("Hello, apprun API"))
-		})
-
-		// health check route
-		r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{"status":"ok","service":"apprun"}`))
 		})
 
 		// feature/config routes

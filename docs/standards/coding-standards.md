@@ -1311,6 +1311,102 @@ build:
 
 ---
 
+## 12. Docker 规范
+
+### 12.1 Docker Compose 命令
+
+**必须使用 Docker Compose V2 语法**:
+
+```bash
+# 正确 ✅
+docker compose up -d
+docker compose down
+
+# 错误 ❌ (deprecated)
+docker-compose up -d
+docker-compose down
+```
+
+### 12.2 Docker Compose 文件格式
+
+- **不使用 `version` 字段**（Docker Compose V2 已废弃）
+- 文件直接以 `services:` 开头
+
+```yaml
+# 正确 ✅
+services:
+  app:
+    image: myapp:latest
+
+# 错误 ❌
+version: '3.8'
+services:
+  app:
+    image: myapp:latest
+```
+
+### 12.3 Dockerfile 最佳实践
+
+- 使用多阶段构建减小镜像体积
+- 使用非 root 用户运行应用
+- 添加健康检查 (HEALTHCHECK)
+- 静态编译 Go 二进制文件
+
+### 12.4 Docker Compose 文件命名
+
+- `docker-compose.yml` - 生产部署配置（默认）
+- `docker-compose.dev.yml` - 本地开发依赖服务
+- `docker-compose.local.yml` - 本地集成测试
+
+---
+
+## 13. 项目结构规范
+
+### 13.1 Makefile 位置
+
+**规则**: Makefile **必须**放在项目根目录，且**只能有一个**。
+
+```
+apprun/
+├── Makefile          ✅ 唯一的构建入口
+├── core/
+│   ├── cmd/
+│   └── pkg/
+├── docker/
+└── tests/
+```
+
+**禁止**: 在子目录创建独立的 Makefile（如 `core/Makefile`）
+
+**原因**:
+- 符合用户期望：开发者习惯在根目录执行构建命令
+- 简化 CI/CD：GitHub Actions 默认在根目录执行
+- 统一入口：所有构建、测试、部署命令集中管理
+- 避免混淆：防止不同目录下的命令冲突
+
+**使用方式**:
+```bash
+# 查看所有可用命令
+make help
+
+# 常用命令
+make build              # 构建应用
+make test-all           # 运行所有测试
+make dev-up             # 启动开发环境
+make clean              # 清理构建产物
+```
+
+### 13.2 目录组织原则
+
+- `core/` - Go 应用核心代码
+- `docker/` - Docker 相关配置（Dockerfile、compose 文件）
+- `docs/` - 项目文档
+- `tests/` - 测试脚本和数据
+- `scripts/` - 辅助脚本
+- `examples/` - 示例配置
+
+---
+
 **文档维护**: Winston (Architect Agent)  
 **审核状态**: 待开发团队评审  
 **下一步**: 测试规范文档 (testing-standards.md)

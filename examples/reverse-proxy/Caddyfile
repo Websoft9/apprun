@@ -1,0 +1,76 @@
+# Caddy Reverse Proxy Configuration for apprun
+# Caddy automatically handles HTTPS with Let's Encrypt
+# Place this file at: /etc/caddy/Caddyfile
+# Reload: sudo systemctl reload caddy
+
+# Main site configuration
+your-domain.com {
+    # Automatic HTTPS with Let's Encrypt
+    tls your-email@example.com
+
+    # Security headers
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Frame-Options "SAMEORIGIN"
+        X-Content-Type-Options "nosniff"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        -Server
+    }
+
+    # Request size limit
+    request_body {
+        max_size 100MB
+    }
+
+    # Reverse proxy to apprun
+    reverse_proxy localhost:8080 {
+        # Health check
+        health_uri /health
+        health_interval 30s
+        health_timeout 5s
+
+        # Load balancing (if multiple instances)
+        # lb_policy round_robin
+
+        # Headers
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+
+    # Access logging
+    log {
+        output file /var/log/caddy/apprun-access.log
+        format json
+    }
+
+    # Error pages (optional)
+    handle_errors {
+        @5xx expression {http.error.status_code} >= 500
+        respond @5xx "Service temporarily unavailable" 503
+    }
+}
+
+# Alternative: Self-signed certificate for development
+# localhost:8443 {
+#     tls internal
+#     reverse_proxy localhost:8080
+# }
+
+# API rate limiting example (requires Caddy rate-limit plugin)
+# your-domain.com {
+#     rate_limit {
+#         zone api {
+#             key {remote_host}
+#             events 100
+#             window 1m
+#         }
+#     }
+#     
+#     @api path /api/*
+#     rate_limit @api api
+#     
+#     reverse_proxy localhost:8080
+# }

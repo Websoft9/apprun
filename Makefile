@@ -1,23 +1,36 @@
 # apprun Makefile
 
-.PHONY: help build test test-all test-unit test-integration test-e2e clean docker-build docker-up docker-down validate-stories sync-index
+.PHONY: help build test test-all test-unit test-integration test-e2e clean docker-build docker-up docker-down validate-stories sync-index dev-up dev-down run-local build-local test-local prod-up-local prod-down-local
 
 # 默认目标
 help:
 	@echo "Available targets:"
+	@echo ""
+	@echo "Build & Test:"
 	@echo "  build          - Build the application"
 	@echo "  test-all       - Run all tests"
 	@echo "  test-unit      - Run unit tests"
-	@echo "  test-unit-html - Run unit tests with HTML coverage report"
-	@echo "  test-unit-setup- Setup unit test environment"
-	@echo "  test-unit-run  - Run unit tests via script"
 	@echo "  test-integration - Run integration tests"
 	@echo "  test-e2e       - Run end-to-end tests"
+	@echo ""
+	@echo "Development Environment (Story 1):"
+	@echo "  dev-up         - Start dev dependencies (postgres + redis)"
+	@echo "  dev-down       - Stop dev dependencies"
+	@echo "  run-local      - Run app locally with go run"
+	@echo "  build-local    - Build Docker image locally"
+	@echo "  test-local     - Run integration tests with local image"
+	@echo "  prod-up-local  - Start production-like environment locally"
+	@echo "  prod-down-local- Stop local production environment"
+	@echo ""
+	@echo "Docker:"
 	@echo "  docker-build   - Build Docker images"
 	@echo "  docker-up      - Start Docker services"
 	@echo "  docker-down    - Stop Docker services"
+	@echo ""
+	@echo "Documentation:"
 	@echo "  validate-stories - Validate all Story documents"
 	@echo "  sync-index     - Sync global Stories index"
+	@echo ""
 	@echo "  clean          - Clean build artifacts"
 
 # 构建
@@ -62,10 +75,10 @@ docker-build:
 	cd docker && docker compose build
 
 docker-up:
-	cd docker && docker compose up -d
+	docker compose up -d
 
 docker-down:
-	cd docker && docker compose down
+	docker compose down
 
 # 清理
 clean:
@@ -101,3 +114,79 @@ sync-index:
 	@echo "🔄 Syncing global Stories index..."
 	@./scripts/sync-story-index.sh
 	@echo "✅ Global Stories index synced"
+
+# ============================================
+# Story 1: Development Environment Commands
+# ============================================
+
+# Start development dependencies only (postgres + redis)
+dev-up:
+	@echo "🚀 Starting development dependencies..."
+	@docker compose -f docker-compose.dev.yml up -d
+	@echo "✅ Development dependencies ready!"
+	@echo ""
+	@echo "📊 Services:"
+	@echo "  PostgreSQL: localhost:5432 (user: apprun, password: dev_password_123)"
+	@echo "  Redis:      localhost:6379"
+	@echo ""
+	@echo "💡 Next step: Run your app locally"
+	@echo "   go run core/cmd/server/main.go"
+
+# Stop development dependencies
+dev-down:
+	@echo "🛑 Stopping development dependencies..."
+	@docker compose -f docker-compose.dev.yml down
+	@echo "✅ Development dependencies stopped"
+
+# Run app locally (assumes dev-up is running)
+run-local:
+	@echo "🏃 Running app locally..."
+	@echo "📌 Make sure dependencies are running: make dev-up"
+	@echo ""
+	cd core && go run ./cmd/server/main.go
+
+# Build Docker image locally
+build-local:
+	@echo "🔨 Building Docker image locally..."
+	@docker build -t apprun:local -f docker/Dockerfile .
+	@echo "✅ Docker image built: apprun:local"
+	@echo ""
+	@docker images apprun:local
+
+# Run integration tests with local build
+test-local: build-local
+	@echo "🧪 Running integration tests..."
+	@docker compose -f docker-compose.local.yml up -d
+	@echo "⏳ Waiting for services to be ready..."
+	@sleep 15
+	@echo "🔍 Checking health..."
+	@docker exec apprun-app-local wget -q -O- http://localhost:8080/health || (echo "❌ Health check failed" && docker compose -f docker-compose.local.yml down && exit 1)
+	@echo "✅ Integration tests passed!"
+	@docker compose -f docker-compose.local.yml down
+
+# Start production-like environment locally
+prod-up-local:
+	@echo "🚀 Starting production-like environment locally..."
+	@docker compose -f docker-compose.local.yml up -d
+	@echo "✅ Local production environment started!"
+	@echo ""
+	@echo "🔗 Access:"
+	@echo "   HTTP:  http://localhost:8080"
+	@echo "   HTTPS: https://localhost:8443"
+	@echo ""
+	@echo "📊 View logs:"
+	@echo "   docker compose -f docker-compose.local.yml logs -f"
+
+# Stop local production environment
+prod-down-local:
+	@echo "🛑 Stopping local production environment..."
+	@docker compose -f docker-compose.local.yml down
+	@echo "✅ Local production environment stopped"
+
+# Clean all Docker resources
+clean-docker:
+	@echo "🧹 Cleaning Docker resources..."
+	@docker compose -f docker-compose.dev.yml down -v
+	@docker compose -f docker-compose.local.yml down -v
+	@docker rmi apprun:local 2>/dev/null || true
+	@echo "✅ Docker resources cleaned"

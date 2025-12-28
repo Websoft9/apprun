@@ -1,6 +1,6 @@
 module apprun
 
-go 1.25.3
+go 1.24.0
 
 require (
 	entgo.io/ent v0.14.5

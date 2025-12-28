@@ -1,41 +1,56 @@
-# Build stage
-FROM golang:alpine AS builder
+# Multi-stage Dockerfile for apprun
+# Stage 1: Builder - Compile Go binary
+FROM golang:1.24-alpine AS builder
 
-# Set GOPROXY to use multiple CDNs for faster downloads and fallback
+# Set GOPROXY for faster downloads
 ENV GOPROXY=https://goproxy.cn,https://proxy.golang.org,direct
 
-WORKDIR /app/core
+WORKDIR /build
 
-# Copy go mod and sum files first for better caching
+# Install build dependencies
+RUN apk add --no-cache git make
+
+# Copy go module files
 COPY core/go.mod core/go.sum ./
-
-# Download dependencies (cached if go.mod unchanged)
 RUN go mod download
 
 # Copy source code
 COPY core/ ./
 
-# Build the application with parallel compilation
-RUN export GOMAXPROCS=$(nproc) && CGO_ENABLED=0 GOOS=linux go build -o main ./cmd/server
+# Build static binary
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -a -installsuffix cgo \
+    -ldflags '-extldflags "-static" -s -w' \
+    -o /apprun ./cmd/server/main.go
 
-# Runtime stage
+# Stage 2: Production - Minimal runtime image
 FROM alpine:latest
 
 # Use TUNA mirror for faster package downloads
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apk/repositories
 
-RUN apk --no-cache add ca-certificates
+# Install runtime dependencies and create non-root user
+RUN apk --no-cache add ca-certificates tzdata wget && \
+    adduser -D -u 1000 apprun
 
-WORKDIR /root/
+WORKDIR /app
 
-# Copy the binary from builder stage
-COPY --from=builder /app/core/main .
+# Copy binary and config from builder
+COPY --from=builder /apprun /app/apprun
+COPY --from=builder /build/config /app/config
 
-# Copy config files
-COPY --from=builder /app/core/config ./config
+# Set ownership
+RUN chown -R apprun:apprun /app
 
-# Expose port
-EXPOSE 8080
+# Switch to non-root user
+USER apprun
 
-# Run the binary
-CMD ["./main"]
+# Expose HTTP and HTTPS ports
+EXPOSE 8080 8443
+
+# Health check endpoint
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
+
+# Run application
+CMD ["./apprun"]

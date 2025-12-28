@@ -1,0 +1,77 @@
+# Production deployment configuration using pre-built image
+# Prerequisites: Image must be available at ghcr.io/websoft9/apprun:latest
+# Usage: docker compose up -d
+
+services:
+  app:
+    image: ghcr.io/websoft9/apprun:latest
+    container_name: apprun-app
+    restart: always
+    ports:
+      - "${APP_HTTP_PORT:-8080}:8080"
+      - "${APP_HTTPS_PORT:-8443}:8443"
+    env_file:
+      - .env.prod
+    environment:
+      - SERVER_ENV=production
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    volumes:
+      - ${SSL_CERT_PATH}:/etc/ssl/certs/server.crt:ro
+      - ${SSL_KEY_PATH}:/etc/ssl/private/server.key:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - apprun-prod
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: apprun-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - apprun-prod
+
+  redis:
+    image: redis:7-alpine
+    container_name: apprun-redis
+    restart: always
+    command: redis-server --appendonly yes ${REDIS_PASSWORD:+--requirepass ${REDIS_PASSWORD}}
+    volumes:
+      - redis_prod_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - apprun-prod
+
+volumes:
+  postgres_prod_data:
+  redis_prod_data:
+
+networks:
+  apprun-prod:
+    driver: bridge
