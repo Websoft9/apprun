@@ -41,5 +41,8 @@ func SetupRoutes(configService *configModule.Service) *chi.Mux {
 		}
 	})
 
+	// Swagger 文档路由（挂载到 /api/docs/）
+	RegisterSwagger(r)
+
 	return r
 }

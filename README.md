@@ -44,6 +44,27 @@ cp config/default.yaml config/local.yaml
 
 # Run server
 make run
+
+# Access API documentation
+# Swagger UI: http://localhost:8080/api/docs/index.html
+# OpenAPI spec: http://localhost:8080/api/docs/doc.json
+```
+
+### API Documentation
+
+**Interactive API documentation is available via Swagger UI**:
+
+- **URL**: `http://localhost:8080/api/docs/index.html`
+- **Features**:
+  - Browse all API endpoints with descriptions
+  - Test APIs directly in the browser ("Try it out")
+  - View request/response examples
+  - See data models and validation rules
+
+**Generating documentation**:
+```bash
+# After modifying API code, regenerate Swagger docs
+make swagger
 ```
 
 ### Production Deployment

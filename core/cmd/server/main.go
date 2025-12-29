@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	_ "apprun/docs" // Swagger docs (自动生成)
 	internalConfig "apprun/internal/config"
 	"apprun/modules/config"
 	"apprun/routes"
@@ -13,6 +14,21 @@ import (
 	_ "github.com/lib/pq"
 )
 
+// @title           AppRun API
+// @version         1.0
+// @description     AppRun 平台 REST API 文档
+// @termsOfService  http://swagger.io/terms/
+
+// @contact.name    API Support
+// @contact.email   support@websoft9.com
+
+// @license.name    Apache 2.0
+// @license.url     http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host            localhost:8080
+// @BasePath        /api
+
+// @schemes         http https
 func main() {
 	ctx := context.Background()
 

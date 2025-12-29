@@ -46,8 +46,9 @@ Story (Executable Tasks)
 | Sprint-0 | Story 08: i18n 国际化Infrastructure | Infrastructure | Planning |
 | Sprint-0 | Story 09: l10n 本地化实施 | Infrastructure | Planning |
 | Sprint-0 | Story 10: Configuration Center Foundation |  | Ready |
+| Sprint-0 | Story 10: # Story 10 修复总结 |  |  |
 | Sprint-0 | Story 10: # Story 10 配置中心 - 实现总结 |  |  |
-| Sprint-0 | Story 10:  |  |  |
+| Sprint-0 | Story 11: Swagger API Documentation |  | Done |
 <!-- MAPPING_TABLE_END -->
 
 ---

@@ -1,6 +1,6 @@
 # apprun Makefile
 
-.PHONY: help build test test-all test-unit test-integration test-e2e clean docker-build docker-up docker-down validate-stories sync-index dev-up dev-down run-local build-local test-local prod-up-local prod-down-local
+.PHONY: help build test test-all test-unit test-integration test-e2e clean docker-build docker-up docker-down validate-stories sync-index dev-up dev-down run-local build-local test-local prod-up-local prod-down-local swagger
 
 # 默认目标
 help:
@@ -12,6 +12,7 @@ help:
 	@echo "  test-unit      - Run unit tests"
 	@echo "  test-integration - Run integration tests"
 	@echo "  test-e2e       - Run end-to-end tests"
+	@echo "  swagger        - Generate Swagger API documentation"
 	@echo ""
 	@echo "Development Environment (Story 1):"
 	@echo "  dev-up         - Start dev dependencies (postgres + redis)"
@@ -36,6 +37,13 @@ help:
 # 构建
 build:
 	cd core && go build -o bin/server ./cmd/server
+
+# Swagger 文档生成
+swagger:
+	@echo "Generating Swagger API documentation..."
+	@cd core && swag init -g cmd/server/main.go -o docs
+	@echo "✅ Swagger docs generated in core/docs/"
+	@echo "Access at: http://localhost:8080/api/docs/"
 
 # 测试
 test-all: test-unit test-integration

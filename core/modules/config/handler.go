@@ -30,7 +30,16 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 }
 
 // GetConfig 获取配置值（查询单个配置项）
-// GET /api/config?key=app.name
+// @Summary      获取配置项
+// @Description  根据 key 查询单个配置项，返回值、来源和是否为动态配置
+// @Tags         config
+// @Accept       json
+// @Produce      json
+// @Param        key  query  string  true  "配置键，例如 app.name"
+// @Success      200  {object}  GetConfigResponse  "配置查询成功"
+// @Failure      400  {object}  ErrorResponse      "缺少 key 参数"
+// @Failure      404  {object}  ErrorResponse      "配置不存在"
+// @Router       /config [get]
 func (h *Handler) GetConfig(w http.ResponseWriter, r *http.Request) {
 	key := r.URL.Query().Get("key")
 	if key == "" {
@@ -58,8 +67,15 @@ func (h *Handler) GetConfig(w http.ResponseWriter, r *http.Request) {
 }
 
 // UpdateConfig 更新动态配置项
-// PUT /api/config
-// Body: {"key": "poc.enabled", "value": "false"}
+// @Summary      更新配置项
+// @Description  更新单个动态配置项（仅限 db:true 的配置）
+// @Tags         config
+// @Accept       json
+// @Produce      json
+// @Param        request  body  UpdateConfigRequest  true  "配置更新请求"
+// @Success      200  {object}  UpdateConfigResponse  "配置更新成功"
+// @Failure      400  {object}  ErrorResponse         "请求无效或配置不允许存储到数据库"
+// @Router       /config [put]
 func (h *Handler) UpdateConfig(w http.ResponseWriter, r *http.Request) {
 	var req UpdateConfigRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -94,7 +110,14 @@ func (h *Handler) UpdateConfig(w http.ResponseWriter, r *http.Request) {
 }
 
 // ListConfigs 列出所有动态配置项
-// GET /api/config/list
+// @Summary      列出动态配置
+// @Description  返回所有存储在数据库中的动态配置项列表
+// @Tags         config
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  ListConfigsResponse  "配置列表"
+// @Failure      500  {object}  ErrorResponse        "服务器内部错误"
+// @Router       /config/list [get]
 func (h *Handler) ListConfigs(w http.ResponseWriter, r *http.Request) {
 	configs, err := h.service.ListDynamicConfigs(r.Context())
 	if err != nil {
@@ -111,7 +134,15 @@ func (h *Handler) ListConfigs(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeleteConfig 删除动态配置项
-// DELETE /api/config?key=poc.enabled
+// @Summary      删除配置项
+// @Description  从数据库中删除指定的动态配置项（配置将恢复为文件或默认值）
+// @Tags         config
+// @Accept       json
+// @Produce      json
+// @Param        key  query  string  true  "配置键"
+// @Success      200  {object}  map[string]interface{}  "删除成功"
+// @Failure      400  {object}  ErrorResponse           "缺少 key 参数或删除失败"
+// @Router       /config [delete]
 func (h *Handler) DeleteConfig(w http.ResponseWriter, r *http.Request) {
 	key := r.URL.Query().Get("key")
 	if key == "" {
@@ -132,7 +163,13 @@ func (h *Handler) DeleteConfig(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetAllowedKeys 获取所有允许动态配置的键（db:true）
-// GET /api/config/allowed
+// @Summary      获取允许的配置键
+// @Description  返回所有标记为 db:true 的配置键列表（可通过 API 动态修改）
+// @Tags         config
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  map[string]interface{}  "允许的配置键列表"
+// @Router       /config/allowed [get]
 func (h *Handler) GetAllowedKeys(w http.ResponseWriter, r *http.Request) {
 	keys := h.service.GetAllowedDynamicKeys()
 

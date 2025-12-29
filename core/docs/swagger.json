@@ -1,0 +1,281 @@
+{
+    "schemes": [
+        "http",
+        "https"
+    ],
+    "swagger": "2.0",
+    "info": {
+        "description": "AppRun 平台 REST API 文档",
+        "title": "AppRun API",
+        "termsOfService": "http://swagger.io/terms/",
+        "contact": {
+            "name": "API Support",
+            "email": "support@websoft9.com"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        },
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/api",
+    "paths": {
+        "/config": {
+            "get": {
+                "description": "根据 key 查询单个配置项，返回值、来源和是否为动态配置",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "config"
+                ],
+                "summary": "获取配置项",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "配置键，例如 app.name",
+                        "name": "key",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "配置查询成功",
+                        "schema": {
+                            "$ref": "#/definitions/config.GetConfigResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "缺少 key 参数",
+                        "schema": {
+                            "$ref": "#/definitions/config.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "配置不存在",
+                        "schema": {
+                            "$ref": "#/definitions/config.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "更新单个动态配置项（仅限 db:true 的配置）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "config"
+                ],
+                "summary": "更新配置项",
+                "parameters": [
+                    {
+                        "description": "配置更新请求",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/config.UpdateConfigRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "配置更新成功",
+                        "schema": {
+                            "$ref": "#/definitions/config.UpdateConfigResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "请求无效或配置不允许存储到数据库",
+                        "schema": {
+                            "$ref": "#/definitions/config.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "从数据库中删除指定的动态配置项（配置将恢复为文件或默认值）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "config"
+                ],
+                "summary": "删除配置项",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "配置键",
+                        "name": "key",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "删除成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "缺少 key 参数或删除失败",
+                        "schema": {
+                            "$ref": "#/definitions/config.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/config/allowed": {
+            "get": {
+                "description": "返回所有标记为 db:true 的配置键列表（可通过 API 动态修改）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "config"
+                ],
+                "summary": "获取允许的配置键",
+                "responses": {
+                    "200": {
+                        "description": "允许的配置键列表",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/config/list": {
+            "get": {
+                "description": "返回所有存储在数据库中的动态配置项列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "config"
+                ],
+                "summary": "列出动态配置",
+                "responses": {
+                    "200": {
+                        "description": "配置列表",
+                        "schema": {
+                            "$ref": "#/definitions/config.ListConfigsResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/config.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "config.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "details": {
+                    "type": "string"
+                },
+                "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "config.GetConfigResponse": {
+            "type": "object",
+            "properties": {
+                "is_dynamic": {
+                    "description": "是否为动态配置",
+                    "type": "boolean"
+                },
+                "key": {
+                    "description": "配置键",
+                    "type": "string"
+                },
+                "source": {
+                    "description": "来源: \"database\", \"file\", \"env\", \"default\"",
+                    "type": "string"
+                },
+                "value": {
+                    "description": "配置值",
+                    "type": "string"
+                }
+            }
+        },
+        "config.ListConfigsResponse": {
+            "type": "object",
+            "properties": {
+                "configs": {
+                    "description": "key -\u003e value 映射",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "count": {
+                    "description": "配置项数量",
+                    "type": "integer"
+                }
+            }
+        },
+        "config.UpdateConfigRequest": {
+            "type": "object",
+            "required": [
+                "key",
+                "value"
+            ],
+            "properties": {
+                "key": {
+                    "description": "配置键",
+                    "type": "string"
+                },
+                "value": {
+                    "description": "新值",
+                    "type": "string"
+                }
+            }
+        },
+        "config.UpdateConfigResponse": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}
