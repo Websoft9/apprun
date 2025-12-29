@@ -1,0 +1,105 @@
+name: Swagger Documentation Sync Check
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'core/**/*.go'
+      - 'core/docs/**'
+      - 'Makefile'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'core/**/*.go'
+      - 'core/docs/**'
+      - 'Makefile'
+
+jobs:
+  swagger-sync:
+    name: Verify Swagger docs are in sync with code
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache-dependency-path: core/go.sum
+
+      - name: Install swag CLI
+        run: go install github.com/swaggo/swag/cmd/swag@v1.16.6
+
+      - name: Generate Swagger documentation
+        run: make swagger
+
+      - name: Check for uncommitted changes
+        run: |
+          if [ -n "$(git status --porcelain core/docs/)" ]; then
+            echo "❌ ERROR: Swagger documentation is out of sync with code!"
+            echo ""
+            echo "The following files have changes:"
+            git status --porcelain core/docs/
+            echo ""
+            echo "Please run 'make swagger' and commit the generated docs:"
+            echo "  make swagger"
+            echo "  git add core/docs/"
+            echo "  git commit -m 'docs: regenerate swagger documentation'"
+            exit 1
+          else
+            echo "✅ Swagger documentation is in sync with code"
+          fi
+
+      - name: Validate OpenAPI spec structure
+        run: |
+          if [ ! -f "core/docs/swagger.json" ]; then
+            echo "❌ ERROR: swagger.json not found"
+            exit 1
+          fi
+          
+          # Basic JSON validation
+          if ! jq empty core/docs/swagger.json 2>/dev/null; then
+            echo "❌ ERROR: swagger.json is not valid JSON"
+            exit 1
+          fi
+          
+          # Verify required OpenAPI fields
+          TITLE=$(jq -r '.info.title' core/docs/swagger.json)
+          VERSION=$(jq -r '.info.version' core/docs/swagger.json)
+          BASEPATH=$(jq -r '.basePath' core/docs/swagger.json)
+          
+          if [ "$TITLE" != "AppRun API" ]; then
+            echo "❌ ERROR: API title mismatch. Expected 'AppRun API', got '$TITLE'"
+            exit 1
+          fi
+          
+          if [ "$BASEPATH" != "/api" ]; then
+            echo "❌ ERROR: BasePath mismatch. Expected '/api', got '$BASEPATH'"
+            exit 1
+          fi
+          
+          echo "✅ OpenAPI spec structure validated"
+          echo "   Title: $TITLE"
+          echo "   Version: $VERSION"
+          echo "   BasePath: $BASEPATH"
+
+      - name: Verify config endpoints are documented
+        run: |
+          # Check if all 5 config endpoints are present
+          ENDPOINTS=$(jq -r '.paths | keys[]' core/docs/swagger.json | grep "^/config" | wc -l)
+          
+          if [ "$ENDPOINTS" -lt 3 ]; then
+            echo "❌ ERROR: Missing config endpoints in OpenAPI spec"
+            echo "   Expected at least 3 paths (/config, /config/list, /config/allowed)"
+            echo "   Found: $ENDPOINTS"
+            exit 1
+          fi
+          
+          echo "✅ Config endpoints documented: $ENDPOINTS paths"
+          jq -r '.paths | keys[]' core/docs/swagger.json | grep "^/config"
+
+      - name: Run Swagger route tests
+        working-directory: core
+        run: go test -v -run TestSwagger ./routes/

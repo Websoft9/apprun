@@ -68,11 +68,13 @@ func (h *Handler) GetConfig(w http.ResponseWriter, r *http.Request) {
 
 // UpdateConfig 更新动态配置项
 // @Summary      Update configuration item
-// @Description  Update a single dynamic configuration item (only for db:true configs)
+// @Description  Update a single dynamic configuration item (only for db:true configs).
+// @Description  Static configurations (db:false) cannot be updated via API.
+// @Description  Changes are persisted to database and take effect immediately.
 // @Tags         config
 // @Accept       json
 // @Produce      json
-// @Param        request  body  UpdateConfigRequest  true  "Configuration update request"
+// @Param        request  body  UpdateConfigRequest  true  "Configuration update request"  example({"key":"poc.enabled","value":"true"})
 // @Success      200  {object}  UpdateConfigResponse  "Configuration updated successfully"
 // @Failure      400  {object}  ErrorResponse         "Invalid request or config not allowed to store in database"
 // @Router       /config [put]
@@ -111,7 +113,9 @@ func (h *Handler) UpdateConfig(w http.ResponseWriter, r *http.Request) {
 
 // ListConfigs 列出所有动态配置项
 // @Summary      List dynamic configurations
-// @Description  Returns all dynamic configuration items stored in database
+// @Description  Returns all dynamic configuration items stored in database.
+// @Description  This does not include static configurations from files.
+// @Description  Use this to see which configs have been overridden dynamically.
 // @Tags         config
 // @Accept       json
 // @Produce      json
@@ -135,11 +139,13 @@ func (h *Handler) ListConfigs(w http.ResponseWriter, r *http.Request) {
 
 // DeleteConfig 删除动态配置项
 // @Summary      Delete configuration item
-// @Description  Delete a dynamic configuration item from database (config will fallback to file or default value)
+// @Description  Delete a dynamic configuration item from database (config will fallback to file or default value).
+// @Description  Only dynamic configurations (db:true) can be deleted.
+// @Description  After deletion, the config will use the value from config files or built-in defaults.
 // @Tags         config
 // @Accept       json
 // @Produce      json
-// @Param        key  query  string  true  "Configuration key"
+// @Param        key  query  string  true  "Configuration key"  example(poc.enabled)
 // @Success      200  {object}  map[string]interface{}  "Deletion successful"
 // @Failure      400  {object}  ErrorResponse           "Missing key parameter or deletion failed"
 // @Router       /config [delete]
@@ -164,7 +170,9 @@ func (h *Handler) DeleteConfig(w http.ResponseWriter, r *http.Request) {
 
 // GetAllowedKeys 获取所有允许动态配置的键（db:true）
 // @Summary      Get allowed configuration keys
-// @Description  Returns all configuration keys marked as db:true (can be modified dynamically via API)
+// @Description  Returns all configuration keys marked as db:true (can be modified dynamically via API).
+// @Description  Use this endpoint to discover which configs can be updated through the API.
+// @Description  Configs not in this list cannot be modified dynamically.
 // @Tags         config
 // @Accept       json
 // @Produce      json

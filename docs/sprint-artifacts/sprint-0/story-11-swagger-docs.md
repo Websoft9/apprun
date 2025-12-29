@@ -55,15 +55,15 @@
 ### 2. Handler 注解
 - `core/modules/config/handler.go` - 添加 Swaggo 注解
   ```go
-  // @Summary      获取配置项
-  // @Description  根据 key 查询单个配置项
+  // @Summary      Get configuration item
+  // @Description  Query a single configuration item by key
   // @Tags         config
   // @Accept       json
   // @Produce      json
-  // @Param        key  query  string  true  "配置键"
+  // @Param        key  query  string  true  "Configuration key"
   // @Success      200  {object}  GetConfigResponse
   // @Failure      400  {object}  ErrorResponse
-  // @Router       /api/config [get]
+  // @Router       /config [get]
   ```
 
 ### 3. Swagger 中间件
@@ -130,20 +130,20 @@ core/
 
 **端点注解模板**：
 ```go
-// @Summary      <简短描述>
-// @Description  <详细说明>
-// @Tags         <分组名>
-// @Param        <参数名>  <位置>  <类型>  <必填>  "<说明>"
-// @Success      200  {object}  <响应结构>
+// @Summary      <Short description>
+// @Description  <Detailed explanation>
+// @Tags         <Group name>
+// @Param        <param_name>  <location>  <type>  <required>  "<description>"
+// @Success      200  {object}  <ResponseStruct>
 // @Failure      400  {object}  ErrorResponse
-// @Router       /<路径> [<方法>]
+// @Router       /<path> [<method>]
 ```
 
 **示例**（配置模块）：
 ```go
-// @Summary      获取配置项
+// @Summary      Get configuration item
 // @Tags         config
-// @Param        key  query  string  true  "配置键"
+// @Param        key  query  string  true  "Configuration key"
 // @Success      200  {object}  GetConfigResponse
 // @Failure      400  {object}  ErrorResponse
 // @Router       /config [get]

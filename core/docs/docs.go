@@ -67,7 +67,7 @@ const docTemplate = `{
                 }
             },
             "put": {
-                "description": "Update a single dynamic configuration item (only for db:true configs)",
+                "description": "Update a single dynamic configuration item (only for db:true configs).\nStatic configurations (db:false) cannot be updated via API.\nChanges are persisted to database and take effect immediately.",
                 "consumes": [
                     "application/json"
                 ],
@@ -105,7 +105,7 @@ const docTemplate = `{
                 }
             },
             "delete": {
-                "description": "Delete a dynamic configuration item from database (config will fallback to file or default value)",
+                "description": "Delete a dynamic configuration item from database (config will fallback to file or default value).\nOnly dynamic configurations (db:true) can be deleted.\nAfter deletion, the config will use the value from config files or built-in defaults.",
                 "consumes": [
                     "application/json"
                 ],
@@ -119,6 +119,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
+                        "example": "poc.enabled",
                         "description": "Configuration key",
                         "name": "key",
                         "in": "query",
@@ -144,7 +145,7 @@ const docTemplate = `{
         },
         "/config/allowed": {
             "get": {
-                "description": "Returns all configuration keys marked as db:true (can be modified dynamically via API)",
+                "description": "Returns all configuration keys marked as db:true (can be modified dynamically via API).\nUse this endpoint to discover which configs can be updated through the API.\nConfigs not in this list cannot be modified dynamically.",
                 "consumes": [
                     "application/json"
                 ],
@@ -168,7 +169,7 @@ const docTemplate = `{
         },
         "/config/list": {
             "get": {
-                "description": "Returns all dynamic configuration items stored in database",
+                "description": "Returns all dynamic configuration items stored in database.\nThis does not include static configurations from files.\nUse this to see which configs have been overridden dynamically.",
                 "consumes": [
                     "application/json"
                 ],

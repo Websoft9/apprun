@@ -961,8 +961,158 @@ openapi2postmanv2 -s openapi.yaml -o postman_collection.json
 - [ ] OpenAPI 文档完整
 - [ ] 示例请求和响应
 - [ ] 版本控制策略
+- [ ] **Swagger 注解已添加** ✨
 
-### 13.3 性能优化
+### 13.3 Swagger Documentation Standards
+
+**Required for ALL API endpoints** starting from Story 11.
+
+#### 13.3.1 Annotation Requirements
+
+Every HTTP handler function MUST include:
+
+```go
+// @Summary      <Short description (50 chars max)>
+// @Description  <Detailed explanation (optional, multi-line supported)>
+// @Tags         <module_name>
+// @Accept       json
+// @Produce      json
+// @Param        <param_name>  <location>  <type>  <required>  "<description>"
+// @Success      200  {object}  <ResponseStruct>  "<success message>"
+// @Failure      400  {object}  ErrorResponse     "<error condition>"
+// @Failure      404  {object}  ErrorResponse     "<not found condition>"
+// @Router       /<path> [<method>]
+```
+
+#### 13.3.2 Examples by Endpoint Type
+
+**GET - Query single resource**:
+```go
+// @Summary      Get configuration item
+// @Description  Query a single configuration item by key, returns value, source and dynamic flag
+// @Tags         config
+// @Accept       json
+// @Produce      json
+// @Param        key  query  string  true  "Configuration key, e.g. app.name"
+// @Success      200  {object}  GetConfigResponse  "Configuration retrieved successfully"
+// @Failure      400  {object}  ErrorResponse      "Missing key parameter"
+// @Failure      404  {object}  ErrorResponse      "Configuration not found"
+// @Router       /config [get]
+func (h *Handler) GetConfig(w http.ResponseWriter, r *http.Request) { ... }
+```
+
+**POST/PUT - Create/Update resource**:
+```go
+// @Summary      Update configuration item
+// @Description  Update a single dynamic configuration item (only for db:true configs)
+// @Tags         config
+// @Accept       json
+// @Produce      json
+// @Param        request  body  UpdateConfigRequest  true  "Configuration update request"
+// @Success      200  {object}  UpdateConfigResponse  "Configuration updated successfully"
+// @Failure      400  {object}  ErrorResponse         "Invalid request or config not allowed"
+// @Router       /config [put]
+func (h *Handler) UpdateConfig(w http.ResponseWriter, r *http.Request) { ... }
+```
+
+**DELETE - Remove resource**:
+```go
+// @Summary      Delete configuration item
+// @Description  Delete a dynamic configuration item from database (config will fallback to file or default value)
+// @Tags         config
+// @Accept       json
+// @Produce      json
+// @Param        key  query  string  true  "Configuration key"
+// @Success      200  {object}  map[string]interface{}  "Deletion successful"
+// @Failure      400  {object}  ErrorResponse           "Missing key parameter or deletion failed"
+// @Router       /config [delete]
+func (h *Handler) DeleteConfig(w http.ResponseWriter, r *http.Request) { ... }
+```
+
+#### 13.3.3 Response Model Standards
+
+All response structs MUST include:
+- English field descriptions as comments
+- `example` tags for better documentation
+- Consistent naming (snake_case in JSON)
+
+```go
+type GetConfigResponse struct {
+    Key       string `json:"key" example:"app.name"`                 // Configuration key
+    Value     string `json:"value" example:"apprun"`                 // Configuration value
+    IsDynamic bool   `json:"is_dynamic" example:"false"`             // Whether it's a dynamic configuration
+    Source    string `json:"source" example:"default"`               // Source: "database", "file", "env", "default"
+}
+
+type ErrorResponse struct {
+    Error   string `json:"error" example:"missing 'key' query parameter"`
+    Details string `json:"details,omitempty" example:""`
+}
+```
+
+#### 13.3.4 Documentation Generation Workflow
+
+1. **Add annotations** to handler functions
+2. **Run generator**: `make swagger`
+3. **Verify output**:
+   - `core/docs/docs.go` - embedded Go code
+   - `core/docs/swagger.json` - OpenAPI spec (JSON)
+   - `core/docs/swagger.yaml` - OpenAPI spec (YAML)
+4. **Commit all 3 files** with code changes
+5. **CI validation** will fail if docs are out of sync
+
+```bash
+# Development workflow
+vim core/modules/config/handler.go  # Add annotations
+make swagger                         # Generate docs
+make build                           # Build with embedded docs
+git add core/docs/                   # Commit generated files
+```
+
+#### 13.3.5 Access and Testing
+
+**Swagger UI**: `http://localhost:8080/api/docs/`  
+**OpenAPI Spec**: `http://localhost:8080/api/docs/doc.json`
+
+Features:
+- Interactive "Try it out" for testing APIs
+- Auto-generated request/response examples
+- Model schema definitions
+- Error response documentation
+
+#### 13.3.6 Common Mistakes to Avoid
+
+❌ **Don't**:
+- Skip annotations for "simple" endpoints
+- Use Chinese in annotations (English only)
+- Hardcode host in main.go (`@host localhost:8080` ❌)
+- Forget to run `make swagger` before committing
+- Commit code without updating docs/
+
+✅ **Do**:
+- Add annotations for EVERY public endpoint
+- Use descriptive summaries and examples
+- Keep host field empty for dynamic deployment
+- Run `make swagger` after ANY handler changes
+- Verify in Swagger UI before committing
+
+#### 13.3.7 CI Integration
+
+GitHub Actions workflow (`.github/workflows/swagger-ci.yml`) automatically:
+- Regenerates Swagger docs
+- Compares with committed version
+- Fails PR if docs are out of sync
+- Validates OpenAPI spec structure
+- Runs Swagger route tests
+
+**Pre-commit checklist**:
+```bash
+make swagger              # Regenerate docs
+git status core/docs/     # Verify changes tracked
+go test ./routes/         # Run swagger tests
+```
+
+### 13.4 Performance Optimization
 
 - 使用 `fields` 参数减少响应大小
 - 使用 `expand` 参数减少请求次数

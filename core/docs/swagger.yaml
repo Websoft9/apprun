@@ -85,10 +85,13 @@ paths:
     delete:
       consumes:
       - application/json
-      description: Delete a dynamic configuration item from database (config will
-        fallback to file or default value)
+      description: |-
+        Delete a dynamic configuration item from database (config will fallback to file or default value).
+        Only dynamic configurations (db:true) can be deleted.
+        After deletion, the config will use the value from config files or built-in defaults.
       parameters:
       - description: Configuration key
+        example: poc.enabled
         in: query
         name: key
         required: true
@@ -140,7 +143,10 @@ paths:
     put:
       consumes:
       - application/json
-      description: Update a single dynamic configuration item (only for db:true configs)
+      description: |-
+        Update a single dynamic configuration item (only for db:true configs).
+        Static configurations (db:false) cannot be updated via API.
+        Changes are persisted to database and take effect immediately.
       parameters:
       - description: Configuration update request
         in: body
@@ -166,8 +172,10 @@ paths:
     get:
       consumes:
       - application/json
-      description: Returns all configuration keys marked as db:true (can be modified
-        dynamically via API)
+      description: |-
+        Returns all configuration keys marked as db:true (can be modified dynamically via API).
+        Use this endpoint to discover which configs can be updated through the API.
+        Configs not in this list cannot be modified dynamically.
       produces:
       - application/json
       responses:
@@ -183,7 +191,10 @@ paths:
     get:
       consumes:
       - application/json
-      description: Returns all dynamic configuration items stored in database
+      description: |-
+        Returns all dynamic configuration items stored in database.
+        This does not include static configurations from files.
+        Use this to see which configs have been overridden dynamically.
       produces:
       - application/json
       responses:

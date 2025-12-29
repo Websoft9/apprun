@@ -67,6 +67,21 @@ make run
 make swagger
 ```
 
+**Troubleshooting**:
+
+| Problem | Solution |
+|---------|----------|
+| **Blank Swagger UI** | Run `make swagger` to regenerate docs |
+| **Changes not reflected** | 1. Run `make swagger`<br>2. Rebuild with `make build` |
+| **404 on /api/docs** | Ensure service is running: `make run` |
+| **Compile error with docs** | Missing docs package - run `make swagger` first |
+
+**Verify docs generation**:
+```bash
+ls -lh core/docs/docs.go     # Should exist (~300KB)
+ls -lh core/docs/swagger.*   # Should have .json and .yaml
+```
+
 ### Production Deployment
 - Docker: TBD
 - Kubernetes: TBD
