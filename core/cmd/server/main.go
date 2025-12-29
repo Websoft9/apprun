@@ -1,16 +1,57 @@
 package main
 
 import (
-	"apprun/routes"
+	"context"
 	"log"
 	"net/http"
 	"os"
+
+	internalConfig "apprun/internal/config"
+	"apprun/modules/config"
+	"apprun/routes"
+
+	_ "github.com/lib/pq"
 )
 
 func main() {
-	// 设置路由
-	router := routes.SetupRoutes()
+	ctx := context.Background()
 
+	// 创建配置引导器
+	bootstrap := config.NewBootstrap(getEnv("CONFIG_DIR", "./config"))
+
+	// 1. 加载初始配置
+	cfg, err := bootstrap.LoadInitialConfig(ctx)
+	if err != nil {
+		log.Fatalf("❌ Failed to load initial config: %v", err)
+	}
+	log.Printf("✅ Config loaded: %s v%s", cfg.App.Name, cfg.App.Version)
+
+	// 2. 初始化数据库
+	dbClient, err := bootstrap.InitDatabase(cfg)
+	if err != nil {
+		log.Fatalf("❌ Failed to initialize database: %v", err)
+	}
+	defer dbClient.Close()
+	log.Println("✅ Database connected")
+
+	// 3. 创建配置服务
+	configService, err := bootstrap.CreateService(ctx, dbClient)
+	if err != nil {
+		log.Printf("⚠️  Warning: Failed to create config service: %v", err)
+		log.Println("⚠️  Config API routes will not be registered")
+	} else {
+		log.Println("✅ Config service initialized with DB support")
+	}
+
+	// 4. 设置路由
+	router := routes.SetupRoutes(configService)
+
+	// 5. 启动服务器
+	startServer(router, cfg)
+}
+
+// startServer 启动 HTTP/HTTPS 服务器
+func startServer(router http.Handler, cfg *internalConfig.Config) {
 	// 获取 TLS 配置
 	sslCertFile := os.Getenv("SSL_CERT_FILE")
 	sslKeyFile := os.Getenv("SSL_KEY_FILE")

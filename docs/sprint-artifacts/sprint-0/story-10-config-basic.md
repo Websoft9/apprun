@@ -18,303 +18,339 @@
 
 ## 🎯 Acceptance Criteria
 
-### 1. 配置优先级实现（6层完整版）
-- [ ] 实现完整配置优先级（从高到低）：
+### 1. 配置优先级实现（6层）
+- [ ] 实现配置优先级（从高到低）：
   1. 环境变量（最高优先级）
   2. 数据库配置（`configitems` 表）
-  3. 用户配置目录（`config/conf_d/*.yaml`）
-  4. 领域配置文件（`config/database.yaml`, `config/server.yaml` 等）
-  5. 默认配置文件（`config/default.yaml`）
-  6. 结构体默认值（`default` tag，最低优先级）
-- [ ] 环境变量能够覆盖所有其他配置源
-- [ ] 环境变量为空值视为"未设置"，将回退到下一级配置源
-- [ ] 数据库配置保护机制：数据库连接配置不从数据库加载（防止循环依赖）
+  3. 用户配置目录（`config/conf_d/*.yaml`，按字母序）
+  4. 专用配置文件（`config/database.yaml`, `config/server.yaml`，按字母序）
+  5. 基础配置文件（`config/default.yaml`）
+  6. 结构体 tag 默认值（`default:"value"`，最低优先级）
+- [ ] 通过 `db:"false"` tag 控制配置项不可存储到数据库（如 `database.*`）
 
-### 2. 环境变量自动映射
+> 覆盖规则：高优先级覆盖低优先级，同级文件按字母序加载（后覆盖前）
+
+### 2. 结构体 Tag 支持
+- [ ] 支持 `default` tag：自动设置默认值（`default:"apprun"`）
+- [ ] 支持 `db` tag：控制配置可否存储到数据库（`db:"false"` 禁止存储）
+- [ ] 支持 `validate` tag：自动校验配置值（`validate:"required,min=1"`）
+- [ ] 使用反射自动处理 tag（启动时一次性遍历）
+
+### 3. 环境变量自动映射
 - [ ] 无环境变量前缀
-- [ ] 自动映射规则：`配置组.配置项（小写） → 配置组_配置项（大写）`
-- [ ] 示例：`database.host` → `DATABASE_HOST`
-- [ ] 无需手动注册，新增配置项自动支持环境变量
+- [ ] 映射规则：`database.host` → `DATABASE_HOST`（`.` → `_`，全大写）
+- [ ] 使用 Viper 自动映射，无需手动注册
 
-### 3. 配置结构统一
-- [ ] `core/internal/config/types.go` 作为唯一配置定义来源
-- [ ] 支持 struct tag：`default`, `validate`, `db`
-- [ ] 配置文件格式：YAML
+### 4. 模块化设计
+- [ ] `internal/config/` - 唯一配置结构体定义（带 tag）
+- [ ] `modules/config/` - 所有配置逻辑（Loader、Repository、Service、Handler）
+- [ ] Loader 通过 ConfigProvider 接口获取数据库配置（解耦）
+- [ ] Repository 实现 ConfigProvider 接口（防腐层，隔离 Ent）
+- [ ] 反射处理 tag（启动时遍历，运行时无开销）
 
-### 4. 测试验证
-- [ ] 环境变量覆盖测试通过
-- [ ] 配置优先级测试通过
-- [ ] Docker Compose 环境变量配置正确
+### 5. API 接口
+- [ ] `GET /api/config` - 返回所有配置项（含 `dbStorable` 元数据）
+- [ ] `PUT /api/config` - 批量更新配置（带 `db` tag 验证和事务）
+- [ ] 自动拒绝修改 `db:"false"` 的配置项（403 Forbidden）
+
+### 6. 测试验证
+- [ ] 单元测试通过（Loader、Service、Repository）
+- [ ] 集成测试通过（API 端到端）
+- [ ] 配置优先级验证通过
 
 ---
 
 ## 📦 Deliverables
 
-### 1. 核心实现
+### 1. 基础设施层（Internal）
 
-#### `core/internal/config/loader.go` 
-```go
-package config
+**目录**: `core/internal/config/`
 
-import (
-    "os"
-    "strings"
-    "github.com/spf13/viper"
-)
+**文件**:
+- `types.go` - **唯一配置结构体定义**（Config, AppConfig, DatabaseConfig, ServerConfig）
+  - 支持 `default` tag：默认值
+  - 支持 `db` tag：控制是否可存储到数据库（`db:"false"` 禁止）
+  - 支持 `validate` tag：配置验证规则
 
-func Load(configPath string) (*Config, error) {
-    v := viper.New()
-    
-    // 1. 结构体默认值（从 default tag 提取）
-    applyStructDefaults(v, &Config{})
-    
-    // 2. 默认配置文件
-    v.SetConfigFile(configPath)
-    if err := v.ReadInConfig(); err != nil {
-        return nil, err
-    }
-    
-    // 3. 领域配置文件（如 database.yaml, server.yaml）
-    loadDomainConfigs(v, "config")
-    
-    // 4. 用户配置目录（conf_d/*.yaml）
-    loadConfD(v, "config/conf_d")
-    
-    // 5. 数据库配置（configitems 表）
-    loadFromDB(v)
-    
-    // 6. 环境变量自动映射（最高优先级）
-    v.AutomaticEnv()
-    v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-    
-    cfg := &Config{}
-    if err := v.Unmarshal(cfg); err != nil {
-        return nil, err
-    }
-    
-    return cfg, nil
-}
-
-// 从结构体 default tag 提取默认值
-func applyStructDefaults(v *viper.Viper, cfg *Config) {
-    // 使用反射提取 default tag 并设置
-}
-
-// 加载领域配置文件
-func loadDomainConfigs(v *viper.Viper, configDir string) {
-    // 加载 database.yaml, server.yaml 等
-}
-
-// 加载 conf_d 目录下的配置文件
-func loadConfD(v *viper.Viper, confDDir string) {
-    // 按字母顺序加载 *.yaml 文件
-}
-
-// 从数据库加载配置（排除数据库连接配置本身）
-func loadFromDB(v *viper.Viper) {
-    // 连接数据库，查询 configitems 表
-    // 注意：不加载 database.* 配置（防止循环依赖）
-}
-```
-
-#### `core/internal/config/types.go` 
-
-- 添加所有配置项的 `default` tag
-- 清晰的配置结构体定义
-- 注释说明环境变量映射规则
+**职责**: 全局配置结构体定义（单一来源），通过 tag 声明配置元数据
 
 **示例**:
 ```go
 type Config struct {
-    Database struct {
-        Host     string `yaml:"host" default:"localhost" db:"false"`     // 环境变量: DATABASE_HOST
-        Port     int    `yaml:"port" default:"5432" db:"false"`          // 环境变量: DATABASE_PORT
-        User     string `yaml:"user" default:"postgres" db:"false"`      // 环境变量: DATABASE_USER
-        Password string `yaml:"password" default:"" db:"false"`          // 环境变量: DATABASE_PASSWORD (数据库配置不从DB加载)
-        DBName   string `yaml:"dbname" default:"apprun" db:"false"`      // 环境变量: DATABASE_DBNAME
-    } `yaml:"database"`
-    
-    App struct {
-        Name    string `yaml:"name" default:"apprun" db:"true"`         // 环境变量: APP_NAME (可从数据库加载)
-        Version string `yaml:"version" default:"1.0.0" db:"true"`       // 环境变量: APP_VERSION
-    } `yaml:"app"`
+    App      AppConfig      `yaml:"app"`
+    Database DatabaseConfig `yaml:"database" db:"false"` // 不可存DB
+}
+
+type AppConfig struct {
+    Name    string `yaml:"name" default:"apprun" db:"false"`
+    Theme   string `yaml:"theme" default:"light" db:"true"` // 可存DB
+    Timeout int    `yaml:"timeout" default:"30" validate:"min=1,max=300"`
 }
 ```
 
-> **注意**: `db:"false"` 标记的配置项不会从数据库加载，防止循环依赖
+---
 
-#### `docker-compose.yml`
+### 2. 配置模块（Modules）
 
-- 文件头部注释说明环境变量映射规则
-- 提供默认值（使用 `${VAR:-default}` 语法）
+**目录**: `core/modules/config/`
 
-### 2. 测试
+**文件**:
+- `types.go` - ConfigProvider 接口 + API 模型（ConfigItem, UpdateConfigRequest, ConfigResponse）
+- `loader.go` - 配置加载器（6层优先级，反射处理 tag，依赖 ConfigProvider 接口）
+- `repository.go` - 数据访问层（实现 ConfigProvider 接口，防腐层）
+- `service.go` - 业务逻辑（反射验证 `db` tag，配置校验，事务管理）
+- `handler.go` - HTTP 接口（GET/PUT /api/config）
 
-#### 单元测试：`core/internal/config/loader_test.go`
-- 测试配置加载逻辑
-- 测试环境变量映射规则
-- 测试优先级覆盖
+**职责**: 启动时加载配置 + 运行时配置管理（自动处理 tag 元数据）
 
-#### 集成测试：`tests/integration/config/test-priority.sh`
-- 测试环境变量 > DB > 文件的优先级
-- 测试自动映射规则
-- 输出详细日志
+---
 
-### 3. 文档
+### 3. 数据模型
 
-#### `docs/standards/coding-standards.md` (Section 14)
+**文件**: `core/ent/schema/configitem.go`
 
-- 配置优先级规范
+**字段**: key (unique), value, is_dynamic, created_at, updated_at
+
+---
+
+### 4. 测试
+
+**单元测试**:
+- `core/modules/config/loader_test.go` - 配置加载逻辑
+- `core/modules/config/service_test.go` - 业务逻辑验证
+- `core/modules/config/repository_test.go` - 数据访问层测试
+
+**集成测试**:
+- `tests/integration/config/test-priority.sh` - 配置优先级验证
+- `tests/integration/config/test-api.sh` - API 端到端测试
+
+---
+
+### 5. 文档
+
+**开发者规范**: `docs/standards/coding-standards.md` Section 14
+- 配置优先级说明
 - 环境变量映射规则
-- 结构体标签使用说明
-- 数据库配置保护机制
+- 模块化架构说明
 
-#### `docs/product/setup/configuration.md`
-
-- 用户配置指南
+**用户指南**: `docs/product/setup/configuration.md`
 - 环境变量使用示例
 - 配置文件说明
-- 配置 API 使用方法
+- API 使用方法
 
 ---
 
 ## 🔧 Technical Design
 
-### 配置加载流程（完整6层）
+### 架构总览
 
 ```
-1. 结构体默认值 (types.go `default` tag)
-   ↓
-2. 默认配置文件 (config/default.yaml)
-   ↓
-3. 领域配置文件 (config/database.yaml, config/server.yaml 等)
-   ↓
-4. 用户配置目录 (config/conf_d/*.yaml，按字母顺序加载)
-   ↓
-5. 数据库配置 (configitems 表，排除 db:"false" 标记的配置)
-   ↓
-6. 环境变量 (无前缀，自动映射，最高优先级)
+core/
+├── internal/config/
+│   └── types.go              # 👑 唯一配置结构体（带 tag）
+│
+├── modules/config/
+│   ├── types.go              # ConfigProvider 接口 + API 模型
+│   ├── loader.go             # 配置加载器（反射处理 tag）
+│   ├── repository.go         # 数据访问（防腐层）
+│   ├── service.go            # 业务逻辑（tag 验证）
+│   └── handler.go            # HTTP 接口
+│
+└── ent/schema/
+    └── configitem.go         # Ent Schema (key, value, is_dynamic)
 ```
 
-### 数据库配置保护机制
+**核心原则**:
+- 结构体 tag 声明配置元数据（`default`, `db`, `validate`）
+- 反射自动处理 tag（启动时一次性，无运行时开销）
+- 减少硬编码，添加新配置无需修改业务逻辑
 
-为防止循环依赖（加载配置需要数据库连接，但数据库连接配置本身在数据库中），使用 `db` tag 标记：
+---
+
+### 配置加载流程（6层优先级）
+
+```
+Tag 默认值 → default.yaml → 专用文件 → conf_d/ → 数据库 → 环境变量
+```
+
+**详细说明**:
+1. **Tag 默认值**: 反射读取 `default:"value"` tag
+2. **基础配置**: `config/default.yaml`
+3. **专用配置**: `config/database.yaml`, `config/server.yaml`（按字母序）
+4. **用户配置**: `config/conf_d/*.yaml`（按字母序）
+5. **数据库配置**: `configitems` 表（仅 `db:"true"` 的字段）
+6. **环境变量**: `DATABASE_HOST`（最高优先级，自动映射）
+
+**Loader 实现**:
+```go
+func LoadGlobalConfig(provider ConfigProvider) (*Config, error) {
+    cfg := &Config{}
+    
+    // 1. 反射设置 tag 默认值
+    setDefaultsByTag(cfg)
+    
+    // 2-4. Viper 加载文件配置
+    viper.SetConfigName("default")
+    viper.ReadInConfig()
+    viper.Unmarshal(cfg)
+    
+    // 5. 从数据库加载（仅 db:"true" 字段）
+    dbConfigs, _ := provider.GetAll()
+    applyDBConfigsByTag(cfg, dbConfigs) // 反射检查 db tag
+    
+    // 6. 环境变量自动覆盖（Viper 自动绑定）
+    
+    // 7. 验证配置（读取 validate tag）
+    validate.Struct(cfg)
+    
+    return cfg, nil
+}
+```
+
+---
+
+### Tag 控制机制
+
+#### **1. `db` Tag - 控制数据库存储**
 
 ```go
+// internal/config/types.go
 type Config struct {
-    Database struct {
-        Host string `yaml:"host" default:"localhost" db:"false"`  // 不从数据库加载
-        // ... 其他数据库连接配置
-    }
-    
-    App struct {
-        Name string `yaml:"name" default:"apprun" db:"true"`  // 可从数据库加载
-    }
+    Database DatabaseConfig `yaml:"database" db:"false"` // 不可存DB
+    App      AppConfig      `yaml:"app"`
+}
+
+type AppConfig struct {
+    Name  string `yaml:"name" db:"false"`  // 静态配置
+    Theme string `yaml:"theme" db:"true"`   // 动态配置（可运行时修改）
 }
 ```
 
-**加载逻辑**:
+**Service 层自动验证**:
 ```go
-func loadFromDB(v *viper.Viper) {
-    // 使用已加载的数据库配置建立连接
-    db := connectWithCurrentConfig(v)
-    
-    // 查询 configitems 表
-    rows := db.Query("SELECT key, value FROM configitems")
-    for rows.Next() {
-        var key, value string
-        rows.Scan(&key, &value)
-        
-        // 检查 struct tag，跳过 db:"false" 的配置
-        if !isDBLoadable(key) {
-            continue
+// modules/config/service.go
+func (s *Service) UpdateBatch(updates map[string]string) error {
+    for key := range updates {
+        if !isDBStorableByTag(key) { // 反射检查 db tag
+            return fmt.Errorf("config '%s' cannot be stored in database", key)
         }
-        
-        v.Set(key, value)
     }
+    return s.repo.SetBatch(updates)
 }
 ```
 
-### 环境变量映射规则
+#### **2. `default` Tag - 默认值**
 
-| 配置路径 | 环境变量名 | 示例值 |
-|---------|-----------|--------|
-| `app.name` | `APP_NAME` | `apprun` |
-| `database.host` | `DATABASE_HOST` | `postgres` |
-| `database.dbname` | `DATABASE_DBNAME` | `apprun` |
-| `server.http_port` | `SERVER_HTTP_PORT` | `8080` |
+```go
+type AppConfig struct {
+    Timeout int `yaml:"timeout" default:"30"` // 启动时自动设置
+}
+```
 
-**规则**: 
-- 无前缀（保持简洁）
-- 路径中的 `.` 转为 `_`
-- 全部大写
+#### **3. `validate` Tag - 配置验证**
+
+```go
+type DatabaseConfig struct {
+    Port int `yaml:"port" default:"5432" validate:"min=1,max=65535"`
+}
+```
+
+### API 接口设计
+
+**GET /api/config** - 返回所有配置项（含元数据）
+
+```json
+[
+  {
+    "path": "database.host",
+    "value": "localhost",
+    "dbStorable": false,
+    "source": "file"
+  },
+  {
+    "path": "app.theme",
+    "value": "dark",
+    "dbStorable": true,
+    "source": "database"
+  }
+]
+```
+
+**PUT /api/config** - 批量更新配置
+
+```bash
+curl -X PUT http://localhost:8080/api/config \
+  -H "Content-Type: application/json" \
+  -d '{"app.theme": "light", "app.timeout": "60"}'
+```
+
+**自动验证**:
+- ✅ 反射检查 `db` tag（拒绝 `db:"false"` 配置）
+- ✅ 使用 `validate` tag 校验值
+- ✅ 事务保证原子性（全部成功或全部回滚）
 
 ---
 
 ## 🧪 Testing Strategy
 
-### 单元测试
-```go
-// core/internal/config/loader_test.go
-func TestConfigPriority(t *testing.T) {
-    // 测试环境变量 > 文件
-    os.Setenv("APP_NAME", "env-app")
-    cfg, _ := Load("testdata/config.yaml")
-    assert.Equal(t, "env-app", cfg.App.Name)
-}
-```
+**单元测试**:
+- Loader: 6层优先级、tag 默认值、环境变量覆盖
+- Service: `db` tag 验证、`validate` tag 校验、事务回滚
+- Repository: Ent 查询、防腐层转换
 
-### 集成测试
-```bash
-# 启动环境并测试
-make test-config-priority
-```
+**集成测试**:
+- API: GET/PUT 接口、错误处理（403/400/500）
+- 优先级: 环境变量 > DB > 文件 > tag 默认值
 
-### 验证清单
-- [ ] 无环境变量时使用 default.yaml
-- [ ] 领域配置文件覆盖 default.yaml
-- [ ] conf_d/ 配置覆盖领域配置
-- [ ] 数据库配置覆盖文件配置
-- [ ] 环境变量覆盖所有配置源
-- [ ] 环境变量为空时回退到下一级配置源
-- [ ] 数据库连接配置不从数据库加载（db:"false" 生效）
-- [ ] 新增配置项无需代码修改即可支持环境变量
+**验证清单**:
+- [ ] Tag 默认值自动设置
+- [ ] `db:"false"` 配置禁止通过 API 修改
+- [ ] `validate` tag 校验生效
+- [ ] 配置优先级正确
+- [ ] 事务回滚正常
 
 ---
 
 ## 📝 Notes
 
 ### 设计原则
-- **完整性优先**: 实现完整的 6 层配置优先级
-- **循环依赖保护**: `db` tag 防止数据库配置从数据库加载
-- **约定优于配置**: 自动映射，无需手动注册
-- **灵活性**: 支持多种配置源，满足不同场景需求
+- **结构体 tag 声明元数据**: 通过 `default`, `db`, `validate` tag 控制配置行为
+- **反射自动处理**: 启动时遍历 tag，无需硬编码，运行时无开销
+- **单一配置来源**: `internal/config/types.go` 唯一定义结构体
+- **高内聚**: 所有配置逻辑集中在 `modules/config/` 模块
+- **防腐层**: Repository 隔离 Ent，便于替换持久化技术
+- **约定优于配置**: 环境变量自动映射，配置文件按字母序加载
+
+### 反射性能说明
+- **启动开销**: ~1-2ms（一次性遍历结构体）
+- **运行时**: 零开销（tag 信息缓存后直接使用）
+- **结论**: 性能影响可忽略，可维护性提升显著
 
 ### 依赖关系
 - **依赖**: Story 1 (Docker环境)
-- **被依赖**: 所有需要配置管理的Story
-
-### 风险
-- ⚠️ 环境变量名称与现有系统冲突 → **缓解**: 使用明确的命名规范（大写+下划线）
-- ⚠️ 配置优先级混淆 → **缓解**: 清晰的文档和日志
+- **被依赖**: 所有需要配置管理的 Story
 
 ---
 
 ## ✅ Definition of Done
 
-- [ ] `core/internal/config/loader.go` 实现完成
-- [ ] `core/internal/config/types.go` 添加所有标签
-- [ ] `core/ent/schema/configitem.go` Schema 定义
-- [ ] 配置加载器通过单元测试
-- [ ] 环境变量自动映射工作正常
-- [ ] 配置 API (`GET/PUT /config`) 实现完成
-- [ ] `docs/standards/coding-standards.md` Section 14 添加
-- [ ] `docs/product/setup/configuration.md` 完善
-- [ ] 集成测试通过
+- [ ] `core/internal/config/types.go` 定义**唯一**配置结构体（带 `default`, `db`, `validate` tag）
+- [ ] `core/modules/config/types.go` 定义 ConfigProvider 接口 + API 模型
+- [ ] `core/modules/config/loader.go` 实现加载器（6层优先级，反射处理 tag）
+- [ ] `core/modules/config/repository.go` 实现 ConfigProvider 接口（防腐层）
+- [ ] `core/modules/config/service.go` 实现业务逻辑（反射验证 `db` tag，配置校验）
+- [ ] `core/modules/config/handler.go` 实现 HTTP 接口（GET/PUT /api/config）
+- [ ] `core/ent/schema/configitem.go` Ent Schema 定义
+- [ ] 单元测试通过（Loader、Service、Repository）
+- [ ] 集成测试通过（API、优先级、tag 验证）
+- [ ] `docs/standards/coding-standards.md` Section 14 添加配置管理规范
+- [ ] `docs/product/setup/configuration.md` 完善用户指南
 - [ ] Code Review 通过
+- [ ] ✅ 验证配置结构体仅在 `internal/config/types.go` 定义一次
+- [ ] ✅ 验证 `db` tag 控制机制生效（无硬编码）
 
 ---
 
 **Created**: 2025-12-28  
-**Updated**: 2025-12-28  
+**Updated**: 2025-12-29  
 **Author**: Winston (Architect Agent)

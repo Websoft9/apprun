@@ -30,11 +30,28 @@ Story 1 (Docker)
 **Execution Order**:
 1. **Phase 1** (P0, Parallel): Story 1 must complete first
 2. **Phase 2** (P0, Sequential): Story 2 → Story 3
-3. **Phase 3** (P0, Parallel): Story 4, Story 5
+3. **Phase 3** (P0, Parallel): Story 4, Story 5, Story 10
 4. **Phase 4** (P1, Sequential): Story 6, Story 7
 5. **Phase 5** (P1, Sequential): Story 8 → Story 9
 
 ---
 
+## Stories
+
+| Story | Title | Status | Priority | Docs |
+|-------|-------|--------|----------|------|
+| 1 | Docker Environment | Planning | P0 | [story-01-docker-environment.md](story-01-docker-environment.md) |
+| 2 | Response Package | Planning | P0 | [story-02-response-package.md](story-02-response-package.md) |
+| 3 | Error Handling | Planning | P0 | [story-03-error-handling.md](story-03-error-handling.md) |
+| 4 | Ent Schema | Planning | P0 | [story-04-ent-schema.md](story-04-ent-schema.md) |
+| 5 | CI/CD Linter | Planning | P0 | [story-05-ci-cd-linter.md](story-05-ci-cd-linter.md) |
+| 6 | Testing Framework | Planning | P1 | [story-06-testing-framework.md](story-06-testing-framework.md) |
+| 7 | Refactor Handlers | Planning | P1 | [story-07-refactor-handlers.md](story-07-refactor-handlers.md) |
+| 8 | i18n Support | Planning | P1 | [story-08-i18n.md](story-08-i18n.md) |
+| 9 | l10n Support | Planning | P1 | [story-09-l10n.md](story-09-l10n.md) |
+| 10 | Configuration Center | ✅ Implemented | P0 | [story-10-config-basic.md](story-10-config-basic.md) · [Implementation](story-10-IMPLEMENTATION-SUMMARY.md) · [Test Review](story-10-TEST-REVIEW.md) |
+
+---
+
 **Maintainer**: Architect Agent  
-**Last Updated**: 2025-12-27
+**Last Updated**: 2025-12-29

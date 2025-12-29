@@ -36,10 +36,11 @@ You can also mention agents directly in your messages:
 
 ## Documentation Location
 
+### Core Documentation
 - Full agent definitions: `.bmad/bmm/agents/`
 - Workflow configurations: `.bmad/bmm/workflows/`
 - Project documentation: `docs/`
 - Sprint artifacts: `docs/sprint-artifacts/`
-- Coding standards: `docs/standards/coding-standards.md`
-- Testing standards: `docs/standards/testing-standards.md`
-- API design standards: `docs/standards/api-design.md`
+- Standards (Developer Reference): `docs/standards/`
+- Architecture (System Design): `docs/architecture/`
+- Product Documentation (User Guide): `docs/product/`

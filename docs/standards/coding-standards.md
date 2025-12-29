@@ -97,65 +97,78 @@ type Closer interface {
 
 ## 2. 项目结构
 
-### 2.1 标准布局
+### 2.1 模块化单体架构（推荐）
+
+**按功能模块垂直切分，每个模块高内聚低耦合**
 
 ```
 apprun/
 ├── cmd/                    # 可执行程序入口
-│   ├── server/            # HTTP 服务器
-│   │   └── main.go
-│   └── cli/               # CLI 工具
-│       └── main.go
-├── internal/              # 私有代码（不可被外部导入）
-│   ├── config/           # 配置管理
-│   ├── middleware/       # HTTP 中间件
-│   ├── repository/       # 数据访问层
-│   ├── service/          # 业务逻辑层
-│   ├── handler/          # HTTP 处理器
-│   ├── cache/            # 缓存实现
-│   ├── events/           # 事件总线
-│   └── errors/           # 错误定义
-├── pkg/                   # 公共库（可被外部导入）
-│   ├── kratos/           # Kratos 集成
-│   ├── temporal/         # Temporal 集成
-│   └── validator/        # 验证工具
-├── ent/                   # Ent ORM Schema
+│   └── server/main.go
+│
+├── modules/                # 业务模块（模块化单体）
+│   ├── config/            # 配置管理模块
+│   │   ├── handler.go     # HTTP API
+│   │   ├── service.go     # 业务逻辑
+│   │   ├── repository.go  # 数据访问
+│   │   └── types.go       # 领域模型
+│   │
+│   ├── user/              # 用户模块
+│   │   ├── handler.go
+│   │   ├── service.go
+│   │   ├── repository.go
+│   │   └── types.go
+│   │
+│   └── app/               # 应用管理模块
+│       ├── handler.go
+│       ├── service.go
+│       ├── repository.go
+│       └── types.go
+│
+├── internal/              # 内部基础设施（非业务模块）
+│   ├── config/           # 全局配置加载器
+│   ├── middleware/       # 中间件
+│   ├── validator/        # 验证器
+│   └── database/         # 数据库连接
+│
+├── pkg/                   # 可复用工具包
+│   ├── logger/
+│   └── errors/
+│
+├── ent/                   # Ent ORM
 │   └── schema/
-├── api/                   # API 定义
-│   ├── openapi/          # OpenAPI 规范
-│   └── proto/            # Protobuf 定义（如果使用 gRPC）
+│
 ├── config/                # 配置文件
 │   ├── default.yaml
-│   └── conf.d/
+│   └── conf_d/
+│
 ├── docs/                  # 文档
 ├── tests/                 # 测试
-│   ├── integration/
-│   └── e2e/
-├── scripts/               # 脚本
-├── go.mod
-├── go.sum
 ├── Makefile
 └── README.md
 ```
 
-### 2.2 internal 目录结构
+**优势**：
+- ✅ 模块边界清晰，易于理解和维护
+- ✅ 便于独立测试和部署
+- ✅ 未来可无缝拆分为微服务
+
+### 2.2 模块内部结构
 
 ```
-internal/
-├── handler/              # HTTP 层
-│   ├── user.go          # 用户处理器
-│   ├── project.go       # 项目处理器
-│   └── middleware.go    # 中间件
-├── service/              # 业务逻辑层
-│   ├── user.go
-│   └── project.go
-├── repository/           # 数据访问层
-│   ├── user.go
-│   └── project.go
-└── model/                # 业务模型（DTO）
-    ├── user.go
-    └── project.go
+modules/config/
+├── handler.go         # HTTP 层：路由和请求处理
+├── service.go         # 业务逻辑层：核心业务规则
+├── repository.go      # 数据访问层：数据库 CRUD
+├── types.go           # 领域模型：请求/响应结构
+└── config_test.go     # 模块测试
 ```
+
+**分层职责**：
+- `handler` - 处理 HTTP 请求，调用 service
+- `service` - 实现业务逻辑，调用 repository
+- `repository` - 封装数据访问，使用 Ent Client
+- `types` - 定义领域模型和 DTO
 
 ---
 

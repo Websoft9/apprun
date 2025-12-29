@@ -1,14 +1,17 @@
 package routes
 
 import (
-	"apprun/handlers"
 	"net/http"
+
+	configModule "apprun/modules/config"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-func SetupRoutes() *chi.Mux {
+// SetupRoutes 设置所有路由
+// configService 参数可选，如果提供则注册配置 API 路由
+func SetupRoutes(configService *configModule.Service) *chi.Mux {
 	r := chi.NewRouter()
 
 	// Use go-chi middlewares
@@ -23,9 +26,6 @@ func SetupRoutes() *chi.Mux {
 		w.Write([]byte(`{"status":"ok","service":"apprun"}`))
 	})
 
-	// Create handlers
-	configHandler := handlers.NewConfigHandler()
-
 	// API routes group
 	r.Route("/api", func(r chi.Router) {
 		// root route
@@ -34,12 +34,11 @@ func SetupRoutes() *chi.Mux {
 			w.Write([]byte("Hello, apprun API"))
 		})
 
-		// feature/config routes
-		r.Route("/config", func(r chi.Router) {
-			r.Get("/", configHandler.GetConfig)          // GET /api/config
-			r.Put("/", configHandler.UpdateConfig)       // PUT /api/config
-			r.Get("/{key}", configHandler.GetConfigItem) // GET /api/config/{key}
-		})
+		// feature/config routes (如果提供了配置服务)
+		if configService != nil {
+			configHandler := configModule.NewHandler(configService)
+			configHandler.RegisterRoutes(r)
+		}
 	})
 
 	return r

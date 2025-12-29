@@ -1,12 +1,13 @@
 package config
 
-// This struct is the root define source of all configuration items
-
+// Config is the root define source of all configuration items
+// YAML keys are implicitly mapped from lowercase field names (e.g., Name -> name)
+// Only nested structs require explicit yaml tags to define root keys
 type Config struct {
 	App struct {
 		Name    string `validate:"required,min=1" default:"apprun" db:"true"`
 		Version string `validate:"required" default:"1.0.0" db:"false"`
-	} `validate:"required"`
+	} `yaml:"app" validate:"required"`
 
 	Database struct {
 		Driver   string `validate:"required,oneof=postgres mysql" default:"postgres" db:"false"`
@@ -15,11 +16,11 @@ type Config struct {
 		User     string `validate:"required" default:"postgres" db:"false"`
 		Password string `validate:"required,min=8" db:"false"`
 		DBName   string `validate:"required" default:"apprun" db:"false"`
-	} `validate:"required"`
+	} `yaml:"database" validate:"required"`
 
 	POC struct {
 		Enabled  bool   `default:"true" db:"true"`
 		Database string `validate:"required,url" default:"postgres://user:pass@localhost:5432/apprun_poc" db:"true"`
 		APIKey   string `validate:"required,min=10" db:"true"`
-	} `validate:"required"`
+	} `yaml:"poc" validate:"required"`
 }

@@ -1,4 +1,7 @@
 # 用户自定义数据库配置示例
-database:
-  host: custom-db-host
-  port: 5433
+# 此文件优先级高于 default.yaml
+# 取消注释以覆盖默认配置
+
+# database:
+#   host: custom-db-host
+#   port: 5433
