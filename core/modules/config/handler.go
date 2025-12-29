@@ -30,15 +30,15 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 }
 
 // GetConfig 获取配置值（查询单个配置项）
-// @Summary      获取配置项
-// @Description  根据 key 查询单个配置项，返回值、来源和是否为动态配置
+// @Summary      Get configuration item
+// @Description  Query a single configuration item by key, returns value, source and dynamic flag
 // @Tags         config
 // @Accept       json
 // @Produce      json
-// @Param        key  query  string  true  "配置键，例如 app.name"
-// @Success      200  {object}  GetConfigResponse  "配置查询成功"
-// @Failure      400  {object}  ErrorResponse      "缺少 key 参数"
-// @Failure      404  {object}  ErrorResponse      "配置不存在"
+// @Param        key  query  string  true  "Configuration key, e.g. app.name"
+// @Success      200  {object}  GetConfigResponse  "Configuration retrieved successfully"
+// @Failure      400  {object}  ErrorResponse      "Missing key parameter"
+// @Failure      404  {object}  ErrorResponse      "Configuration not found"
 // @Router       /config [get]
 func (h *Handler) GetConfig(w http.ResponseWriter, r *http.Request) {
 	key := r.URL.Query().Get("key")
@@ -67,14 +67,14 @@ func (h *Handler) GetConfig(w http.ResponseWriter, r *http.Request) {
 }
 
 // UpdateConfig 更新动态配置项
-// @Summary      更新配置项
-// @Description  更新单个动态配置项（仅限 db:true 的配置）
+// @Summary      Update configuration item
+// @Description  Update a single dynamic configuration item (only for db:true configs)
 // @Tags         config
 // @Accept       json
 // @Produce      json
-// @Param        request  body  UpdateConfigRequest  true  "配置更新请求"
-// @Success      200  {object}  UpdateConfigResponse  "配置更新成功"
-// @Failure      400  {object}  ErrorResponse         "请求无效或配置不允许存储到数据库"
+// @Param        request  body  UpdateConfigRequest  true  "Configuration update request"
+// @Success      200  {object}  UpdateConfigResponse  "Configuration updated successfully"
+// @Failure      400  {object}  ErrorResponse         "Invalid request or config not allowed to store in database"
 // @Router       /config [put]
 func (h *Handler) UpdateConfig(w http.ResponseWriter, r *http.Request) {
 	var req UpdateConfigRequest
@@ -110,13 +110,13 @@ func (h *Handler) UpdateConfig(w http.ResponseWriter, r *http.Request) {
 }
 
 // ListConfigs 列出所有动态配置项
-// @Summary      列出动态配置
-// @Description  返回所有存储在数据库中的动态配置项列表
+// @Summary      List dynamic configurations
+// @Description  Returns all dynamic configuration items stored in database
 // @Tags         config
 // @Accept       json
 // @Produce      json
-// @Success      200  {object}  ListConfigsResponse  "配置列表"
-// @Failure      500  {object}  ErrorResponse        "服务器内部错误"
+// @Success      200  {object}  ListConfigsResponse  "Configuration list"
+// @Failure      500  {object}  ErrorResponse        "Internal server error"
 // @Router       /config/list [get]
 func (h *Handler) ListConfigs(w http.ResponseWriter, r *http.Request) {
 	configs, err := h.service.ListDynamicConfigs(r.Context())
@@ -134,14 +134,14 @@ func (h *Handler) ListConfigs(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeleteConfig 删除动态配置项
-// @Summary      删除配置项
-// @Description  从数据库中删除指定的动态配置项（配置将恢复为文件或默认值）
+// @Summary      Delete configuration item
+// @Description  Delete a dynamic configuration item from database (config will fallback to file or default value)
 // @Tags         config
 // @Accept       json
 // @Produce      json
-// @Param        key  query  string  true  "配置键"
-// @Success      200  {object}  map[string]interface{}  "删除成功"
-// @Failure      400  {object}  ErrorResponse           "缺少 key 参数或删除失败"
+// @Param        key  query  string  true  "Configuration key"
+// @Success      200  {object}  map[string]interface{}  "Deletion successful"
+// @Failure      400  {object}  ErrorResponse           "Missing key parameter or deletion failed"
 // @Router       /config [delete]
 func (h *Handler) DeleteConfig(w http.ResponseWriter, r *http.Request) {
 	key := r.URL.Query().Get("key")
@@ -163,12 +163,12 @@ func (h *Handler) DeleteConfig(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetAllowedKeys 获取所有允许动态配置的键（db:true）
-// @Summary      获取允许的配置键
-// @Description  返回所有标记为 db:true 的配置键列表（可通过 API 动态修改）
+// @Summary      Get allowed configuration keys
+// @Description  Returns all configuration keys marked as db:true (can be modified dynamically via API)
 // @Tags         config
 // @Accept       json
 // @Produce      json
-// @Success      200  {object}  map[string]interface{}  "允许的配置键列表"
+// @Success      200  {object}  map[string]interface{}  "List of allowed configuration keys"
 // @Router       /config/allowed [get]
 func (h *Handler) GetAllowedKeys(w http.ResponseWriter, r *http.Request) {
 	keys := h.service.GetAllowedDynamicKeys()

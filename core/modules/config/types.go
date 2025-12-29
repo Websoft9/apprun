@@ -27,34 +27,34 @@ type GetConfigRequest struct {
 
 // GetConfigResponse GET /api/config 响应
 type GetConfigResponse struct {
-	Key       string `json:"key"`        // 配置键
-	Value     string `json:"value"`      // 配置值
-	IsDynamic bool   `json:"is_dynamic"` // 是否为动态配置
-	Source    string `json:"source"`     // 来源: "database", "file", "env", "default"
+	Key       string `json:"key" example:"app.name"`     // Configuration key
+	Value     string `json:"value" example:"apprun"`     // Configuration value
+	IsDynamic bool   `json:"is_dynamic" example:"false"` // Whether it's a dynamic configuration
+	Source    string `json:"source" example:"default"`   // Source: "database", "file", "env", "default"
 }
 
 // UpdateConfigRequest PUT /api/config 请求体
 type UpdateConfigRequest struct {
-	Key   string `json:"key" validate:"required"`   // 配置键
-	Value string `json:"value" validate:"required"` // 新值
+	Key   string `json:"key" validate:"required" example:"poc.enabled"` // Configuration key
+	Value string `json:"value" validate:"required" example:"true"`      // New value
 }
 
 // UpdateConfigResponse PUT /api/config 响应
 type UpdateConfigResponse struct {
-	Success bool   `json:"success"`
-	Message string `json:"message,omitempty"`
-	Key     string `json:"key"`
-	Value   string `json:"value"`
+	Success bool   `json:"success" example:"true"`
+	Message string `json:"message,omitempty" example:"config updated successfully"`
+	Key     string `json:"key" example:"poc.enabled"`
+	Value   string `json:"value" example:"true"`
 }
 
 // ListConfigsResponse GET /api/configs 响应（列出所有动态配置）
 type ListConfigsResponse struct {
-	Configs map[string]string `json:"configs"` // key -> value 映射
-	Count   int               `json:"count"`   // 配置项数量
+	Configs map[string]string `json:"configs"`           // Key-value mapping of dynamic configurations
+	Count   int               `json:"count" example:"3"` // Number of configuration items
 }
 
 // ErrorResponse 通用错误响应
 type ErrorResponse struct {
-	Error   string `json:"error"`
-	Details string `json:"details,omitempty"`
+	Error   string `json:"error" example:"missing 'key' query parameter"`
+	Details string `json:"details,omitempty" example:""`
 }

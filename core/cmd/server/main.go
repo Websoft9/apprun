@@ -16,7 +16,7 @@ import (
 
 // @title           AppRun API
 // @version         1.0
-// @description     AppRun 平台 REST API 文档
+// @description     AppRun Platform REST API Documentation
 // @termsOfService  http://swagger.io/terms/
 
 // @contact.name    API Support
@@ -25,7 +25,6 @@ import (
 // @license.name    Apache 2.0
 // @license.url     http://www.apache.org/licenses/LICENSE-2.0.html
 
-// @host            localhost:8080
 // @BasePath        /api
 
 // @schemes         http https

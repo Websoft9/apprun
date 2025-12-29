@@ -25,7 +25,7 @@ const docTemplate = `{
     "paths": {
         "/config": {
             "get": {
-                "description": "根据 key 查询单个配置项，返回值、来源和是否为动态配置",
+                "description": "Query a single configuration item by key, returns value, source and dynamic flag",
                 "consumes": [
                     "application/json"
                 ],
@@ -35,11 +35,11 @@ const docTemplate = `{
                 "tags": [
                     "config"
                 ],
-                "summary": "获取配置项",
+                "summary": "Get configuration item",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "配置键，例如 app.name",
+                        "description": "Configuration key, e.g. app.name",
                         "name": "key",
                         "in": "query",
                         "required": true
@@ -47,19 +47,19 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "配置查询成功",
+                        "description": "Configuration retrieved successfully",
                         "schema": {
                             "$ref": "#/definitions/config.GetConfigResponse"
                         }
                     },
                     "400": {
-                        "description": "缺少 key 参数",
+                        "description": "Missing key parameter",
                         "schema": {
                             "$ref": "#/definitions/config.ErrorResponse"
                         }
                     },
                     "404": {
-                        "description": "配置不存在",
+                        "description": "Configuration not found",
                         "schema": {
                             "$ref": "#/definitions/config.ErrorResponse"
                         }
@@ -67,7 +67,7 @@ const docTemplate = `{
                 }
             },
             "put": {
-                "description": "更新单个动态配置项（仅限 db:true 的配置）",
+                "description": "Update a single dynamic configuration item (only for db:true configs)",
                 "consumes": [
                     "application/json"
                 ],
@@ -77,10 +77,10 @@ const docTemplate = `{
                 "tags": [
                     "config"
                 ],
-                "summary": "更新配置项",
+                "summary": "Update configuration item",
                 "parameters": [
                     {
-                        "description": "配置更新请求",
+                        "description": "Configuration update request",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -91,13 +91,13 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "配置更新成功",
+                        "description": "Configuration updated successfully",
                         "schema": {
                             "$ref": "#/definitions/config.UpdateConfigResponse"
                         }
                     },
                     "400": {
-                        "description": "请求无效或配置不允许存储到数据库",
+                        "description": "Invalid request or config not allowed to store in database",
                         "schema": {
                             "$ref": "#/definitions/config.ErrorResponse"
                         }
@@ -105,7 +105,7 @@ const docTemplate = `{
                 }
             },
             "delete": {
-                "description": "从数据库中删除指定的动态配置项（配置将恢复为文件或默认值）",
+                "description": "Delete a dynamic configuration item from database (config will fallback to file or default value)",
                 "consumes": [
                     "application/json"
                 ],
@@ -115,11 +115,11 @@ const docTemplate = `{
                 "tags": [
                     "config"
                 ],
-                "summary": "删除配置项",
+                "summary": "Delete configuration item",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "配置键",
+                        "description": "Configuration key",
                         "name": "key",
                         "in": "query",
                         "required": true
@@ -127,14 +127,14 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "删除成功",
+                        "description": "Deletion successful",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
                         }
                     },
                     "400": {
-                        "description": "缺少 key 参数或删除失败",
+                        "description": "Missing key parameter or deletion failed",
                         "schema": {
                             "$ref": "#/definitions/config.ErrorResponse"
                         }
@@ -144,7 +144,7 @@ const docTemplate = `{
         },
         "/config/allowed": {
             "get": {
-                "description": "返回所有标记为 db:true 的配置键列表（可通过 API 动态修改）",
+                "description": "Returns all configuration keys marked as db:true (can be modified dynamically via API)",
                 "consumes": [
                     "application/json"
                 ],
@@ -154,10 +154,10 @@ const docTemplate = `{
                 "tags": [
                     "config"
                 ],
-                "summary": "获取允许的配置键",
+                "summary": "Get allowed configuration keys",
                 "responses": {
                     "200": {
-                        "description": "允许的配置键列表",
+                        "description": "List of allowed configuration keys",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -168,7 +168,7 @@ const docTemplate = `{
         },
         "/config/list": {
             "get": {
-                "description": "返回所有存储在数据库中的动态配置项列表",
+                "description": "Returns all dynamic configuration items stored in database",
                 "consumes": [
                     "application/json"
                 ],
@@ -178,16 +178,16 @@ const docTemplate = `{
                 "tags": [
                     "config"
                 ],
-                "summary": "列出动态配置",
+                "summary": "List dynamic configurations",
                 "responses": {
                     "200": {
-                        "description": "配置列表",
+                        "description": "Configuration list",
                         "schema": {
                             "$ref": "#/definitions/config.ListConfigsResponse"
                         }
                     },
                     "500": {
-                        "description": "服务器内部错误",
+                        "description": "Internal server error",
                         "schema": {
                             "$ref": "#/definitions/config.ErrorResponse"
                         }
@@ -201,10 +201,12 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "details": {
-                    "type": "string"
+                    "type": "string",
+                    "example": ""
                 },
                 "error": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "missing 'key' query parameter"
                 }
             }
         },
@@ -212,20 +214,24 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "is_dynamic": {
-                    "description": "是否为动态配置",
-                    "type": "boolean"
+                    "description": "Whether it's a dynamic configuration",
+                    "type": "boolean",
+                    "example": false
                 },
                 "key": {
-                    "description": "配置键",
-                    "type": "string"
+                    "description": "Configuration key",
+                    "type": "string",
+                    "example": "app.name"
                 },
                 "source": {
-                    "description": "来源: \"database\", \"file\", \"env\", \"default\"",
-                    "type": "string"
+                    "description": "Source: \"database\", \"file\", \"env\", \"default\"",
+                    "type": "string",
+                    "example": "default"
                 },
                 "value": {
-                    "description": "配置值",
-                    "type": "string"
+                    "description": "Configuration value",
+                    "type": "string",
+                    "example": "apprun"
                 }
             }
         },
@@ -233,15 +239,16 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "configs": {
-                    "description": "key -\u003e value 映射",
+                    "description": "Key-value mapping of dynamic configurations",
                     "type": "object",
                     "additionalProperties": {
                         "type": "string"
                     }
                 },
                 "count": {
-                    "description": "配置项数量",
-                    "type": "integer"
+                    "description": "Number of configuration items",
+                    "type": "integer",
+                    "example": 3
                 }
             }
         },
@@ -253,12 +260,14 @@ const docTemplate = `{
             ],
             "properties": {
                 "key": {
-                    "description": "配置键",
-                    "type": "string"
+                    "description": "Configuration key",
+                    "type": "string",
+                    "example": "poc.enabled"
                 },
                 "value": {
-                    "description": "新值",
-                    "type": "string"
+                    "description": "New value",
+                    "type": "string",
+                    "example": "true"
                 }
             }
         },
@@ -266,16 +275,20 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "key": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "poc.enabled"
                 },
                 "message": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "config updated successfully"
                 },
                 "success": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "example": true
                 },
                 "value": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "true"
                 }
             }
         }
@@ -285,11 +298,11 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "localhost:8080",
+	Host:             "",
 	BasePath:         "/api",
 	Schemes:          []string{"http", "https"},
 	Title:            "AppRun API",
-	Description:      "AppRun 平台 REST API 文档",
+	Description:      "AppRun Platform REST API Documentation",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",
