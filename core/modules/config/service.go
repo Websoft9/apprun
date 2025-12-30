@@ -165,10 +165,11 @@ func (s *Service) UpdateConfig(ctx context.Context, key string, value string) er
 		return fmt.Errorf("unknown config key: %s", key)
 	}
 
-	// TODO: 实现基于 validate 标签的值验证
-	// 当前简化实现，仅检查非空
-	if value == "" && meta.ValidateTag != "" {
-		return fmt.Errorf("config value cannot be empty for key: %s", key)
+	// 使用 validator 进行值验证（如果有 validate 标签）
+	if meta.ValidateTag != "" {
+		if err := s.validator.Var(value, meta.ValidateTag); err != nil {
+			return fmt.Errorf("validation failed for key '%s': %w", key, err)
+		}
 	}
 
 	// 持久化到数据库

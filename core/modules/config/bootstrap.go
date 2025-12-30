@@ -44,7 +44,7 @@ func (b *Bootstrap) LoadInitialConfig(ctx context.Context) (*internalConfig.Conf
 
 // InitDatabase 使用配置初始化数据库连接
 // 环境变量优先级高于配置文件
-func (b *Bootstrap) InitDatabase(cfg *internalConfig.Config) (*ent.Client, error) {
+func (b *Bootstrap) InitDatabase(ctx context.Context, cfg *internalConfig.Config) (*ent.Client, error) {
 	// 环境变量优先，如果没有则使用配置文件
 	dbHost := getEnvOrDefault("DB_HOST", cfg.Database.Host)
 	dbPort := getEnvOrDefault("DB_PORT", fmt.Sprintf("%d", cfg.Database.Port))
@@ -61,7 +61,7 @@ func (b *Bootstrap) InitDatabase(cfg *internalConfig.Config) (*ent.Client, error
 	}
 
 	// 自动迁移 schema
-	if err := client.Schema.Create(context.Background()); err != nil {
+	if err := client.Schema.Create(ctx); err != nil {
 		client.Close()
 		return nil, fmt.Errorf("failed to create schema: %w", err)
 	}

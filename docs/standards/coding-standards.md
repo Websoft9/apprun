@@ -16,6 +16,10 @@
 - 遵循 [Go Code Review Comments](https://github.com/golang/go/wiki/CodeReviewComments)
 - 使用 `gofmt` 和 `goimports` 格式化代码
 - 使用 `golangci-lint` 进行静态检查
+- 所有的代码和注释都采用英文
+- 公共代码
+  - API respone 使用统一的 pkg/response
+  - Log 处理，使用统一的 pkg/logger
 
 ### 1.2 命名规范
 

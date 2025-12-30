@@ -36,8 +36,8 @@ Story (Executable Tasks)
 <!-- MAPPING_TABLE_START -->
 | Sprint | Story & Description | Module | Status |
 |--------|---------------------|--------|--------|
-| Sprint-0 | Story 01: Docker Development & Deployment Environment | Infrastructure | Planning |
-| Sprint-0 | Story 02: 统一响应工具包 | Infrastructure | Planning |
+| Sprint-0 | Story 01: Docker Development & Deployment Environment | Infrastructure | Done |
+| Sprint-0 | Story 02: 统一响应工具包 | Infrastructure | Done |
 | Sprint-0 | Story 03: 错误处理框架 | Infrastructure | Planning |
 | Sprint-0 | Story 04: Ent Schema 配置管理 | Infrastructure | Planning |
 | Sprint-0 | Story 05: CI/CD 流水线与 Linter | Infrastructure | Planning |
@@ -45,8 +45,9 @@ Story (Executable Tasks)
 | Sprint-0 | Story 07: 重构现有 Handlers | Infrastructure | Planning |
 | Sprint-0 | Story 08: i18n 国际化Infrastructure | Infrastructure | Planning |
 | Sprint-0 | Story 09: l10n 本地化实施 | Infrastructure | Planning |
-| Sprint-0 | Story 10: Configuration Center Foundation |  | Ready |
+| Sprint-0 | Story 10: Configuration Center Foundation |  | Done |
 | Sprint-0 | Story 11: Swagger API Documentation |  | Done |
+| Sprint-0 | Story 12: 日志防腐层 | Infrastructure | Done |
 <!-- MAPPING_TABLE_END -->
 
 ---

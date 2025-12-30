@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"apprun/pkg/response"
+
 	"github.com/go-chi/chi/v5"
 )
 
@@ -37,19 +39,19 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 // @Produce      json
 // @Param        key  query  string  true  "Configuration key, e.g. app.name"
 // @Success      200  {object}  GetConfigResponse  "Configuration retrieved successfully"
-// @Failure      400  {object}  ErrorResponse      "Missing key parameter"
-// @Failure      404  {object}  ErrorResponse      "Configuration not found"
+// @Failure      400  {object}  response.Response  "Missing key parameter"
+// @Failure      404  {object}  response.Response  "Configuration not found"
 // @Router       /config [get]
 func (h *Handler) GetConfig(w http.ResponseWriter, r *http.Request) {
 	key := r.URL.Query().Get("key")
 	if key == "" {
-		h.respondError(w, http.StatusBadRequest, "missing 'key' query parameter", "")
+		response.ValidationErrorWithRequest(w, r, "key", "missing 'key' query parameter")
 		return
 	}
 
 	value, source, err := h.service.GetConfigValue(r.Context(), key)
 	if err != nil {
-		h.respondError(w, http.StatusNotFound, "config not found", err.Error())
+		response.ErrorWithRequest(w, r, http.StatusNotFound, response.ErrCodeNotFound, "config not found: "+err.Error())
 		return
 	}
 
@@ -64,7 +66,7 @@ func (h *Handler) GetConfig(w http.ResponseWriter, r *http.Request) {
 		Source:    source,
 	}
 
-	h.respondJSON(w, http.StatusOK, resp)
+	response.SuccessWithRequest(w, r, resp)
 }
 
 // UpdateConfig 更新动态配置项
@@ -77,39 +79,34 @@ func (h *Handler) GetConfig(w http.ResponseWriter, r *http.Request) {
 // @Produce      json
 // @Param        request  body  UpdateConfigRequest  true  "Configuration update request"  example({"key":"poc.enabled","value":"true"})
 // @Success      200  {object}  UpdateConfigResponse  "Configuration updated successfully"
-// @Failure      400  {object}  ErrorResponse         "Invalid request or config not allowed to store in database"
+// @Failure      400  {object}  response.Response     "Invalid request or config not allowed to store in database"
 // @Router       /config [put]
 func (h *Handler) UpdateConfig(w http.ResponseWriter, r *http.Request) {
 	var req UpdateConfigRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.respondError(w, http.StatusBadRequest, "invalid request body", err.Error())
+		response.ErrorWithRequest(w, r, http.StatusBadRequest, response.ErrCodeInvalidParam, "invalid request body: "+err.Error())
 		return
 	}
 
 	// 验证请求
 	if req.Key == "" {
-		h.respondError(w, http.StatusBadRequest, "missing 'key' field", "")
+		response.ValidationErrorWithRequest(w, r, "key", "missing 'key' field")
 		return
 	}
 	if req.Value == "" {
-		h.respondError(w, http.StatusBadRequest, "missing 'value' field", "")
+		response.ValidationErrorWithRequest(w, r, "value", "missing 'value' field")
 		return
 	}
 
 	// 更新配置
 	if err := h.service.UpdateConfig(r.Context(), req.Key, req.Value); err != nil {
-		h.respondError(w, http.StatusBadRequest, "failed to update config", err.Error())
+		response.ErrorWithRequest(w, r, http.StatusBadRequest, response.ErrCodeInvalidParam, "failed to update config: "+err.Error())
 		return
 	}
 
-	resp := UpdateConfigResponse{
-		Success: true,
-		Message: "config updated successfully",
-		Key:     req.Key,
-		Value:   req.Value,
-	}
+	resp := UpdateConfigResponse(req)
 
-	h.respondJSON(w, http.StatusOK, resp)
+	response.SuccessWithRequest(w, r, resp)
 }
 
 // ListConfigs 列出所有动态配置项
@@ -121,12 +118,12 @@ func (h *Handler) UpdateConfig(w http.ResponseWriter, r *http.Request) {
 // @Accept       json
 // @Produce      json
 // @Success      200  {object}  ListConfigsResponse  "Configuration list"
-// @Failure      500  {object}  ErrorResponse        "Internal server error"
+// @Failure      500  {object}  response.Response    "Internal server error"
 // @Router       /config/list [get]
 func (h *Handler) ListConfigs(w http.ResponseWriter, r *http.Request) {
 	configs, err := h.service.ListDynamicConfigs(r.Context())
 	if err != nil {
-		h.respondError(w, http.StatusInternalServerError, "failed to list configs", err.Error())
+		response.ErrorWithRequest(w, r, http.StatusInternalServerError, response.ErrCodeInternalError, "failed to list configs: "+err.Error())
 		return
 	}
 
@@ -135,7 +132,7 @@ func (h *Handler) ListConfigs(w http.ResponseWriter, r *http.Request) {
 		Count:   len(configs),
 	}
 
-	h.respondJSON(w, http.StatusOK, resp)
+	response.SuccessWithRequest(w, r, resp)
 }
 
 // DeleteConfig 删除动态配置项
@@ -148,24 +145,22 @@ func (h *Handler) ListConfigs(w http.ResponseWriter, r *http.Request) {
 // @Produce      json
 // @Param        key  query  string  true  "Configuration key"  example(poc.enabled)
 // @Success      200  {object}  map[string]interface{}  "Deletion successful"
-// @Failure      400  {object}  ErrorResponse           "Missing key parameter or deletion failed"
+// @Failure      400  {object}  response.Response       "Missing key parameter or deletion failed"
 // @Router       /config [delete]
 func (h *Handler) DeleteConfig(w http.ResponseWriter, r *http.Request) {
 	key := r.URL.Query().Get("key")
 	if key == "" {
-		h.respondError(w, http.StatusBadRequest, "missing 'key' query parameter", "")
+		response.ValidationErrorWithRequest(w, r, "key", "missing 'key' query parameter")
 		return
 	}
 
 	if err := h.service.DeleteDynamicConfig(r.Context(), key); err != nil {
-		h.respondError(w, http.StatusBadRequest, "failed to delete config", err.Error())
+		response.ErrorWithRequest(w, r, http.StatusBadRequest, response.ErrCodeInvalidParam, "failed to delete config: "+err.Error())
 		return
 	}
 
-	h.respondJSON(w, http.StatusOK, map[string]interface{}{
-		"success": true,
-		"message": "config deleted successfully",
-		"key":     key,
+	response.SuccessWithRequest(w, r, map[string]interface{}{
+		"key": key,
 	})
 }
 
@@ -182,24 +177,8 @@ func (h *Handler) DeleteConfig(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetAllowedKeys(w http.ResponseWriter, r *http.Request) {
 	keys := h.service.GetAllowedDynamicKeys()
 
-	h.respondJSON(w, http.StatusOK, map[string]interface{}{
+	response.SuccessWithRequest(w, r, map[string]interface{}{
 		"allowed_keys": keys,
 		"count":        len(keys),
 	})
-}
-
-// respondJSON 发送 JSON 响应
-func (h *Handler) respondJSON(w http.ResponseWriter, status int, data interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(data)
-}
-
-// respondError 发送错误响应
-func (h *Handler) respondError(w http.ResponseWriter, status int, message string, details string) {
-	resp := ErrorResponse{
-		Error:   message,
-		Details: details,
-	}
-	h.respondJSON(w, status, resp)
 }

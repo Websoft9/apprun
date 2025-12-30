@@ -20,11 +20,6 @@ type ConfigProvider interface {
 	DeleteConfig(ctx context.Context, key string) error
 }
 
-// GetConfigRequest GET /api/config 请求参数
-type GetConfigRequest struct {
-	Key string `json:"key" validate:"required"` // 配置键，如 "app.name" 或 "poc.enabled"
-}
-
 // GetConfigResponse GET /api/config 响应
 type GetConfigResponse struct {
 	Key       string `json:"key" example:"app.name"`     // Configuration key
@@ -41,20 +36,12 @@ type UpdateConfigRequest struct {
 
 // UpdateConfigResponse PUT /api/config 响应
 type UpdateConfigResponse struct {
-	Success bool   `json:"success" example:"true"`
-	Message string `json:"message,omitempty" example:"config updated successfully"`
-	Key     string `json:"key" example:"poc.enabled"`
-	Value   string `json:"value" example:"true"`
+	Key   string `json:"key" example:"poc.enabled"`
+	Value string `json:"value" example:"true"`
 }
 
 // ListConfigsResponse GET /api/configs 响应（列出所有动态配置）
 type ListConfigsResponse struct {
 	Configs map[string]string `json:"configs"`           // Key-value mapping of dynamic configurations
 	Count   int               `json:"count" example:"3"` // Number of configuration items
-}
-
-// ErrorResponse 通用错误响应
-type ErrorResponse struct {
-	Error   string `json:"error" example:"missing 'key' query parameter"`
-	Details string `json:"details,omitempty" example:""`
 }

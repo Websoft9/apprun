@@ -42,7 +42,7 @@ func main() {
 	log.Printf("✅ Config loaded: %s v%s", cfg.App.Name, cfg.App.Version)
 
 	// 2. 初始化数据库
-	dbClient, err := bootstrap.InitDatabase(cfg)
+	dbClient, err := bootstrap.InitDatabase(ctx, cfg)
 	if err != nil {
 		log.Fatalf("❌ Failed to initialize database: %v", err)
 	}

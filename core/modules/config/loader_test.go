@@ -146,8 +146,10 @@ poc:
 
 	// 模拟数据库配置（只有 db:true 的字段）
 	mockProvider := newMockProvider()
-	mockProvider.SetConfig(context.Background(), "app.name", "db-app")
-	mockProvider.SetConfig(context.Background(), "poc.enabled", "true")
+	err = mockProvider.SetConfig(context.Background(), "app.name", "db-app")
+	require.NoError(t, err)
+	err = mockProvider.SetConfig(context.Background(), "poc.enabled", "true")
+	require.NoError(t, err)
 
 	loader, err := NewLoader(tmpDir, mockProvider)
 	require.NoError(t, err)

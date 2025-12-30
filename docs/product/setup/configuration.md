@@ -94,3 +94,24 @@ curl -X PUT http://localhost:8080/config \
 - 生产环境不要提交 `.env` 文件到 Git
 - 定期轮换数据库密码和 API 密钥
 
+
+## 配置存储模型
+
+### 配置来源
+1. **文件配置（基线）**: config/default.yaml
+2. **数据库配置（覆盖）**: 通过 API 修改的配置
+
+### 工作流程
+1. 初始状态：所有配置来自文件
+2. 调用 UPDATE API：配置写入数据库并立即生效
+3. 调用 DELETE API：删除数据库记录，恢复文件值
+4. 重启应用：数据库配置自动覆盖文件配置
+
+### 配置优先级
+database > env vars > conf_d > specialized files > default.yaml > tag defaults
+
+### 最佳实践
+- ✅ 使用文件定义默认配置
+- ✅ 通过 API 修改运行时配置
+- ✅ 删除数据库配置即可回滚
+- ❌ 不要手动修改数据库 configitem 表

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"apprun/pkg/response"
 	"bytes"
 	"encoding/json"
 	"net/http"
@@ -39,11 +40,19 @@ func TestHandler_GetConfig(t *testing.T) {
 	// Assert
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var response GetConfigResponse
-	err = json.NewDecoder(w.Body).Decode(&response)
+	var apiResp response.Response
+	err = json.NewDecoder(w.Body).Decode(&apiResp)
 	require.NoError(t, err)
-	assert.Equal(t, "app.name", response.Key)
-	assert.Equal(t, "test-app", response.Value)
+	assert.True(t, apiResp.Success)
+
+	// Parse the GetConfigResponse from Data
+	dataBytes, err := json.Marshal(apiResp.Data)
+	require.NoError(t, err)
+	var configResp GetConfigResponse
+	err = json.Unmarshal(dataBytes, &configResp)
+	require.NoError(t, err)
+	assert.Equal(t, "app.name", configResp.Key)
+	assert.Equal(t, "test-app", configResp.Value)
 }
 
 // TestHandler_GetConfig_MissingKey 测试缺少 key 参数
@@ -61,11 +70,13 @@ func TestHandler_GetConfig_MissingKey(t *testing.T) {
 	handler.GetConfig(w, req)
 
 	// Assert
-	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, http.StatusUnprocessableEntity, w.Code) // 422 for validation errors
 
-	var response ErrorResponse
-	json.NewDecoder(w.Body).Decode(&response)
-	assert.Contains(t, response.Error, "missing 'key'")
+	var resp response.Response
+	err := json.NewDecoder(w.Body).Decode(&resp)
+	require.NoError(t, err)
+	assert.False(t, resp.Success)
+	assert.Contains(t, resp.Error.Message, "missing 'key'")
 }
 
 // TestHandler_UpdateConfig 测试更新配置
@@ -90,7 +101,8 @@ poc:
   database: "postgres://user:pass@localhost:5432/apprun_poc"
   apikey: "test-api-key-12345"
 `
-	os.WriteFile(filepath.Join(tmpDir, "default.yaml"), []byte(defaultYAML), 0644)
+	err := os.WriteFile(filepath.Join(tmpDir, "default.yaml"), []byte(defaultYAML), 0644)
+	require.NoError(t, err)
 
 	mockProvider := &mockConfigProvider{configs: make(map[string]string)}
 	loader, err := NewLoader(tmpDir, mockProvider)
@@ -115,12 +127,16 @@ poc:
 	// Assert
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var response UpdateConfigResponse
-	err = json.NewDecoder(w.Body).Decode(&response)
+	var apiResp response.Response
+	err = json.NewDecoder(w.Body).Decode(&apiResp)
 	require.NoError(t, err)
-	assert.True(t, response.Success)
-	assert.Equal(t, "app.name", response.Key)
-	assert.Equal(t, "updated-app", response.Value)
+	assert.True(t, apiResp.Success)
+
+	// Extract the actual UpdateConfigResponse from Data
+	respData, ok := apiResp.Data.(map[string]interface{})
+	require.True(t, ok)
+	assert.Equal(t, "app.name", respData["key"])
+	assert.Equal(t, "updated-app", respData["value"])
 
 	// 验证数据已保存
 	assert.Equal(t, "updated-app", mockProvider.configs["app.name"])
@@ -148,7 +164,8 @@ poc:
   database: "postgres://user:pass@localhost:5432/apprun_poc"
   apikey: "test-api-key-12345"
 `
-	os.WriteFile(filepath.Join(tmpDir, "default.yaml"), []byte(defaultYAML), 0644)
+	err := os.WriteFile(filepath.Join(tmpDir, "default.yaml"), []byte(defaultYAML), 0644)
+	require.NoError(t, err)
 
 	mockProvider := &mockConfigProvider{configs: make(map[string]string)}
 	loader, err := NewLoader(tmpDir, mockProvider)
@@ -173,17 +190,19 @@ poc:
 	// Assert
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 
-	var response ErrorResponse
-	json.NewDecoder(w.Body).Decode(&response)
-	t.Logf("Error response: %+v", response)
+	var resp response.Response
+	err = json.NewDecoder(w.Body).Decode(&resp)
+	require.NoError(t, err)
+	t.Logf("Error response: %+v", resp)
 	// 检查错误消息包含 "not allowed" 或 "db:false"
+	errorMsg := ""
+	if resp.Error != nil {
+		errorMsg = resp.Error.Message
+	}
 	assert.True(t,
-		strings.Contains(response.Error, "not allowed") ||
-			strings.Contains(response.Error, "db:false") ||
-			strings.Contains(response.Details, "not allowed") ||
-			strings.Contains(response.Details, "db:false"),
-		"Error should mention 'not allowed' or 'db:false'",
-	)
+		strings.Contains(errorMsg, "not allowed") ||
+			strings.Contains(errorMsg, "db:false"),
+		"Expected error message to contain 'not allowed' or 'db:false', got: %s", errorMsg)
 }
 
 // TestHandler_UpdateConfig_InvalidJSON 测试无效的 JSON 请求体
@@ -204,9 +223,11 @@ func TestHandler_UpdateConfig_InvalidJSON(t *testing.T) {
 	// Assert
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 
-	var response ErrorResponse
-	json.NewDecoder(w.Body).Decode(&response)
-	assert.Contains(t, response.Error, "invalid request body")
+	var resp response.Response
+	err := json.NewDecoder(w.Body).Decode(&resp)
+	require.NoError(t, err)
+	assert.False(t, resp.Success)
+	assert.Contains(t, resp.Error.Message, "invalid request body")
 }
 
 // TestHandler_ListConfigs 测试列出所有动态配置
@@ -232,11 +253,19 @@ func TestHandler_ListConfigs(t *testing.T) {
 	// Assert
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var response ListConfigsResponse
-	err = json.NewDecoder(w.Body).Decode(&response)
+	var apiResp response.Response
+	err = json.NewDecoder(w.Body).Decode(&apiResp)
 	require.NoError(t, err)
-	assert.Equal(t, 2, response.Count)
-	assert.Len(t, response.Configs, 2)
+	assert.True(t, apiResp.Success)
+
+	// Parse the ListConfigsResponse from Data
+	dataBytes, err := json.Marshal(apiResp.Data)
+	require.NoError(t, err)
+	var listResp ListConfigsResponse
+	err = json.Unmarshal(dataBytes, &listResp)
+	require.NoError(t, err)
+	assert.Equal(t, 2, listResp.Count)
+	assert.Len(t, listResp.Configs, 2)
 }
 
 // TestHandler_DeleteConfig 测试删除动态配置
@@ -261,10 +290,15 @@ func TestHandler_DeleteConfig(t *testing.T) {
 	// Assert
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var response map[string]interface{}
-	json.NewDecoder(w.Body).Decode(&response)
-	assert.True(t, response["success"].(bool))
-	assert.Equal(t, "app.name", response["key"])
+	var apiResp response.Response
+	err = json.NewDecoder(w.Body).Decode(&apiResp)
+	require.NoError(t, err)
+	assert.True(t, apiResp.Success)
+
+	// Parse the map from Data
+	dataMap, ok := apiResp.Data.(map[string]interface{})
+	require.True(t, ok)
+	assert.Equal(t, "app.name", dataMap["key"])
 
 	// 验证已删除
 	_, exists := mockProvider.configs["app.name"]
@@ -290,9 +324,16 @@ func TestHandler_GetAllowedKeys(t *testing.T) {
 	// Assert
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var response map[string]interface{}
-	json.NewDecoder(w.Body).Decode(&response)
-	allowedKeys := response["allowed_keys"].([]interface{})
+	var apiResp response.Response
+	err = json.NewDecoder(w.Body).Decode(&apiResp)
+	require.NoError(t, err)
+	assert.True(t, apiResp.Success)
+
+	// Parse the map from Data
+	dataMap, ok := apiResp.Data.(map[string]interface{})
+	require.True(t, ok)
+	allowedKeys, ok := dataMap["allowed_keys"].([]interface{})
+	require.True(t, ok)
 	assert.Greater(t, len(allowedKeys), 0)
 	assert.Contains(t, allowedKeys, "app.name") // app.name 的 db tag 是 true
 }
@@ -362,9 +403,18 @@ poc:
 		r.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)
-		var response GetConfigResponse
-		json.NewDecoder(w.Body).Decode(&response)
-		assert.Equal(t, testValue, response.Value)
+		var apiResp response.Response
+		err := json.NewDecoder(w.Body).Decode(&apiResp)
+		require.NoError(t, err)
+		assert.True(t, apiResp.Success)
+
+		// Parse GetConfigResponse from Data
+		dataBytes, err := json.Marshal(apiResp.Data)
+		require.NoError(t, err)
+		var configResp GetConfigResponse
+		err = json.Unmarshal(dataBytes, &configResp)
+		require.NoError(t, err)
+		assert.Equal(t, testValue, configResp.Value)
 	})
 
 	// Test 3: 列出所有配置
@@ -375,9 +425,18 @@ poc:
 		r.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)
-		var response ListConfigsResponse
-		json.NewDecoder(w.Body).Decode(&response)
-		assert.GreaterOrEqual(t, response.Count, 1)
+		var apiResp response.Response
+		err := json.NewDecoder(w.Body).Decode(&apiResp)
+		require.NoError(t, err)
+		assert.True(t, apiResp.Success)
+
+		// Parse ListConfigsResponse from Data
+		dataBytes, err := json.Marshal(apiResp.Data)
+		require.NoError(t, err)
+		var listResp ListConfigsResponse
+		err = json.Unmarshal(dataBytes, &listResp)
+		require.NoError(t, err)
+		assert.GreaterOrEqual(t, listResp.Count, 1)
 	})
 
 	// Test 4: 删除配置
@@ -401,7 +460,8 @@ poc:
 		// 只验证不再是我们设置的值
 		if w.Code == http.StatusOK {
 			var response GetConfigResponse
-			json.NewDecoder(w.Body).Decode(&response)
+			err := json.NewDecoder(w.Body).Decode(&response)
+			require.NoError(t, err)
 			// 验证返回的是默认值，而不是我们设置的值
 			assert.NotEqual(t, testValue, response.Value)
 		}
