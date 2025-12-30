@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
+	"strings"
 
 	"apprun/internal/config"
 
@@ -48,29 +50,106 @@ func (s *Service) GetConfig() *config.Config {
 	return s.cfg
 }
 
-// GetConfigValue 根据 key 获取配置值
+// GetConfigValue retrieves config value by key with source information
 func (s *Service) GetConfigValue(ctx context.Context, key string) (string, string, error) {
-	// 尝试从数据库获取
+	// Try to get from database first (for dynamic configs)
 	value, isDynamic, err := s.provider.GetConfig(ctx, key)
-	if err == nil {
-		source := "database"
-		if !isDynamic {
-			source = "file" // 静态配置从文件加载
+	if err == nil && isDynamic {
+		return value, "database", nil
+	}
+
+	// Get from loaded config instance (file, env, or defaults)
+	if s.cfg != nil {
+		if val := s.getValueFromConfig(key); val != "" {
+			return val, "file", nil
 		}
-		return value, source, nil
 	}
 
-	// 数据库中不存在，从加载器元数据获取默认值
+	// Fallback to tag default value
 	meta, exists := s.loader.GetMetadata(key)
-	if !exists {
-		return "", "", fmt.Errorf("unknown config key: %s", key)
-	}
-
-	if meta.DefaultVal != "" {
+	if exists && meta.DefaultVal != "" {
 		return meta.DefaultVal, "default", nil
 	}
 
 	return "", "", fmt.Errorf("config key has no value: %s", key)
+}
+
+// getValueFromConfig extracts value from loaded config using reflection
+func (s *Service) getValueFromConfig(key string) string {
+	if s.cfg == nil {
+		return ""
+	}
+
+	parts := strings.Split(key, ".")
+	if len(parts) < 2 {
+		return ""
+	}
+
+	v := reflect.ValueOf(s.cfg).Elem()
+
+	// Navigate through nested structs
+	for i, part := range parts {
+		// Find field by matching yaml tag or field name (case-insensitive)
+		field, found := s.findField(v, part)
+		if !found {
+			return ""
+		}
+
+		// If last part, get the value
+		if i == len(parts)-1 {
+			return formatValue(field)
+		}
+
+		// Continue to nested struct
+		if field.Kind() == reflect.Struct {
+			v = field
+		} else {
+			return ""
+		}
+	}
+
+	return ""
+}
+
+// findField finds a struct field by name (case-insensitive) or yaml tag
+func (s *Service) findField(v reflect.Value, name string) (reflect.Value, bool) {
+	t := v.Type()
+	nameLower := strings.ToLower(name)
+
+	for i := 0; i < v.NumField(); i++ {
+		field := t.Field(i)
+		fieldValue := v.Field(i)
+
+		// Check yaml tag
+		if yamlTag := field.Tag.Get("yaml"); yamlTag != "" {
+			if strings.Split(yamlTag, ",")[0] == nameLower {
+				return fieldValue, true
+			}
+		}
+
+		// Check field name (case-insensitive)
+		if strings.ToLower(field.Name) == nameLower {
+			return fieldValue, true
+		}
+	}
+
+	return reflect.Value{}, false
+}
+
+// formatValue converts reflect.Value to string
+func formatValue(v reflect.Value) string {
+	switch v.Kind() {
+	case reflect.String:
+		return v.String()
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return fmt.Sprintf("%d", v.Int())
+	case reflect.Bool:
+		return fmt.Sprintf("%t", v.Bool())
+	case reflect.Float32, reflect.Float64:
+		return fmt.Sprintf("%f", v.Float())
+	default:
+		return ""
+	}
 }
 
 // UpdateConfig 更新动态配置项

@@ -120,6 +120,11 @@ func (l *Loader) walkStruct(t reflect.Type, prefix string) error {
 //
 //	< Layer 4 (conf_d) < Layer 5 (数据库) < Layer 6 (环境变量)
 func (l *Loader) Load(ctx context.Context) (*config.Config, error) {
+	// Create a fresh viper instance to avoid stale values from previous loads
+	l.viper = viper.New()
+	l.viper.AutomaticEnv()
+	l.viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+
 	cfg := &config.Config{}
 
 	// Layer 1: 应用标签默认值
@@ -152,8 +157,7 @@ func (l *Loader) Load(ctx context.Context) (*config.Config, error) {
 		return nil, fmt.Errorf("failed to apply database config: %w", err)
 	}
 
-	// Layer 6: 环境变量（Viper 自动处理，优先级最高）
-	// 已由 AutomaticEnv() 启用
+	// Layer 6: 环境变量自动覆盖（通过 Viper 的 AutomaticEnv）
 
 	return cfg, nil
 }

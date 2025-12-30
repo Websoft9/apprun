@@ -53,8 +53,9 @@ func (h *Handler) GetConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 判断是否为动态配置
-	isDynamic := h.service.loader.AllowDatabaseStorage(key) && source == "database"
+	// isDynamic means the config CAN be modified via API (has db:"true" tag)
+	// regardless of its current source
+	isDynamic := h.service.loader.AllowDatabaseStorage(key)
 
 	resp := GetConfigResponse{
 		Key:       key,
