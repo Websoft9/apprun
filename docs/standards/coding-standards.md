@@ -1490,8 +1490,247 @@ type Config struct {
 }
 ```
 
+### 14.5 模块配置结构体规范
+
+**所有模块的配置结构体必须遵循统一的标签标准**，参考 `internal/config/types.go`。
+
+#### **标准标签格式**
+
+```go
+type ModuleConfig struct {
+    FieldName  Type  `validate:"..." default:"..." db:"true|false"`
+}
+```
+
+**标签说明**：
+
+| 标签 | 说明 | 必需 | 示例 |
+|------|------|------|------|
+| `validate` | 验证规则（go-playground/validator） | 推荐 | `validate:"required,min=1"` |
+| `default` | 默认值（文档说明） | 推荐 | `default:"8080"` |
+| `db` | 是否允许从配置中心加载 | **必需** | `db:"true"` 或 `db:"false"` |
+
+#### **基础设施配置 vs 业务配置**
+
+**1. 基础设施配置** - 标记 `db:"false"`
+
+适用场景：
+- 服务器启动配置（端口、SSL证书）
+- 数据库连接配置
+- 日志级别（影响全局）
+- 启动时必需的参数
+
+```go
+// pkg/server/server.go
+type Config struct {
+    HTTPPort            string        `validate:"required,min=1,max=5" default:"8080" db:"false"`
+    HTTPSPort           string        `validate:"required,min=1,max=5" default:"8443" db:"false"`
+    SSLCertFile         string        `validate:"omitempty,file" default:"" db:"false"`
+    SSLKeyFile          string        `validate:"omitempty,file" default:"" db:"false"`
+    ShutdownTimeout     time.Duration `validate:"required,min=1s" default:"30s" db:"false"`
+    EnableHTTPWithHTTPS bool          `default:"true" db:"false"`
+}
+```
+
+**理由**：
+- ✅ 服务器是最早启动的组件，不能依赖配置中心
+- ✅ 避免循环依赖（配置中心需要服务器）
+- ✅ 基础设施配置通过环境变量提供
+
+**2. 业务配置** - 标记 `db:"true"`
+
+适用场景：
+- 业务功能开关
+- API 密钥
+- 业务规则参数
+- 运行时可变的配置
+
+```go
+// internal/config/types.go
+type Config struct {
+    POC struct {
+        Enabled  bool   `default:"true" db:"true"`
+        Database string `validate:"required,url" default:"..." db:"true"`
+        APIKey   string `validate:"required,min=10" db:"true"`
+    } `yaml:"poc" validate:"required"`
+}
+```
+
+**理由**：
+- ✅ 支持运行时动态修改
+- ✅ 可通过配置中心管理
+- ✅ 不影响服务器启动
+
+#### **验证规则示例**
+
+```go
+// 常用验证规则
+type ExampleConfig struct {
+    // 必填字段
+    Name string `validate:"required" default:"example" db:"true"`
+    
+    // 字符串长度限制
+    Password string `validate:"required,min=8,max=32" default:"" db:"false"`
+    
+    // 数字范围
+    Port int `validate:"required,min=1,max=65535" default:"8080" db:"false"`
+    
+    // 枚举值
+    LogLevel string `validate:"required,oneof=debug info warn error" default:"info" db:"true"`
+    
+    // URL 格式
+    DatabaseURL string `validate:"required,url" default:"..." db:"false"`
+    
+    // 文件路径（可选）
+    SSLCertFile string `validate:"omitempty,file" default:"" db:"false"`
+    
+    // 时间段
+    Timeout time.Duration `validate:"required,min=1s" default:"30s" db:"false"`
+}
+```
+
+#### **完整示例：Logger 模块**
+
+```go
+// pkg/logger/config.go
+package logger
+
+type Config struct {
+    // 日志级别：debug, info, warn, error
+    Level string `validate:"required,oneof=debug info warn error" default:"info" db:"true"`
+    
+    // 输出目标：stdout, stderr, file
+    Output struct {
+        Targets []string `validate:"required,min=1" default:"[\"stdout\"]" db:"true"`
+        File    string   `validate:"omitempty,file" default:"" db:"true"`
+    } `yaml:"output"`
+    
+    // 日志格式：json, text
+    Format string `validate:"required,oneof=json text" default:"json" db:"true"`
+    
+    // 启用调用位置记录
+    EnableCaller bool `default:"true" db:"true"`
+}
+```
+
+#### **配置结构体检查清单**
+
+- [ ] 每个字段都有 `yaml` 标签（**必需**，复杂驼峰命名必须显式指定）
+- [ ] 每个字段都有 `validate` 标签（推荐）
+- [ ] 每个字段都有 `default` 标签（文档作用）
+- [ ] 每个字段都有 `db` 标签（**必需**）
+- [ ] 基础设施配置标记 `db:"false"`
+- [ ] 业务配置标记 `db:"true"`
+- [ ] 验证规则符合业务逻辑
+- [ ] 默认值合理且安全
+- [ ] 提供 `DefaultConfig()` 函数用于实际默认值赋值
+
+#### **yaml 标签命名规范**
+
+**规则**: 使用 `snake_case` 命名，复杂驼峰字段必须显式指定
+
+```go
+// ✅ 正确：复杂驼峰命名显式指定 yaml 标签
+type Config struct {
+    HTTPPort            string `yaml:"http_port" ...`      // HTTP → http
+    HTTPSPort           string `yaml:"https_port" ...`     // HTTPS → https
+    SSLCertFile         string `yaml:"ssl_cert_file" ...`  // SSL → ssl
+    EnableHTTPWithHTTPS bool   `yaml:"enable_http_with_https" ...`
+}
+
+// ❌ 错误：缺少 yaml 标签
+type BadConfig struct {
+    HTTPPort string `default:"8080" db:"false"`  // 缺少 yaml tag
+}
+```
+
+**环境变量自动映射**（Viper AutomaticEnv）:
+```bash
+# yaml tag → 环境变量（自动大写下划线）
+http_port              → HTTP_PORT
+https_port             → HTTPS_PORT
+ssl_cert_file          → SSL_CERT_FILE
+enable_http_with_https → ENABLE_HTTP_WITH_HTTPS
+```
+
+#### **DefaultConfig() 函数规范**
+
+**为什么需要**：
+- ❌ `default` 标签不会自动赋值（仅作文档说明）
+- ✅ `DefaultConfig()` 提供实际可用的默认值
+- ✅ 支持复杂类型（如 `time.Duration`）
+- ✅ 防御性编程（nil 检查）
+
+**标准模式**:
+```go
+// 1. 定义配置结构体（包含 default 标签）
+type Config struct {
+    HTTPPort        string        `yaml:"http_port" validate:"required" default:"8080" db:"false"`
+    ShutdownTimeout time.Duration `yaml:"shutdown_timeout" validate:"required" default:"30s" db:"false"`
+}
+
+// 2. 提供 DefaultConfig() 函数（实际赋值）
+func DefaultConfig() *Config {
+    return &Config{
+        HTTPPort:        "8080",              // 与 default 标签保持一致
+        ShutdownTimeout: 30 * time.Second,    // 类型安全
+    }
+}
+
+// 3. 在 API 中使用
+func Start(router http.Handler, cfg *Config) error {
+    if cfg == nil {
+        cfg = DefaultConfig()  // 防御性编程
+    }
+    // ...
+}
+```
+
+**标签 vs 函数对比**:
+
+| 特性 | default 标签 | DefaultConfig() 函数 |
+|------|-------------|---------------------|
+| 自动赋值 | ❌ 否 | ✅ 是 |
+| 类型安全 | ❌ 仅字符串 | ✅ 完全类型安全 |
+| 复杂类型 | ❌ 不支持 time.Duration | ✅ 支持 |
+| 文档作用 | ✅ 是 | ✅ 是 |
+| 可测试 | ❌ 不可测试 | ✅ 可单元测试 |
+| 职责 | 元数据/文档 | 实际初始化 |
+
+**最佳实践**:
+- ✅ 同时保留两者（标签 + 函数）
+- ✅ 保持默认值一致
+- ✅ 所有配置结构体都应提供 `DefaultConfig()`
+
+#### **反例：不规范的配置结构体**
+
+```go
+// ❌ 错误 1：缺少 yaml 标签
+type BadConfig struct {
+    HTTPPort string `default:"8080" db:"false"`  // 缺少 yaml tag
+}
+
+// ❌ 错误 2：缺少 DefaultConfig() 函数
+type BadConfig2 struct {
+    Port string `yaml:"port" default:"8080" db:"false"`
+}
+// 直接使用会得到零值！
+cfg := &BadConfig2{}
+fmt.Println(cfg.Port)  // 输出: "" (空字符串，不是 "8080")
+
+// ❌ 错误 3：基础设施配置标记 db:"true"
+type BadServerConfig struct {
+    Port int `yaml:"port" db:"true"`  // 服务器端口不应该从配置中心加载
+}
+
+// ❌ 错误 4：缺少验证规则
+type BadAuthConfig struct {
+    Password string `yaml:"password" default:"123456" db:"false"`  // 缺少 min 验证
+}
+```
+
 ---
 
-**文档维护**: Winston (Architect Agent)  
+**文档维护**: Winston (Architect Agent) & Amelia (Dev Agent)  
 **审核状态**: 待开发团队评审  
 **下一步**: 测试规范文档 (testing-standards.md)

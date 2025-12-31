@@ -20,6 +20,7 @@ type Loader struct {
 	provider  ConfigProvider        // 数据库配置提供者
 	viper     *viper.Viper          // Viper 实例
 	metadata  map[string]*fieldMeta // 字段元数据（从反射提取）
+	registry  *ConfigRegistry       // 模块配置注册表（可选）
 }
 
 // fieldMeta 字段元数据
@@ -32,6 +33,11 @@ type fieldMeta struct {
 
 // NewLoader 创建配置加载器
 func NewLoader(configDir string, provider ConfigProvider) (*Loader, error) {
+	return NewLoaderWithRegistry(configDir, provider, nil)
+}
+
+// NewLoaderWithRegistry 创建支持模块注册的配置加载器
+func NewLoaderWithRegistry(configDir string, provider ConfigProvider, registry *ConfigRegistry) (*Loader, error) {
 	v := viper.New()
 	v.SetConfigType("yaml")
 	v.AutomaticEnv() // 自动绑定环境变量
@@ -42,11 +48,19 @@ func NewLoader(configDir string, provider ConfigProvider) (*Loader, error) {
 		provider:  provider,
 		viper:     v,
 		metadata:  make(map[string]*fieldMeta),
+		registry:  registry,
 	}
 
-	// 使用反射提取字段元数据
+	// 使用反射提取字段元数据（全局 Config）
 	if err := loader.extractMetadata(); err != nil {
 		return nil, fmt.Errorf("failed to extract metadata: %w", err)
+	}
+
+	// 提取注册模块的元数据
+	if registry != nil {
+		if err := loader.extractRegistryMetadata(); err != nil {
+			return nil, fmt.Errorf("failed to extract registry metadata: %w", err)
+		}
 	}
 
 	return loader, nil
@@ -58,6 +72,28 @@ func (l *Loader) extractMetadata() error {
 	t := reflect.TypeOf(cfg)
 
 	return l.walkStruct(t, "")
+}
+
+// extractRegistryMetadata 提取注册模块的元数据
+func (l *Loader) extractRegistryMetadata() error {
+	if l.registry == nil {
+		return nil
+	}
+
+	modules := l.registry.GetAll()
+	for namespace, configStruct := range modules {
+		t := reflect.TypeOf(configStruct)
+		// 如果是指针，获取元素类型
+		if t.Kind() == reflect.Ptr {
+			t = t.Elem()
+		}
+
+		if err := l.walkStruct(t, namespace); err != nil {
+			return fmt.Errorf("failed to extract metadata for module '%s': %w", namespace, err)
+		}
+	}
+
+	return nil
 }
 
 // walkStruct 递归遍历结构体字段

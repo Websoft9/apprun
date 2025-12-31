@@ -44,10 +44,14 @@ Story (Executable Tasks)
 | Sprint-0 | Story 06: 测试框架与工具集 | Infrastructure | Planning |
 | Sprint-0 | Story 07: 重构现有 Handlers | Infrastructure | Planning |
 | Sprint-0 | Story 08: i18n 国际化Infrastructure | Infrastructure | Planning |
-| Sprint-0 | Story 09: l10n 本地化实施 | Infrastructure | Planning |
+| Sprint-0 | Story 09: l10n Localization 本地化实施 | Infrastructure | Planning |
 | Sprint-0 | Story 10: Configuration Center Foundation |  | Done |
 | Sprint-0 | Story 11: Swagger API Documentation |  | Done |
 | Sprint-0 | Story 12: 日志防腐层 | Infrastructure | Done |
+| Sprint-1 | Story 13: Request Package | Infrastructure | Planning |
+| Sprint-1 | Story 14: HTTP Server Package | Infrastructure | Done |
+| Sprint-1 | Story 15: Environment Variable Utility Package | Infrastructure | Done |
+| Sprint-1 | Story 16: Database Anti-Corruption Layer | Infrastructure | Done ✅ |
 <!-- MAPPING_TABLE_END -->
 
 ---

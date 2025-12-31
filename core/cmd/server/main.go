@@ -3,12 +3,14 @@ package main
 import (
 	"context"
 	"log"
-	"net/http"
-	"os"
+	"time"
 
 	_ "apprun/docs" // Swagger docs (自动生成)
-	internalConfig "apprun/internal/config"
 	"apprun/modules/config"
+	"apprun/pkg/database"
+	"apprun/pkg/env"
+	"apprun/pkg/logger"
+	"apprun/pkg/server"
 	"apprun/routes"
 
 	_ "github.com/lib/pq"
@@ -25,31 +27,57 @@ import (
 // @license.name    Apache 2.0
 // @license.url     http://www.apache.org/licenses/LICENSE-2.0.html
 
+// @host            localhost:8080
 // @BasePath        /api
 
 // @schemes         http https
 func main() {
-	ctx := context.Background()
+	// Recover from panics during startup (e.g., missing required environment variables)
+	defer func() {
+		if r := recover(); r != nil {
+			log.Fatalf("❌ Startup failed: %v", r)
+		}
+	}()
 
-	// 创建配置引导器
-	bootstrap := config.NewBootstrap(getEnv("CONFIG_DIR", "./config"))
-
-	// 1. 加载初始配置
-	cfg, err := bootstrap.LoadInitialConfig(ctx)
-	if err != nil {
-		log.Fatalf("❌ Failed to load initial config: %v", err)
+	// Phase 0: Load infrastructure config from file to environment variables
+	// This allows default.yaml to provide defaults while respecting existing env vars
+	// Priority: runtime env > config file > code defaults
+	configDir := env.Get("CONFIG_DIR", "./config")
+	if err := env.LoadConfigToEnv(configDir); err != nil {
+		log.Printf("⚠️  Warning: Failed to load config file: %v", err)
+		log.Println("⚠️  Using environment variables and code defaults only")
 	}
-	log.Printf("✅ Config loaded: %s v%s", cfg.App.Name, cfg.App.Version)
 
-	// 2. 初始化数据库
-	dbClient, err := bootstrap.InitDatabase(ctx, cfg)
+	// Create context with timeout for startup phase
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// Phase 1: Initialize Configuration Module Registry
+	// Register business module configurations for centralized management
+	// Note: Infrastructure configs (server, database) are NOT registered here
+	// They are managed via environment variables loaded in Phase 0
+	registry := config.NewRegistry()
+	if err := registry.Register("logger", &logger.Config{}); err != nil {
+		log.Fatalf("❌ Failed to register logger config: %v", err)
+	}
+	log.Println("✅ Logger module registered with config center")
+
+	// Create configuration bootstrapper with registry
+	bootstrap := config.NewBootstrapWithRegistry(env.Get("CONFIG_DIR", "./config"), registry)
+
+	// Phase 2: Connect to Database (Layer 1 infrastructure)
+	// Database connection is required for config service and business logic
+	// Note: DB_PASSWORD environment variable is required (set via Phase 0 or export)
+	dbCfg := database.DefaultConfig()
+	dbClient, err := database.Connect(ctx, dbCfg)
 	if err != nil {
-		log.Fatalf("❌ Failed to initialize database: %v", err)
+		log.Fatalf("❌ Failed to connect to database: %v", err)
 	}
 	defer dbClient.Close()
 	log.Println("✅ Database connected")
 
-	// 3. 创建配置服务
+	// Phase 3: Initialize Config Service (Layer 2 - Configuration Center)
+	// Config service manages runtime configurations stored in database
 	configService, err := bootstrap.CreateService(ctx, dbClient)
 	if err != nil {
 		log.Printf("⚠️  Warning: Failed to create config service: %v", err)
@@ -58,56 +86,55 @@ func main() {
 		log.Println("✅ Config service initialized with DB support")
 	}
 
-	// 4. 设置路由
-	router := routes.SetupRoutes(configService)
-
-	// 5. 启动服务器
-	startServer(router, cfg)
-}
-
-// startServer 启动 HTTP/HTTPS 服务器
-func startServer(router http.Handler, cfg *internalConfig.Config) {
-	// 获取 TLS 配置
-	sslCertFile := os.Getenv("SSL_CERT_FILE")
-	sslKeyFile := os.Getenv("SSL_KEY_FILE")
-	httpPort := getEnv("SERVER_PORT", "8080")
-	httpsPort := getEnv("HTTPS_PORT", "8443")
-
-	// 检查是否启用 TLS
-	if sslCertFile != "" && sslKeyFile != "" {
-		// 启动 HTTPS 服务器
-		log.Printf("🔒 Starting HTTPS server on :%s", httpsPort)
-		log.Printf("📄 Using certificate: %s", sslCertFile)
-
-		// 同时启动 HTTP 服务器（用于健康检查和可能的重定向）
-		go func() {
-			httpAddr := ":" + httpPort
-			log.Printf("🌐 Starting HTTP server on %s (for health checks)", httpAddr)
-			if err := http.ListenAndServe(httpAddr, router); err != nil {
-				log.Fatalf("HTTP server failed: %v", err)
-			}
-		}()
-
-		// 启动 HTTPS 服务器
-		httpsAddr := ":" + httpsPort
-		if err := http.ListenAndServeTLS(httpsAddr, sslCertFile, sslKeyFile, router); err != nil {
-			log.Fatalf("HTTPS server failed: %v", err)
-		}
+	// Phase 4: Initialize Business Logger (Layer 2 - Runtime Logger)
+	// Business logger is used for application runtime logging (request handling, business logic)
+	// Startup logs continue using standard log package (this is still bootstrap phase)
+	loggerCfg := logger.Config{
+		Level: logger.LevelInfo, // Default level, can be overridden by config service
+		Output: logger.OutputConfig{
+			Targets: []string{"stdout"},
+		},
+	}
+	// TODO: Load logger config from config service in future iterations
+	// For now, use default config for business logger initialization
+	businessLogger, err := logger.NewZapLogger(loggerCfg)
+	if err != nil {
+		log.Printf("⚠️  Warning: Failed to initialize business logger: %v", err)
+		log.Println("⚠️  Using NopLogger (no-op) for runtime logging")
+		// Fallback to NopLogger if initialization fails
 	} else {
-		// 仅启动 HTTP 服务器
-		addr := ":" + httpPort
-		log.Printf("🌐 Starting HTTP server on %s", addr)
-		log.Printf("💡 Tip: Set SSL_CERT_FILE and SSL_KEY_FILE to enable HTTPS")
-		if err := http.ListenAndServe(addr, router); err != nil {
-			log.Fatalf("HTTP server failed: %v", err)
-		}
+		logger.SetLogger(businessLogger)
+		defer businessLogger.Close()
+		log.Println("✅ Business logger initialized (runtime logging ready)")
 	}
-}
 
-// getEnv 获取环境变量，如果不存在则返回默认值
-func getEnv(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
+	// Phase 5: Setup HTTP Routes
+	// Register all HTTP handlers and middleware
+	router := routes.SetupRoutes(configService)
+	log.Println("✅ HTTP routes configured")
+
+	// Phase 6: Configure HTTP/HTTPS Server
+	// Server configuration is automatically loaded from environment variables by DefaultConfig()
+	// Environment variables are set in Phase 0 by LoadConfigToEnv() from default.yaml
+	// Naming convention: SERVER_HTTP_PORT, SERVER_HTTPS_PORT, SERVER_SSL_CERT_FILE, etc.
+	serverCfg := server.DefaultConfig()
+
+	// Print startup summary (still using standard log - bootstrap phase)
+	log.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+	log.Println("🚀 AppRun Server Starting...")
+	log.Printf("   Database: %s@%s:%d/%s", dbCfg.User, dbCfg.Host, dbCfg.Port, dbCfg.DBName)
+	log.Printf("   HTTP Port: %s", serverCfg.HTTPPort)
+	if serverCfg.SSLCertFile != "" {
+		log.Printf("   HTTPS Port: %s (TLS Enabled)", serverCfg.HTTPSPort)
 	}
-	return defaultValue
+	log.Printf("   Config Dir: %s", env.Get("CONFIG_DIR", "./config"))
+	log.Printf("   Logger Level: %s", loggerCfg.Level)
+	log.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+	log.Println("📝 Note: Using standard log for startup, business logger for runtime")
+
+	// Phase 7: Start HTTP/HTTPS Server (enters runtime phase)
+	// From this point, handlers will use logger.L() for business logging
+	if err := server.Start(router, serverCfg); err != nil {
+		log.Fatalf("❌ Server failed: %v", err)
+	}
 }

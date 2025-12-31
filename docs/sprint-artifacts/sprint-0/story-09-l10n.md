@@ -1,217 +1,244 @@
-# Story 9: l10n 本地化实施
+# Story 9: l10n Localization 本地化实施
 # Sprint 0: Infrastructure建设
 
 **Priority**: P1  
 **Effort**: 2 天  
 **Owner**: Backend Dev  
-**Dependencies**: Story 8  
+**Dependencies**: Story 8 (i18n 基础设施)  
 **Status**: Planning  
 **Module**: Infrastructure  
 **Issue**: #TBD  
-**Related**: [API 设计规范](../../standards/api-design.md#i18n)
+**Related**: [API 设计规范](../../standards/api-design.md#i18n), [i18n Standards](../../standards/i18n-standards.md)
 
 ---
 
 ## User Story
 
-作为开发者，我希望在现有代码中应用本地化（l10n），以便所有用户可见消息支持多语言。
+作为国际化应用开发者，我需要实现本地化基础设施，使应用能够根据用户的地区偏好，自动格式化日期时间、数字货币等数据，提供符合本地习惯的用户体验。
+
+---
+
+## 核心问题
+
+本地化需要解决的具体问题：
+
+### 1. 时区处理
+- **问题**：用户分布在不同时区，时间显示混乱
+- **需求**：
+  - 数据库使用 UTC 统一存储
+  - API 返回时自动转换为用户时区
+  - 支持系统级默认时区配置
+  - 支持用户级时区偏好设置
+
+### 2. 日期时间格式
+- **问题**：不同地区日期格式不同
+- **需求**：
+  - 美国：`MM/DD/YYYY 02:30 PM`
+  - 欧洲：`DD/MM/YYYY 14:30`
+  - 中国：`YYYY年MM月DD日 14:30`
+  - ISO 8601：`2024-01-15T14:30:00+08:00`
+
+### 3. 数字格式
+- **问题**：千位分隔符和小数点表示不同
+- **需求**：
+  - 美国：`1,234,567.89`
+  - 欧洲：`1.234.567,89`
+  - 中国：`1,234,567.89`
+
+### 4. 货币格式
+- **问题**：货币符号位置和格式不同
+- **需求**：
+  - 美元：`$1,234.56`
+  - 欧元：`1.234,56 €`
+  - 人民币：`¥1,234.56` 或 `CNY 1,234.56`
 
 ---
 
 ## Acceptance Criteria
 
-- [ ] 更新 response 包支持 i18n
-- [ ] 更新 errors 包支持 i18n
-- [ ] 翻译所有错误消息
-- [ ] 翻译所有成功消息
-- [ ] 更新 Handlers 使用 i18n
-- [ ] 编写 l10n 测试
-- [ ] 更新 API 文档
+- [ ] 实现时区中间件，从请求头或用户配置读取时区
+- [ ] 在 Config 表支持系统级时区配置（`app.timezone`）
+- [ ] 在 Users 表添加用户级时区字段（`timezone`）
+- [ ] 提供时间格式化工具函数（根据语言和时区）
+- [ ] 提供数字格式化工具函数（千位分隔符、小数点）
+- [ ] 提供货币格式化工具函数（货币符号、位置）
+- [ ] API 响应时间使用 RFC 3339 格式包含时区信息
+- [ ] 单元测试覆盖所有格式化函数
+- [ ] 文档说明时区配置和使用方法
+
+---
+
+## Technical Design
+
+### 架构分层
+
+```
+┌─────────────────────────────────────────┐
+│ API Layer                               │
+│  • 请求：检测用户时区/语言               │
+│  • 响应：格式化数据                      │
+└─────────────────────────────────────────┘
+              ↓
+┌─────────────────────────────────────────┐
+│ Middleware Layer                        │
+│  • timezone.Middleware                  │
+│  • language.Middleware (Story 8)        │
+└─────────────────────────────────────────┘
+              ↓
+┌─────────────────────────────────────────┐
+│ Business Layer                          │
+│  • 使用 UTC 时间                         │
+│  • 调用 l10n 工具格式化                  │
+└─────────────────────────────────────────┘
+              ↓
+┌─────────────────────────────────────────┐
+│ Data Layer                              │
+│  • 数据库: TIMESTAMP WITH TIME ZONE     │
+│  • 存储: UTC 时间                        │
+└─────────────────────────────────────────┘
+```
+
+### 包结构
+
+```
+core/pkg/l10n/
+├── timezone.go       # 时区工具
+├── datetime.go       # 日期时间格式化
+├── number.go         # 数字格式化
+├── currency.go       # 货币格式化
+└── l10n_test.go      # 单元测试
+
+core/pkg/middleware/
+└── timezone.go       # 时区中间件
+```
+
+### 配置结构
+
+```yaml
+# config/default.yaml
+app:
+  timezone: "Asia/Shanghai"  # 系统默认时区（IANA 格式）
+```
+
+```sql
+-- 用户表增加时区字段
+ALTER TABLE users ADD COLUMN timezone VARCHAR(50) DEFAULT 'UTC';
+```
 
 ---
 
 ## Implementation Tasks
 
-- [ ] 修改 `pkg/response` 包（接受 lang 参数）
-- [ ] 修改 `pkg/errors` 包（支持翻译）
-- [ ] 翻译所有错误码消息
-- [ ] 更新 Handlers（从 context 获取 lang）
-- [ ] 添加翻译覆盖率检查
-- [ ] 编写 l10n 测试
-- [ ] 更新 API 文档（Accept-Language）
+### Task 1: 系统级时区配置
+- 在 `Config.App` 添加 `Timezone` 字段
+- 验证器支持 IANA 时区名称
+- 启动时加载系统时区
+
+### Task 2: 用户级时区支持
+- 用户表添加 `timezone` 字段
+- 用户注册时使用系统默认时区
+- 提供用户时区更新 API
+
+### Task 3: 时区中间件
+- 从请求头 `Accept-Timezone` 或 `X-Timezone` 读取
+- 从用户配置读取时区偏好
+- 存储到请求上下文 `context.Context`
+
+### Task 4: 格式化工具函数
+- `FormatDateTime(t time.Time, lang, tz string) string`
+- `FormatNumber(n float64, lang string) string`
+- `FormatCurrency(amount float64, currency, lang string) string`
+
+### Task 5: API 响应标准化
+- 时间字段使用 RFC 3339 格式
+- 包含时区偏移信息
+- 示例：`2024-01-15T14:30:00+08:00`
 
 ---
 
-## Technical Details
+## API Examples
 
-### 更新 Response 包
-
-```go
-// core/pkg/response/response.go
-
-import "github.com/yourusername/apprun/core/pkg/i18n"
-
-func Success(w http.ResponseWriter, data interface{}, lang string) {
-    resp := Response{
-        Success: true,
-        Code:    http.StatusOK,
-        Message: i18n.Translate(lang, "success.ok", nil),
-        Data:    data,
-    }
-    
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(resp)
-}
-
-func Error(w http.ResponseWriter, code int, errCode, messageID string, lang string) {
-    resp := Response{
-        Success: false,
-        Code:    code,
-        Error: &ErrorInfo{
-            Code:    errCode,
-            Message: i18n.Translate(lang, messageID, nil),
-        },
-    }
-    
-    w.WriteHeader(code)
-    json.NewEncoder(w).Encode(resp)
-}
+### 请求示例
+```http
+GET /api/users/123
+Accept-Language: zh-CN
+Accept-Timezone: Asia/Shanghai
 ```
 
-### 更新 Handlers
-
-```go
-// handlers/config.go
-
-func (h *Handler) GetConfig(w http.ResponseWriter, r *http.Request) {
-    lang := r.Context().Value("lang").(string)
-    
-    id := chi.URLParam(r, "id")
-    if id == "" {
-        response.Error(w, http.StatusBadRequest, errors.ErrInvalidRequest, "errors.invalid_request", lang)
-        return
-    }
-    
-    config, err := h.repo.GetConfig(r.Context(), id)
-    if err != nil {
-        response.Error(w, http.StatusNotFound, errors.ErrResourceNotFound, "errors.not_found", lang)
-        return
-    }
-    
-    response.Success(w, config, lang)
+### 响应示例
+```json
+{
+  "id": 123,
+  "name": "张三",
+  "created_at": "2024-01-15T14:30:00+08:00",
+  "balance": {
+    "amount": 1234.56,
+    "formatted": "¥1,234.56",
+    "currency": "CNY"
+  },
+  "timezone": "Asia/Shanghai",
+  "language": "zh-CN"
 }
 ```
 
-### 翻译文件更新
+---
 
-```toml
-# core/locales/active.zh-CN.toml
+## Testing Strategy
 
-[success.ok]
-other = "操作成功"
+### 单元测试
+- 时区转换：UTC ↔ 用户时区
+- 日期格式化：多语言、多格式
+- 数字格式化：千位分隔符、小数点
+- 货币格式化：符号位置、格式
 
-[success.created]
-other = "创建成功"
+### 集成测试
+- 中间件：请求头时区提取
+- API 响应：时间字段格式正确
+- 用户配置：时区设置生效
 
-[success.updated]
-other = "更新成功"
-
-[success.deleted]
-other = "删除成功"
-
-[errors.unauthorized]
-other = "未授权访问"
-
-[errors.forbidden]
-other = "禁止访问"
-
-[errors.not_found]
-other = "资源未找到"
-
-[errors.invalid_request]
-other = "请求参数无效"
-
-[errors.internal_error]
-other = "服务器内部错误"
-
-[config.key_required]
-other = "配置键不能为空"
-
-[config.value_required]
-other = "配置值不能为空"
+### 测试用例
 ```
-
-```toml
-# core/locales/active.en-US.toml
-
-[success.ok]
-other = "Operation successful"
-
-[success.created]
-other = "Created successfully"
-
-[success.updated]
-other = "Updated successfully"
-
-[success.deleted]
-other = "Deleted successfully"
-
-[errors.unauthorized]
-other = "Unauthorized access"
-
-[errors.forbidden]
-other = "Forbidden"
-
-[errors.not_found]
-other = "Resource not found"
-
-[errors.invalid_request]
-other = "Invalid request parameters"
-
-[errors.internal_error]
-other = "Internal server error"
-
-[config.key_required]
-other = "Config key is required"
-
-[config.value_required]
-other = "Config value is required"
+时区：UTC, Asia/Shanghai, America/New_York, Europe/London
+语言：en-US, zh-CN, de-DE, fr-FR
+货币：USD, CNY, EUR, JPY
 ```
 
 ---
 
-## 翻译覆盖率检查
+## Dependencies
 
-```bash
-# scripts/check-translations.sh
-
-#!/bin/bash
-# 检查所有语言的翻译文件是否包含相同的 messageID
-
-LANG_FILES="core/locales/active.*.toml"
-
-# 提取所有 messageID 并比较
-```
+- **Story 8**: i18n 基础设施（语言检测中间件）
+- **Config 模块**: 系统配置支持
+- **User 模块**: 用户表结构
 
 ---
 
-## Test Cases
+## Non-Goals
 
-- [ ] zh-CN 响应消息正确
-- [ ] en-US 响应消息正确
-- [ ] 所有错误消息已翻译
-- [ ] 所有成功消息已翻译
-- [ ] 翻译覆盖率 100%
-
----
-
-## Related Docs
-
-- [API 设计规范](../../standards/api-design.md#i18n)
-- [Story 8: i18n Infrastructure](./story-08-i18n.md)
+本 Story 不包含：
+- ❌ 复杂的地区规则（如节假日、工作日）
+- ❌ 地址格式化
+- ❌ 电话号码格式化
+- ❌ 度量单位转换（英里 vs 公里）
 
 ---
 
-**Created**: 2025-12-27  
-**Updated**: 2025-12-27  
-**Maintainer**: Architect Agent
+## Benefits
+
+1. **用户体验**：时间、数字、货币自动本地化
+2. **全球化支持**：轻松支持新地区
+3. **数据一致性**：统一使用 UTC 存储
+4. **开发效率**：工具函数可复用
+
+---
+
+## Related Documentation
+
+- [i18n Standards](../../standards/i18n-standards.md)
+- [API Design - i18n Guidelines](../../standards/api-design.md#i18n)
+- [Story 8 - i18n Infrastructure](./story-08-i18n.md)
+
+---
+
+**Created**: 2024-12-01  
+**Updated**: 2025-12-31

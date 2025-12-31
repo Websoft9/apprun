@@ -23,12 +23,12 @@
   1. 环境变量（最高优先级）
   2. 数据库配置（`configitems` 表）
   3. 用户配置目录（`config/conf_d/*.yaml`，按字母序）
-  4. 专用配置文件（`config/database.yaml`, `config/server.yaml`，按字母序）
+  4. 专用配置文件（`config/user.yaml`, `config/resource.yaml`，按字母序）
   5. 基础配置文件（`config/default.yaml`）
   6. 结构体 tag 默认值（`default:"value"`，最低优先级）
 - [x] 通过 `db:"false"` tag 控制配置项不可存储到数据库（如 `database.*`）
 
-> 覆盖规则：高优先级覆盖低优先级，同级文件按字母序加载（后覆盖前）
+> 覆盖规则：高优先级覆盖低优先级，同级文件按字母序加载（后覆盖前）。database,server 配置仅支持存放到 default.yaml
 
 ### 2. 结构体 Tag 支持
 - [x] 支持 `default` tag：自动设置默认值（`default:"apprun"`）
@@ -146,15 +146,178 @@ type AppConfig struct {
 
 ## 🔧 Technical Design
 
+### 三层关系模型
+
+配置系统基于"业务主导"的设计哲学，遵循以下三层关系：
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Layer 1: 业务模块结构体（Business Structs）- 源头           │
+│ - 业务模块参考 internal/config/types.go 定义自己的配置结构  │
+│ - 通过注册机制加载到配置中心                                │
+│ - 示例: modules/user/config.go 定义 UserConfig             │
+│ - 职责: What needs to be configured (业务内聚)             │
+└─────────────────────────────────────────────────────────────┘
+                           ↓ (注册 + 定义流)
+┌─────────────────────────────────────────────────────────────┐
+│ Layer 2: 配置中心（Config Center）- 统一映射器              │
+│ - 反射读取已注册模块的 struct tags，统一加载机制            │
+│ - 示例: Loader, Service, ConfigProvider 接口               │
+│ - 职责: How to load and validate (基础设施)                │
+└─────────────────────────────────────────────────────────────┘
+                           ↓ (数据流)
+┌─────────────────────────────────────────────────────────────┐
+│ Layer 3: 数据源（Data Sources）- 同层平等                  │
+│ - YAML 文件、数据库表、环境变量（无层次差异）              │
+│ - 示例: default.yaml, configitems 表, USER_MAX_LOGIN=5     │
+│ - 职责: Where values come from (外部存储)                   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**设计逻辑**：
+1. **业务模块主导**：各业务模块参考 `internal/config/types.go` 定义自己的配置结构体，保持业务内聚
+2. **注册机制**：业务模块启动时向配置中心注册
+3. **感知隔离**：业务模块只接收填充好的结构体，不关心配置从 YAML/DB/Env 哪里来
+4. **数据源平等**：配置中心对 YAML、DB、Env 使用统一接口，按优先级合并，不区分层次
+5. **验证内聚**：`validate` tags 在业务结构体上，确保所有数据源的值都经过相同验证
+
+**当前实现（Sprint 0）**：
+- 使用 `internal/config/types.go` 全局 Config 结构体（集中式）
+- 适用于初期模块数量少的场景（App, Database, POC）
+
+---
+
+### 配置命名映射规则
+
+配置系统使用 Viper 库处理配置源到结构体的映射，遵循以下规则：
+
+#### **1. YAML 文件映射**
+
+**默认规则**：
+- 结构体字段名 → 小写（`UserName` → `username`）
+- 嵌套结构体需要 `yaml:"key"` tag 定义根键
+
+**推荐实践**：
+- ✅ 使用 `yaml` tag 明确指定 YAML 键名，避免依赖默认转换
+- ✅ YAML 键名使用 snake_case（`user_name`）或无下划线（`username`）
+- ⚠️ 避免下划线在嵌套键中（Viper 解析歧义）
+
+**示例**：
+```go
+// internal/config/types.go
+type Config struct {
+    User UserConfig `yaml:"user"` // ✅ 必须：嵌套结构体需要 yaml tag
+}
+
+type UserConfig struct {
+    UserName     string `yaml:"user_name"`     // ✅ 推荐：明确 tag
+    MaxAttempts  int    `yaml:"max_attempts"`  // ✅ 推荐：snake_case
+    IsActive     bool   `yaml:"is_active"`     // ✅ 推荐：明确 tag
+    
+    // ❌ 不推荐：依赖默认转换
+    // UserName string  // 默认转换为 "username"，可能与预期不符
+}
+```
+
+**对应 YAML**：
+```yaml
+user:
+  user_name: "john_doe"    # 映射到 UserName
+  max_attempts: 5          # 映射到 MaxAttempts
+  is_active: true          # 映射到 IsActive
+```
+
+#### **2. 环境变量映射**
+
+**自动映射规则**：
+- 配置路径 → 大写 + 下划线（`user.user_name` → `USER_USER_NAME`）
+- 点号（`.`）→ 下划线（`_`）
+- 无需手动注册，Viper 自动绑定
+
+**示例**：
+```bash
+# 环境变量自动映射到配置路径
+USER_USER_NAME=john_doe      # → user.user_name
+USER_MAX_ATTEMPTS=10         # → user.max_attempts
+DATABASE_HOST=prod-db        # → database.host
+DATABASE_PORT=5432           # → database.port
+```
+
+**验证方式**：
+```go
+// Viper 自动处理环境变量映射
+viper.AutomaticEnv()
+viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+
+// 读取时自动优先使用环境变量
+dbHost := viper.GetString("database.host") // 如果 DATABASE_HOST 存在，优先使用
+```
+
+#### **3. 数据库键名映射**
+
+**规则**：
+- 数据库键名与 YAML 路径一致（如 `user.user_name`）
+- 通过 `db:"true"` tag 标记允许存储的字段
+
+**示例**：
+```go
+type UserConfig struct {
+    UserName    string `yaml:"user_name" db:"true"`     // ✅ 可存储到 DB
+    MaxAttempts int    `yaml:"max_attempts" db:"true"`  // ✅ 可存储到 DB
+    APIKey      string `yaml:"api_key" db:"false"`      // ❌ 禁止存储到 DB
+}
+```
+
+**数据库表**：
+```sql
+-- configitems 表
+key: "user.user_name", value: "jane_doe", is_dynamic: true
+key: "user.max_attempts", value: "3", is_dynamic: true
+```
+
+#### **4. 驼峰命名处理**
+
+**问题**：Go 驼峰字段名（如 `UserName`）与配置源命名风格不一致
+
+**解决方案**：
+```go
+type Config struct {
+    // ✅ 方案 1：使用 yaml tag 明确指定（推荐）
+    UserName string `yaml:"user_name" db:"user_name"`
+    
+    // ✅ 方案 2：完全小写（适合简单字段）
+    Username string `yaml:"username" db:"username"`
+    
+    // ❌ 不推荐：依赖默认转换（UserName → username，可能不符预期）
+    // UserName string
+}
+```
+
+**最佳实践**：
+- **复杂字段名**：使用 `yaml` tag 明确指定（如 `APIKey` → `api_key`）
+- **简单字段名**：可使用小写无下划线（如 `username`, `timeout`）
+- **一致性**：项目内统一风格（snake_case 或 camelCase）
+
+#### **5. 命名约定总结**
+
+| 层次 | 命名风格 | 示例 | 说明 |
+|------|---------|------|------|
+| **Go 结构体字段** | PascalCase | `UserName`, `MaxAttempts` | Go 语言约定 |
+| **YAML 键名** | snake_case | `user_name`, `max_attempts` | 推荐，避免下划线歧义 |
+| **环境变量** | UPPER_SNAKE_CASE | `USER_NAME`, `MAX_ATTEMPTS` | 自动转换 |
+| **数据库键名** | 点号路径 | `user.user_name` | 与 YAML 路径一致 |
+
+---
+
 ### 架构总览
 
 ```
 core/
 ├── internal/config/
-│   └── types.go              # 👑 唯一配置结构体（带 tag）
+│   └── types.go              # 👑 唯一配置结构体（带 tag）- Layer 1
 │
 ├── modules/config/
-│   ├── types.go              # ConfigProvider 接口 + API 模型
+│   ├── types.go              # ConfigProvider 接口 + API 模型 - Layer 2
 │   ├── bootstrap.go          # 🔄 配置引导器（解决循环依赖）
 │   ├── loader.go             # 配置加载器（反射处理 tag）
 │   ├── repository.go         # 数据访问（防腐层）
@@ -162,7 +325,7 @@ core/
 │   └── handler.go            # HTTP 接口
 │
 └── ent/schema/
-    └── configitem.go         # Ent Schema (key, value, is_dynamic)
+    └── configitem.go         # Ent Schema (key, value, is_dynamic) - Layer 3
 ```
 
 **启动流程**:
@@ -333,6 +496,139 @@ curl -X PUT http://localhost:8080/api/config \
 - ✅ 反射检查 `db` tag（拒绝 `db:"false"` 配置）
 - ✅ 使用 `validate` tag 校验值
 - ✅ 事务保证原子性（全部成功或全部回滚）
+
+---
+
+## 🔌 Configuration Module Registry
+
+**Added**: 2025-12-30 (Dev Agent - Amelia)
+
+### Purpose
+
+Enable business modules to independently define their configurations while maintaining centralized management through the config center. This preserves business cohesion by keeping module-specific configs within their respective packages.
+
+### Design
+
+**Three-Layer Model**:
+1. **Business Structs (Source)**: Modules define their own config structs (e.g., `pkg/logger/logger.go`, `modules/user/config.go`)
+2. **Config Center (Mapper)**: Extracts metadata via reflection, enforces validation, manages persistence
+3. **Data Sources (Equal)**: YAML files, environment variables, database records provide values
+
+**Registration Workflow**:
+```
+Module startup → Register config struct → Registry stores reference →
+Loader extracts tags → Metadata cache → Service validates updates
+```
+
+### Implementation
+
+**Registry API** (`modules/config/registry.go`):
+```go
+registry := NewRegistry()
+
+// Register module configs
+registry.Register("logger", &logger.Config{})
+registry.Register("user", &user.Config{})
+
+// Query
+config, exists := registry.Get("logger")
+allConfigs := registry.GetAll()
+count := registry.Count()
+```
+
+**Loader Integration** (`modules/config/loader.go`):
+```go
+// With registry support
+loader, _ := NewLoaderWithRegistry(configDir, dbProvider, registry)
+
+// Without registry (backward compatible)
+loader, _ := NewLoader(configDir, dbProvider)
+```
+
+**Bootstrap Usage** (`modules/config/bootstrap.go`):
+```go
+// Create bootstrap with registry
+registry := NewRegistry()
+registry.Register("logger", &logger.Config{})
+
+bootstrap := NewBootstrapWithRegistry(configDir, registry)
+
+// Load initial config and initialize database
+config, _ := bootstrap.LoadInitialConfig(ctx)
+dbClient, _ := bootstrap.InitDatabase(ctx, config)
+service, _ := bootstrap.CreateService(ctx, dbClient)
+```
+
+### Tag System
+
+Modules define configs with standard tags:
+```go
+type Config struct {
+    Level string `yaml:"level" default:"info" db:"true" validate:"oneof=debug info warn error"`
+    Output OutputConfig `yaml:"output"`
+}
+
+type OutputConfig struct {
+    Targets []string `yaml:"targets" default:"stdout" db:"true" validate:"min=1,dive,oneof=stdout stderr file"`
+}
+```
+
+**Supported Tags**:
+- `yaml:"key"` - YAML key mapping
+- `default:"value"` - Default value (lowest priority)
+- `db:"true|false"` - Whether config can be stored in database
+- `validate:"rules"` - Validation rules (go-playground/validator)
+
+### Benefits
+
+1. **Business Cohesion**: Module configs stay within module packages
+2. **Centralized Control**: Config center manages all module configs uniformly
+3. **Dynamic Updates**: `db:"true"` configs can be updated at runtime via API
+4. **Validation**: Automatic validation based on struct tags
+5. **Backward Compatible**: Works with existing config system (registry optional)
+
+### Testing
+
+Comprehensive test coverage:
+- **Unit Tests**: 7 tests for registry (registration, retrieval, concurrency)
+- **Integration Tests**: 4 tests for full workflow (logger module, multiple modules, backward compat)
+- **Results**: All 33 tests passing (22 original + 7 registry + 4 integration)
+
+### Example: Logger Module
+
+**1. Define Config** (`pkg/logger/logger.go`):
+```go
+type Config struct {
+    Level  string       `yaml:"level" default:"info" db:"true" validate:"oneof=debug info warn error"`
+    Output OutputConfig `yaml:"output"`
+}
+```
+
+**2. Register at Startup** (`cmd/server/main.go`):
+```go
+registry := config.NewRegistry()
+registry.Register("logger", &logger.Config{})
+
+bootstrap := config.NewBootstrapWithRegistry("./config", registry)
+```
+
+**3. Use Config Center APIs**:
+```
+# Update logger level dynamically
+PUT /api/config
+{"key": "logger.level", "value": "debug"}
+
+# Get allowed keys (includes registered modules)
+GET /api/config/allowed
+-> ["app.theme", "poc.enabled", "logger.level", "logger.output.targets", ...]
+```
+
+### Future Evolution
+
+- **Story 14**: Full registry rollout (user module, project module)
+- **Auto-discovery**: Scan modules for config definitions
+- **Hot-reload**: Watch for config changes and notify subscribers
+- **Versioning**: Track config schema versions for migration
 
 ---
 

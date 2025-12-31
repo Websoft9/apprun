@@ -43,7 +43,7 @@ swagger:
 	@echo "Generating Swagger API documentation..."
 	@cd core && swag init -g cmd/server/main.go -o docs
 	@echo "✅ Swagger docs generated in core/docs/"
-	@echo "Access at: http://localhost:8080/api/docs/"
+	@echo "Access at: http://localhost:$${HTTP_PORT:-8080}/api/docs/"
 
 # 测试
 test-all: test-unit test-integration
@@ -96,8 +96,8 @@ clean:
 # 开发环境
 dev: docker-up
 	@echo "Development environment started"
-	@echo "App: http://localhost:8080"
-	@echo "Config API: http://localhost:8080/config"
+	@echo "App: http://localhost:$${HTTP_PORT:-8080}"
+	@echo "Config API: http://localhost:$${HTTP_PORT:-8080}/config"
 
 # 快速测试
 test-config: test-unit
@@ -150,8 +150,13 @@ dev-down:
 run-local:
 	@echo "🏃 Running app locally..."
 	@echo "📌 Make sure dependencies are running: make dev-up"
+	@echo "📝 Using development database configuration"
 	@echo ""
-	cd core && go run ./cmd/server/main.go
+	cd core && \
+		DATABASE_USER=apprun \
+		DATABASE_PASSWORD=dev_password_123 \
+		DATABASE_DB_NAME=apprun_dev \
+		go run ./cmd/server/main.go
 
 # Build Docker image locally
 build-local:
@@ -168,7 +173,7 @@ test-local: build-local
 	@echo "⏳ Waiting for services to be ready..."
 	@sleep 15
 	@echo "🔍 Checking health..."
-	@docker exec apprun-app-local wget -q -O- http://localhost:8080/health || (echo "❌ Health check failed" && docker compose -f docker-compose.local.yml down && exit 1)
+	@docker exec apprun-app-local wget -q -O- http://localhost:$${HTTP_PORT:-8080}/health || (echo "❌ Health check failed" && docker compose -f docker-compose.local.yml down && exit 1)
 	@echo "✅ Integration tests passed!"
 	@docker compose -f docker-compose.local.yml down
 
@@ -179,8 +184,8 @@ prod-up-local:
 	@echo "✅ Local production environment started!"
 	@echo ""
 	@echo "🔗 Access:"
-	@echo "   HTTP:  http://localhost:8080"
-	@echo "   HTTPS: https://localhost:8443"
+	@echo "   HTTP:  http://localhost:$${HTTP_PORT:-8080}"
+	@echo "   HTTPS: https://localhost:$${HTTPS_PORT:-8443}"
 	@echo ""
 	@echo "📊 View logs:"
 	@echo "   docker compose -f docker-compose.local.yml logs -f"

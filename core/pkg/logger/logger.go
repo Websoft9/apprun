@@ -57,9 +57,10 @@ const (
 )
 
 // Config holds logger configuration
+// Follows internal/config/types.go standards for consistency
 type Config struct {
-	Level  Level        `json:"level"`
-	Output OutputConfig `json:"output"`
+	Level  Level        `yaml:"level" default:"info" db:"true" validate:"oneof=debug info warn error"`
+	Output OutputConfig `yaml:"output"`
 }
 
 // OutputConfig defines output targets
@@ -69,7 +70,7 @@ type OutputConfig struct {
 	// - "stdout": standard output
 	// - "stderr": standard error
 	// - "file:/path/to/file.log": file path
-	Targets []string `json:"targets"`
+	Targets []string `yaml:"targets" default:"stdout" db:"true" validate:"min=1,dive,oneof=stdout stderr file"`
 }
 
 // Global logger instance

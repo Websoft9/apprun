@@ -235,7 +235,7 @@ func TestService_GetAllowedDynamicKeys(t *testing.T) {
 	assert.Contains(t, keys, "app.name")
 	assert.Contains(t, keys, "poc.enabled")
 	assert.Contains(t, keys, "poc.database")
-	assert.Contains(t, keys, "poc.apikey")
+	assert.Contains(t, keys, "poc.api_key")
 
 	// 验证不包含 db:false 键
 	assert.NotContains(t, keys, "app.version")

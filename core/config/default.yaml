@@ -1,6 +1,7 @@
 app:
   name: apprun
   version: "1.0.0"
+  timezone: "Asia/Shanghai"  # or "America/New_York", "Europe/London"
 
 database:
   driver: postgres
@@ -8,9 +9,26 @@ database:
   port: 5432
   user: apprun
   password: "dev_password_123"
-  dbname: apprun_dev
+  db_name: apprun_dev
 
 poc:
   enabled: true
   database: "postgres://user:pass@localhost:5432/apprun_poc"
   apikey: "poc-api-key-123456"
+
+logger:
+  level: info
+  output:
+    targets: ["stdout"]
+
+# Server configuration (infrastructure, not managed by config center)
+# Override via environment variables following naming convention:
+# Pattern: {GROUP}_UPPERCASE_{KEY}_UPPERCASE
+# Examples: SERVER_HTTP_PORT, SERVER_HTTPS_PORT, SERVER_SSL_CERT_FILE
+server:
+  http_port: "8080"
+  https_port: "8443"
+  ssl_cert_file: ""  # Path to SSL certificate (empty = HTTP only)
+  ssl_key_file: ""   # Path to SSL private key
+  shutdown_timeout: "30s"
+  enable_http_with_https: true  # Enable HTTP when HTTPS is active (for health checks)
