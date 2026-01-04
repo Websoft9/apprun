@@ -38,8 +38,8 @@ Story (Executable Tasks)
 |--------|---------------------|--------|--------|
 | Sprint-0 | Story 01: Docker Development & Deployment Environment | Infrastructure | Done |
 | Sprint-0 | Story 02: 统一响应工具包 | Infrastructure | Done |
-| Sprint-0 | Story 03: 错误处理框架 | Infrastructure | Planning |
-| Sprint-0 | Story 04: Ent Schema 配置管理 | Infrastructure | Planning |
+| Sprint-0 | Story 03: 业务错误包装框架 | Infrastructure | Done |
+| Sprint-0 | Story 04: Ent Schema 配置管理 | Config | Done |
 | Sprint-0 | Story 05: CI/CD 流水线与 Linter | Infrastructure | Planning |
 | Sprint-0 | Story 06: 测试框架与工具集 | Infrastructure | Planning |
 | Sprint-0 | Story 07: 重构现有 Handlers | Infrastructure | Planning |

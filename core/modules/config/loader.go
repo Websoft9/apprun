@@ -2,7 +2,6 @@ package config
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -10,6 +9,7 @@ import (
 	"strings"
 
 	"apprun/internal/config"
+	"apprun/pkg/errors"
 
 	"github.com/spf13/viper"
 )
@@ -53,13 +53,13 @@ func NewLoaderWithRegistry(configDir string, provider ConfigProvider, registry *
 
 	// 使用反射提取字段元数据（全局 Config）
 	if err := loader.extractMetadata(); err != nil {
-		return nil, fmt.Errorf("failed to extract metadata: %w", err)
+		return nil, errors.Wrap(err, errors.ErrCodeConfigMetadataFailed, "Failed to extract metadata")
 	}
 
 	// 提取注册模块的元数据
 	if registry != nil {
 		if err := loader.extractRegistryMetadata(); err != nil {
-			return nil, fmt.Errorf("failed to extract registry metadata: %w", err)
+			return nil, errors.Wrap(err, errors.ErrCodeConfigMetadataFailed, "Failed to extract registry metadata")
 		}
 	}
 
@@ -89,7 +89,7 @@ func (l *Loader) extractRegistryMetadata() error {
 		}
 
 		if err := l.walkStruct(t, namespace); err != nil {
-			return fmt.Errorf("failed to extract metadata for module '%s': %w", namespace, err)
+			return errors.Wrap(err, errors.ErrCodeConfigMetadataFailed, "Failed to extract metadata for module").WithContext("module", namespace)
 		}
 	}
 
@@ -135,7 +135,7 @@ func (l *Loader) walkStruct(t reflect.Type, prefix string) error {
 			var err error
 			allowDB, err = strconv.ParseBool(dbTag)
 			if err != nil {
-				return fmt.Errorf("invalid db tag for field %s: %s", field.Name, dbTag)
+				return errors.New(errors.ErrCodeConfigInvalidTag, "Invalid db tag for field").WithContext("field", field.Name).WithContext("tag", dbTag)
 			}
 		}
 
@@ -165,32 +165,32 @@ func (l *Loader) Load(ctx context.Context) (*config.Config, error) {
 
 	// Layer 1: 应用标签默认值
 	if err := l.applyTagDefaults(cfg); err != nil {
-		return nil, fmt.Errorf("failed to apply tag defaults: %w", err)
+		return nil, errors.Wrap(err, errors.ErrCodeConfigLoadFailed, "Failed to apply tag defaults")
 	}
 
 	// Layer 2: 加载 default.yaml
 	if err := l.loadDefaultYAML(); err != nil {
-		return nil, fmt.Errorf("failed to load default.yaml: %w", err)
+		return nil, errors.Wrap(err, errors.ErrCodeConfigLoadFailed, "Failed to load default.yaml")
 	}
 
 	// Layer 3: 加载专用配置文件（如 database.yaml, server.yaml）
 	if err := l.loadSpecializedFiles(); err != nil {
-		return nil, fmt.Errorf("failed to load specialized files: %w", err)
+		return nil, errors.Wrap(err, errors.ErrCodeConfigLoadFailed, "Failed to load specialized files")
 	}
 
 	// Layer 4: 加载 conf_d 目录下的配置文件
 	if err := l.loadConfD(); err != nil {
-		return nil, fmt.Errorf("failed to load conf_d: %w", err)
+		return nil, errors.Wrap(err, errors.ErrCodeConfigLoadFailed, "Failed to load conf_d")
 	}
 
 	// 将 Viper 配置解析到结构体
 	if err := l.viper.Unmarshal(cfg); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
+		return nil, errors.Wrap(err, errors.ErrCodeConfigUnmarshalFailed, "Failed to unmarshal config")
 	}
 
 	// Layer 5: 从数据库覆盖动态配置（只覆盖 db:true 的字段）
 	if err := l.applyDatabaseConfig(ctx, cfg); err != nil {
-		return nil, fmt.Errorf("failed to apply database config: %w", err)
+		return nil, errors.Wrap(err, errors.ErrCodeConfigLoadFailed, "Failed to apply database config")
 	}
 
 	// Layer 6: 环境变量自动覆盖（通过 Viper 的 AutomaticEnv）
@@ -214,7 +214,7 @@ func (l *Loader) loadDefaultYAML() error {
 	if _, err := os.Stat(defaultFile); err == nil {
 		l.viper.SetConfigFile(defaultFile)
 		if err := l.viper.ReadInConfig(); err != nil {
-			return fmt.Errorf("failed to read default.yaml: %w", err)
+			return errors.Wrap(err, errors.ErrCodeConfigLoadFailed, "Failed to read default.yaml")
 		}
 	}
 	return nil
@@ -230,11 +230,11 @@ func (l *Loader) loadSpecializedFiles() error {
 			tmpViper := viper.New()
 			tmpViper.SetConfigFile(fpath)
 			if err := tmpViper.ReadInConfig(); err != nil {
-				return fmt.Errorf("failed to read %s: %w", fname, err)
+				return errors.Wrap(err, errors.ErrCodeConfigLoadFailed, "Failed to read config file").WithContext("file", fname)
 			}
 			// 合并到主 viper 实例
 			if err := l.viper.MergeConfigMap(tmpViper.AllSettings()); err != nil {
-				return fmt.Errorf("failed to merge %s: %w", fname, err)
+				return errors.Wrap(err, errors.ErrCodeConfigParseFailed, "Failed to merge config file").WithContext("file", fname)
 			}
 		}
 	}
@@ -250,7 +250,7 @@ func (l *Loader) loadConfD() error {
 
 	entries, err := os.ReadDir(confDDir)
 	if err != nil {
-		return fmt.Errorf("failed to read conf_d directory: %w", err)
+		return errors.Wrap(err, errors.ErrCodeConfigLoadFailed, "Failed to read conf_d directory")
 	}
 
 	for _, entry := range entries {
@@ -263,10 +263,10 @@ func (l *Loader) loadConfD() error {
 		tmpViper := viper.New()
 		tmpViper.SetConfigFile(fpath)
 		if err := tmpViper.ReadInConfig(); err != nil {
-			return fmt.Errorf("failed to read %s: %w", entry.Name(), err)
+			return errors.Wrap(err, errors.ErrCodeConfigLoadFailed, "Failed to read config file").WithContext("file", entry.Name())
 		}
 		if err := l.viper.MergeConfigMap(tmpViper.AllSettings()); err != nil {
-			return fmt.Errorf("failed to merge %s: %w", entry.Name(), err)
+			return errors.Wrap(err, errors.ErrCodeConfigParseFailed, "Failed to merge config file").WithContext("file", entry.Name())
 		}
 	}
 
@@ -281,7 +281,7 @@ func (l *Loader) applyDatabaseConfig(ctx context.Context, cfg *config.Config) er
 
 	dbConfigs, err := l.provider.ListDynamicConfigs(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to list database configs: %w", err)
+		return errors.Wrap(err, errors.ErrCodeConfigQueryFailed, "Failed to list database configs")
 	}
 
 	// 只覆盖 db:true 的字段
@@ -301,7 +301,7 @@ func (l *Loader) applyDatabaseConfig(ctx context.Context, cfg *config.Config) er
 
 	// 重新解析到结构体
 	if err := l.viper.Unmarshal(cfg); err != nil {
-		return fmt.Errorf("failed to re-unmarshal after database config: %w", err)
+		return errors.Wrap(err, errors.ErrCodeConfigUnmarshalFailed, "Failed to re-unmarshal after database config")
 	}
 
 	return nil

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"apprun/internal/config"
+	"apprun/pkg/errors"
 
 	"github.com/go-playground/validator/v10"
 )
@@ -156,38 +157,45 @@ func formatValue(v reflect.Value) string {
 func (s *Service) UpdateConfig(ctx context.Context, key string, value string) error {
 	// 验证 key 是否允许数据库存储
 	if !s.loader.AllowDatabaseStorage(key) {
-		return fmt.Errorf("config key '%s' is not allowed to be stored in database (db:false)", key)
+		return errors.New(errors.ErrCodeConfigNotAllowedDB, "Config key not allowed in database").
+			WithContext("key", key).
+			WithContext("reason", "db:false")
 	}
 
 	// 验证值是否符合规则
 	meta, exists := s.loader.GetMetadata(key)
 	if !exists {
-		return fmt.Errorf("unknown config key: %s", key)
+		return errors.New(errors.ErrCodeConfigNotFound, "Unknown config key").
+			WithContext("key", key)
 	}
 
 	// 使用 validator 进行值验证（如果有 validate 标签）
 	if meta.ValidateTag != "" {
 		if err := s.validator.Var(value, meta.ValidateTag); err != nil {
-			return fmt.Errorf("validation failed for key '%s': %w", key, err)
+			return errors.Wrap(err, errors.ErrCodeConfigInvalidValue, "Config validation failed").
+				WithContext("key", key)
 		}
 	}
 
 	// 持久化到数据库
 	if err := s.provider.SetConfig(ctx, key, value); err != nil {
-		return fmt.Errorf("failed to update config: %w", err)
+		return errors.Wrap(err, errors.ErrCodeConfigUpdateFailed, "Failed to update config").
+			WithContext("key", key)
 	}
 
 	// 重新加载配置以应用变更
 	newCfg, err := s.loader.Load(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to reload config after update: %w", err)
+		return errors.Wrap(err, errors.ErrCodeConfigLoadFailed, "Failed to reload config after update").
+			WithContext("key", key)
 	}
 
 	// 验证新配置
 	if err := s.validator.Struct(newCfg); err != nil {
 		// 回滚：删除刚刚设置的值
 		_ = s.provider.DeleteConfig(ctx, key)
-		return fmt.Errorf("new config validation failed, rolled back: %w", err)
+		return errors.Wrap(err, errors.ErrCodeConfigInvalidValue, "New config validation failed, rolled back").
+			WithContext("key", key)
 	}
 
 	s.cfg = newCfg
@@ -203,17 +211,21 @@ func (s *Service) ListDynamicConfigs(ctx context.Context) (map[string]string, er
 func (s *Service) DeleteDynamicConfig(ctx context.Context, key string) error {
 	// 验证 key 是否允许数据库存储
 	if !s.loader.AllowDatabaseStorage(key) {
-		return fmt.Errorf("config key '%s' is not a dynamic config (db:false)", key)
+		return errors.New(errors.ErrCodeConfigNotDynamic, "Config key is not dynamic").
+			WithContext("key", key).
+			WithContext("reason", "db:false")
 	}
 
 	if err := s.provider.DeleteConfig(ctx, key); err != nil {
-		return fmt.Errorf("failed to delete config: %w", err)
+		return errors.Wrap(err, errors.ErrCodeConfigDeleteFailed, "Failed to delete config").
+			WithContext("key", key)
 	}
 
 	// 重新加载配置
 	newCfg, err := s.loader.Load(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to reload config after deletion: %w", err)
+		return errors.Wrap(err, errors.ErrCodeConfigLoadFailed, "Failed to reload config after deletion").
+			WithContext("key", key)
 	}
 
 	s.cfg = newCfg

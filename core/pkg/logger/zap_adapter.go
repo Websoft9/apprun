@@ -2,7 +2,7 @@ package logger
 
 import (
 	"context"
-	"fmt"
+	"apprun/pkg/errors"
 	"os"
 	"strings"
 
@@ -26,7 +26,7 @@ func validateConfig(cfg Config) error {
 	seen := make(map[string]bool)
 	for _, target := range cfg.Output.Targets {
 		if seen[target] {
-			return fmt.Errorf("duplicate output target: %s", target)
+			return errors.New(errors.ErrCodeLogInvalidConfig, "Duplicate output target").WithContext("target", target)
 		}
 		seen[target] = true
 
@@ -34,7 +34,7 @@ func validateConfig(cfg Config) error {
 		if !strings.HasPrefix(target, "file:") &&
 			target != "stdout" &&
 			target != "stderr" {
-			return fmt.Errorf("invalid output target: %s (must be stdout, stderr, or file:/path)", target)
+			return errors.New(errors.ErrCodeLogInvalidConfig, "Invalid output target").WithContext("target", target)
 		}
 	}
 
@@ -45,13 +45,13 @@ func validateConfig(cfg Config) error {
 func NewZapLogger(cfg Config) (Logger, error) {
 	// Validate configuration
 	if err := validateConfig(cfg); err != nil {
-		return nil, fmt.Errorf("invalid config: %w", err)
+		return nil, errors.Wrap(err, errors.ErrCodeLogInvalidConfig, "Invalid logger config")
 	}
 
 	// Parse log level
 	level, err := parseLevel(cfg.Level)
 	if err != nil {
-		return nil, fmt.Errorf("invalid log level: %w", err)
+		return nil, errors.Wrap(err, errors.ErrCodeLogLevelParseFailed, "Invalid log level")
 	}
 
 	// Create encoder config (JSON format)
@@ -64,7 +64,7 @@ func NewZapLogger(cfg Config) (Logger, error) {
 	// Parse output targets
 	writeSyncers, closers, err := parseOutputTargets(cfg.Output.Targets)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse output targets: %w", err)
+		return nil, errors.Wrap(err, errors.ErrCodeLogInvalidConfig, "Failed to parse output targets")
 	}
 
 	// Create multi-writer if multiple targets
@@ -125,12 +125,12 @@ func parseOutputTargets(targets []string) ([]zapcore.WriteSyncer, []func() error
 			filePath := strings.TrimPrefix(target, "file:")
 			file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 			if err != nil {
-				return nil, nil, fmt.Errorf("failed to open log file %s: %w", filePath, err)
+				return nil, nil, errors.Wrap(err, errors.ErrCodeLogFileOpenFailed, "Failed to open log file").WithContext("file", filePath)
 			}
 			syncers = append(syncers, zapcore.AddSync(file))
 			closers = append(closers, file.Close)
 		default:
-			return nil, nil, fmt.Errorf("unsupported output target: %s", target)
+			return nil, nil, errors.New(errors.ErrCodeLogInvalidConfig, "Unsupported output target").WithContext("target", target)
 		}
 	}
 
@@ -210,7 +210,7 @@ func (z *zapLogger) Close() error {
 	}
 
 	if len(errs) > 0 {
-		return fmt.Errorf("failed to close %d resources: %v", len(errs), errs)
+		return errors.New(errors.ErrCodeLogOutputFailed, "Failed to close logger resources")
 	}
 	return nil
 }

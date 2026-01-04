@@ -1,6 +1,7 @@
 package response
 
 import (
+	apperrors "apprun/pkg/errors"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -284,14 +285,14 @@ func TestValidationError(t *testing.T) {
 			name:      "validation error with field",
 			field:     "email",
 			message:   "Email format is invalid",
-			wantCode:  422,
+			wantCode:  400, // Changed from 422 to 400 (VAL category maps to 400)
 			wantField: "email",
 		},
 		{
 			name:      "validation error with empty field",
 			field:     "",
 			message:   "Validation failed",
-			wantCode:  422,
+			wantCode:  400, // Changed from 422 to 400 (VAL category maps to 400)
 			wantField: "",
 		},
 	}
@@ -318,8 +319,8 @@ func TestValidationError(t *testing.T) {
 				t.Fatal("ValidationError() should have error info")
 			}
 
-			if resp.Error.Code != "VAL_INVALID_PARAM_001" {
-				t.Errorf("ValidationError() error code = %v, want VAL_INVALID_PARAM_001", resp.Error.Code)
+			if resp.Error.Code != "CORE_VAL_INVALID_PARAM_001" {
+				t.Errorf("ValidationError() error code = %v, want CORE_VAL_INVALID_PARAM_001", resp.Error.Code)
 			}
 
 			if resp.Error.Message != tt.message {
@@ -333,6 +334,101 @@ func TestValidationError(t *testing.T) {
 				}
 				if details["field"] != tt.wantField {
 					t.Errorf("ValidationError() details field = %v, want %v", details["field"], tt.wantField)
+				}
+			}
+		})
+	}
+}
+
+func TestAppError(t *testing.T) {
+	tests := []struct {
+		name           string
+		err            error
+		wantStatusCode int
+		wantErrCode    string
+		wantMessage    string
+		wantContext    bool
+	}{
+		{
+			name:           "validation error",
+			err:            apperrors.New(apperrors.ErrCodeInvalidParam, "Invalid input"),
+			wantStatusCode: 400,
+			wantErrCode:    apperrors.ErrCodeInvalidParam,
+			wantMessage:    "Invalid input",
+			wantContext:    false,
+		},
+		{
+			name:           "not found error",
+			err:            apperrors.New(apperrors.ErrCodeNotFound, "User not found"),
+			wantStatusCode: 404,
+			wantErrCode:    apperrors.ErrCodeNotFound,
+			wantMessage:    "User not found",
+			wantContext:    false,
+		},
+		{
+			name: "error with context",
+			err: apperrors.New(apperrors.ErrCodeNotFound, "Resource not found").
+				WithContext(apperrors.ContextKeyUserID, "user123"),
+			wantStatusCode: 404,
+			wantErrCode:    apperrors.ErrCodeNotFound,
+			wantMessage:    "Resource not found",
+			wantContext:    true,
+		},
+		{
+			name:           "nil error returns success",
+			err:            nil,
+			wantStatusCode: 200,
+			wantErrCode:    "",
+			wantMessage:    "",
+			wantContext:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			AppError(w, tt.err)
+
+			if w.Code != tt.wantStatusCode {
+				t.Errorf("AppError() status code = %v, want %v", w.Code, tt.wantStatusCode)
+			}
+
+			if tt.err == nil {
+				// For nil error, expect success response
+				var resp Response
+				if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+					t.Fatalf("Failed to unmarshal response: %v", err)
+				}
+				if !resp.Success {
+					t.Error("AppError(nil) should return success")
+				}
+				return
+			}
+
+			var resp Response
+			if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+				t.Fatalf("Failed to unmarshal response: %v", err)
+			}
+
+			if resp.Success {
+				t.Error("AppError() success should be false for error")
+			}
+
+			if resp.Error == nil {
+				t.Fatal("AppError() should have error info")
+			}
+
+			if resp.Error.Code != tt.wantErrCode {
+				t.Errorf("AppError() error code = %v, want %v", resp.Error.Code, tt.wantErrCode)
+			}
+
+			if resp.Error.Message != tt.wantMessage {
+				t.Errorf("AppError() error message = %v, want %v", resp.Error.Message, tt.wantMessage)
+			}
+
+			if tt.wantContext {
+				if resp.Error.Details == nil {
+					t.Error("AppError() should have context details")
 				}
 			}
 		})

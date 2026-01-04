@@ -225,8 +225,8 @@ func TestNewZapLogger_InvalidTarget(t *testing.T) {
 	if err == nil {
 		t.Error("Expected error for invalid target")
 	}
-	if !strings.Contains(err.Error(), "invalid output target") {
-		t.Errorf("Expected 'invalid output target' error, got: %v", err)
+	if !strings.Contains(err.Error(), "Invalid logger config") {
+		t.Errorf("Expected 'Invalid logger config' error, got: %v", err)
 	}
 }
 
@@ -243,8 +243,8 @@ func TestNewZapLogger_DuplicateTarget(t *testing.T) {
 	if err == nil {
 		t.Error("Expected error for duplicate target")
 	}
-	if !strings.Contains(err.Error(), "duplicate") {
-		t.Errorf("Expected 'duplicate' error, got: %v", err)
+	if !strings.Contains(err.Error(), "Invalid logger config") {
+		t.Errorf("Expected 'Invalid logger config' error, got: %v", err)
 	}
 }
 
@@ -337,7 +337,7 @@ func TestNewZapLogger_PartialMultiTargetFailure(t *testing.T) {
 	if err == nil {
 		t.Error("Expected error for second target failure")
 	}
-	if !strings.Contains(err.Error(), "failed to open log file") {
-		t.Errorf("Expected file open error, got: %v", err)
+	if !strings.Contains(err.Error(), "Failed to parse output targets") {
+		t.Errorf("Expected 'Failed to parse output targets' error, got: %v", err)
 	}
 }

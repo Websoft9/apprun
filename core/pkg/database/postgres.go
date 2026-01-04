@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"apprun/ent"
+	"apprun/pkg/errors"
 
 	_ "github.com/lib/pq"
 )
@@ -23,13 +24,13 @@ func Connect(ctx context.Context, cfg *Config) (Client, error) {
 	// Open connection
 	client, err := ent.Open(cfg.Driver, dsn)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open database connection: %w", err)
+		return nil, errors.Wrap(err, errors.ErrCodeDatabaseConnectFailed, "Failed to open database connection")
 	}
 
 	// Run schema migration
 	if err := client.Schema.Create(ctx); err != nil {
 		client.Close()
-		return nil, fmt.Errorf("failed to create schema: %w", err)
+		return nil, errors.Wrap(err, errors.ErrCodeDatabaseMigrateFailed, "Failed to create schema")
 	}
 
 	return &entClient{client: client}, nil

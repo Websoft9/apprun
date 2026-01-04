@@ -1,5 +1,5 @@
 app:
-  name: apprun
+  name: apprun002
   version: "1.0.0"
   timezone: "Asia/Shanghai"  # or "America/New_York", "Europe/London"
 

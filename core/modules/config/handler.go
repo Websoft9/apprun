@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	apperrors "apprun/pkg/errors"
 	"apprun/pkg/response"
 
 	"github.com/go-chi/chi/v5"
@@ -51,7 +52,7 @@ func (h *Handler) GetConfig(w http.ResponseWriter, r *http.Request) {
 
 	value, source, err := h.service.GetConfigValue(r.Context(), key)
 	if err != nil {
-		response.ErrorWithRequest(w, r, http.StatusNotFound, response.ErrCodeNotFound, "config not found: "+err.Error())
+		response.AppErrorWithRequest(w, r, err)
 		return
 	}
 
@@ -84,7 +85,7 @@ func (h *Handler) GetConfig(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) UpdateConfig(w http.ResponseWriter, r *http.Request) {
 	var req UpdateConfigRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.ErrorWithRequest(w, r, http.StatusBadRequest, response.ErrCodeInvalidParam, "invalid request body: "+err.Error())
+		response.AppErrorWithRequest(w, r, apperrors.New(apperrors.ErrCodeConfigInvalidKey, "Invalid request body"))
 		return
 	}
 
@@ -100,7 +101,7 @@ func (h *Handler) UpdateConfig(w http.ResponseWriter, r *http.Request) {
 
 	// 更新配置
 	if err := h.service.UpdateConfig(r.Context(), req.Key, req.Value); err != nil {
-		response.ErrorWithRequest(w, r, http.StatusBadRequest, response.ErrCodeInvalidParam, "failed to update config: "+err.Error())
+		response.AppErrorWithRequest(w, r, err)
 		return
 	}
 
@@ -123,7 +124,7 @@ func (h *Handler) UpdateConfig(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) ListConfigs(w http.ResponseWriter, r *http.Request) {
 	configs, err := h.service.ListDynamicConfigs(r.Context())
 	if err != nil {
-		response.ErrorWithRequest(w, r, http.StatusInternalServerError, response.ErrCodeInternalError, "failed to list configs: "+err.Error())
+		response.AppErrorWithRequest(w, r, err)
 		return
 	}
 
@@ -155,7 +156,7 @@ func (h *Handler) DeleteConfig(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.service.DeleteDynamicConfig(r.Context(), key); err != nil {
-		response.ErrorWithRequest(w, r, http.StatusBadRequest, response.ErrCodeInvalidParam, "failed to delete config: "+err.Error())
+		response.AppErrorWithRequest(w, r, err)
 		return
 	}
 

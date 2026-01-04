@@ -767,3 +767,67 @@ Successfully migrated Story 10 configuration module to use the unified `pkg/resp
 **Author**: Winston (Architect Agent)  
 **Code Review**: 2025-12-29 (Amelia - Dev Agent)  
 **Response Migration**: 2025-12-30 (Amelia - Dev Agent)
+
+---
+
+## Migration History
+
+### 2026-01-04: Error Handling Migration
+**Developer**: Amelia (Dev Agent)
+
+#### Changes Made
+
+1. **Service Layer** (`modules/config/service.go`)
+   - Migrated `UpdateConfig()` method from `fmt.Errorf` to AppError
+   - Migrated `DeleteDynamicConfig()` method to AppError
+   - Added proper error context with `.WithContext()` method
+   - Maintained error wrapping hierarchy for debugging
+
+2. **Error Codes** (`pkg/errors/codes.go`)
+   - **New Code**: `ErrCodeConfigNotAllowedDB = "CONFIG_BIZ_NOT_ALLOWED_DB_004"`
+   - Used existing codes: `ErrCodeConfigNotFound`, `ErrCodeConfigInvalidValue`, `ErrCodeConfigUpdateFailed`, `ErrCodeConfigDeleteFailed`, `ErrCodeConfigLoadFailed`
+
+#### Tests Updated
+
+**Handler Tests** (`modules/config/handler_test.go`):
+1. **TestHandler_GetConfig_MissingKey**
+   - Old: Expected HTTP 422 (Unprocessable Entity)
+   - New: Expected HTTP 400 (Bad Request) - VAL category maps to 400
+
+2. **TestHandler_UpdateConfig_DBFalse**
+   - Old: Expected HTTP 400
+   - New: Expected HTTP 422 (Unprocessable Entity) - BIZ category maps to 422
+   - Updated error message assertion to match "not allowed" or "database"
+
+3. **TestHandler_UpdateConfig_InvalidJSON**
+   - Updated to use case-insensitive check for "invalid" in error message
+
+**Service Tests** (`modules/config/service_test.go`):
+1. **TestService_UpdateConfig_DBFalse**
+   - Updated error message assertion from "not allowed to be stored in database" to "not allowed"
+
+#### HTTP Status Code Mapping
+- **VAL** (Validation errors) → 400 Bad Request
+- **BIZ** (Business logic errors) → 422 Unprocessable Entity
+- **RES** (Resource errors) → 404 Not Found (if contains "NOT_FOUND"), else 400
+- **SYS** (System errors) → 500 Internal Server Error
+
+#### Test Results
+- All config module tests passing: 38/38 (100%)
+- Handler tests: 9/9 passing
+- Service tests: 7/7 passing
+- No regressions introduced
+
+#### Files Modified
+- `modules/config/service.go`: Error handling migration
+- `modules/config/handler_test.go`: Test assertions updated
+- `modules/config/service_test.go`: Error message assertions updated
+- `pkg/errors/codes.go`: New error code added
+
+---
+
+## Related Documentation
+
+- [Story 03: Error Handling](story-03-error-handling.md)
+- [Story 12: Logger Package](story-12-logger-package.md)
+- [API Design Standards](../../standards/api-design.md)

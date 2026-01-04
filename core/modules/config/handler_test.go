@@ -70,7 +70,7 @@ func TestHandler_GetConfig_MissingKey(t *testing.T) {
 	handler.GetConfig(w, req)
 
 	// Assert
-	assert.Equal(t, http.StatusUnprocessableEntity, w.Code) // 422 for validation errors
+	assert.Equal(t, http.StatusBadRequest, w.Code) // 400 for validation errors (VAL category)
 
 	var resp response.Response
 	err := json.NewDecoder(w.Body).Decode(&resp)
@@ -188,7 +188,7 @@ poc:
 	handler.UpdateConfig(w, req)
 
 	// Assert
-	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, http.StatusUnprocessableEntity, w.Code) // 422 for business logic errors (BIZ category)
 
 	var resp response.Response
 	err = json.NewDecoder(w.Body).Decode(&resp)
@@ -201,8 +201,8 @@ poc:
 	}
 	assert.True(t,
 		strings.Contains(errorMsg, "not allowed") ||
-			strings.Contains(errorMsg, "db:false"),
-		"Expected error message to contain 'not allowed' or 'db:false', got: %s", errorMsg)
+			strings.Contains(errorMsg, "database"),
+		"Expected error message to contain 'not allowed' or 'database', got: %s", errorMsg)
 }
 
 // TestHandler_UpdateConfig_InvalidJSON 测试无效的 JSON 请求体
@@ -221,13 +221,13 @@ func TestHandler_UpdateConfig_InvalidJSON(t *testing.T) {
 	handler.UpdateConfig(w, req)
 
 	// Assert
-	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, http.StatusBadRequest, w.Code) // 400 for validation errors (VAL category)
 
 	var resp response.Response
 	err := json.NewDecoder(w.Body).Decode(&resp)
 	require.NoError(t, err)
 	assert.False(t, resp.Success)
-	assert.Contains(t, resp.Error.Message, "invalid request body")
+	assert.Contains(t, strings.ToLower(resp.Error.Message), "invalid")
 }
 
 // TestHandler_ListConfigs 测试列出所有动态配置

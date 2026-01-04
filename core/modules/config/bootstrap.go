@@ -8,6 +8,7 @@ import (
 
 	internalConfig "apprun/internal/config"
 	"apprun/pkg/database"
+	"apprun/pkg/errors"
 )
 
 // Bootstrap 配置引导器，统一管理配置初始化流程
@@ -39,13 +40,13 @@ func (b *Bootstrap) LoadInitialConfig(ctx context.Context) (*internalConfig.Conf
 	// 创建没有数据库支持的加载器（但支持模块注册）
 	loader, err := NewLoaderWithRegistry(b.configDir, nil, b.registry)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create config loader: %w", err)
+		return nil, errors.Wrap(err, errors.ErrCodeConfigLoadFailed, "Failed to create config loader")
 	}
 
 	// 加载配置（从文件、环境变量等）
 	cfg, err := loader.Load(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load config: %w", err)
+		return nil, errors.Wrap(err, errors.ErrCodeConfigLoadFailed, "Failed to load config")
 	}
 
 	return cfg, nil

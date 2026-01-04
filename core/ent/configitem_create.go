@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -41,6 +42,48 @@ func (_c *ConfigitemCreate) SetIsDynamic(v bool) *ConfigitemCreate {
 func (_c *ConfigitemCreate) SetNillableIsDynamic(v *bool) *ConfigitemCreate {
 	if v != nil {
 		_c.SetIsDynamic(*v)
+	}
+	return _c
+}
+
+// SetStatus sets the "status" field.
+func (_c *ConfigitemCreate) SetStatus(v configitem.Status) *ConfigitemCreate {
+	_c.mutation.SetStatus(v)
+	return _c
+}
+
+// SetNillableStatus sets the "status" field if the given value is not nil.
+func (_c *ConfigitemCreate) SetNillableStatus(v *configitem.Status) *ConfigitemCreate {
+	if v != nil {
+		_c.SetStatus(*v)
+	}
+	return _c
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (_c *ConfigitemCreate) SetCreatedAt(v time.Time) *ConfigitemCreate {
+	_c.mutation.SetCreatedAt(v)
+	return _c
+}
+
+// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
+func (_c *ConfigitemCreate) SetNillableCreatedAt(v *time.Time) *ConfigitemCreate {
+	if v != nil {
+		_c.SetCreatedAt(*v)
+	}
+	return _c
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (_c *ConfigitemCreate) SetUpdatedAt(v time.Time) *ConfigitemCreate {
+	_c.mutation.SetUpdatedAt(v)
+	return _c
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (_c *ConfigitemCreate) SetNillableUpdatedAt(v *time.Time) *ConfigitemCreate {
+	if v != nil {
+		_c.SetUpdatedAt(*v)
 	}
 	return _c
 }
@@ -84,6 +127,18 @@ func (_c *ConfigitemCreate) defaults() {
 		v := configitem.DefaultIsDynamic
 		_c.mutation.SetIsDynamic(v)
 	}
+	if _, ok := _c.mutation.Status(); !ok {
+		v := configitem.DefaultStatus
+		_c.mutation.SetStatus(v)
+	}
+	if _, ok := _c.mutation.CreatedAt(); !ok {
+		v := configitem.DefaultCreatedAt()
+		_c.mutation.SetCreatedAt(v)
+	}
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
+		v := configitem.DefaultUpdatedAt()
+		_c.mutation.SetUpdatedAt(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -101,6 +156,20 @@ func (_c *ConfigitemCreate) check() error {
 	}
 	if _, ok := _c.mutation.IsDynamic(); !ok {
 		return &ValidationError{Name: "is_dynamic", err: errors.New(`ent: missing required field "Configitem.is_dynamic"`)}
+	}
+	if _, ok := _c.mutation.Status(); !ok {
+		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "Configitem.status"`)}
+	}
+	if v, ok := _c.mutation.Status(); ok {
+		if err := configitem.StatusValidator(v); err != nil {
+			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Configitem.status": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.CreatedAt(); !ok {
+		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Configitem.created_at"`)}
+	}
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
+		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Configitem.updated_at"`)}
 	}
 	return nil
 }
@@ -139,6 +208,18 @@ func (_c *ConfigitemCreate) createSpec() (*Configitem, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.IsDynamic(); ok {
 		_spec.SetField(configitem.FieldIsDynamic, field.TypeBool, value)
 		_node.IsDynamic = value
+	}
+	if value, ok := _c.mutation.Status(); ok {
+		_spec.SetField(configitem.FieldStatus, field.TypeEnum, value)
+		_node.Status = value
+	}
+	if value, ok := _c.mutation.CreatedAt(); ok {
+		_spec.SetField(configitem.FieldCreatedAt, field.TypeTime, value)
+		_node.CreatedAt = value
+	}
+	if value, ok := _c.mutation.UpdatedAt(); ok {
+		_spec.SetField(configitem.FieldUpdatedAt, field.TypeTime, value)
+		_node.UpdatedAt = value
 	}
 	return _node, _spec
 }

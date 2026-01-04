@@ -417,3 +417,43 @@ logger.Error("failed to encode", logger.Field{"error", err})
 - **Result**: Coverage improved from 87.1% to 88.2%, all security issues resolved, thread-safe implementation
 
 ---
+
+## Migration History
+
+### 2026-01-04: Error Handling Migration
+**Developer**: Amelia (Dev Agent)
+
+#### Changes Made
+- Migrated error handling from `fmt.Errorf` to `errors.New()` and `errors.Wrap()`
+- Updated error codes to use AppError framework
+- Maintained error wrapping hierarchy for context preservation
+
+#### Tests Updated
+Fixed 3 failing test assertions to match new error message format:
+
+1. **TestNewZapLogger_InvalidTarget**
+   - Old: Expected "invalid output target"
+   - New: Expected "Invalid logger config" (wrapped error)
+
+2. **TestNewZapLogger_DuplicateTarget**
+   - Old: Expected "duplicate"
+   - New: Expected "Invalid logger config" (wrapped error)
+
+3. **TestNewZapLogger_PartialMultiTargetFailure**
+   - Old: Expected "failed to open log file"
+   - New: Expected "Failed to parse output targets" (wrapped error)
+
+#### Error Codes Used
+- `ErrCodeLogInvalidConfig`: Invalid logger configuration
+- `ErrCodeLogFileOpenFailed`: Failed to open log file
+
+#### Test Results
+- All 22 tests passing
+- Coverage maintained at 95%+
+
+---
+
+## Related Docs
+
+- [编码规范 § 9 日志规范](../../standards/coding-standards.md#9-日志规范)
+- [Story 03: Error Handling](story-03-error-handling.md)

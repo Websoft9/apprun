@@ -6,6 +6,7 @@ import (
 	"apprun/ent/configitem"
 	"fmt"
 	"strings"
+	"time"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
@@ -16,12 +17,18 @@ type Configitem struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
-	// 配置项的键，如 poc.enabled
+	// 配置项的键，如 app.name
 	Key string `json:"key,omitempty"`
-	// 配置项的值（JSON字符串）
+	// 配置项的值（字符串）
 	Value string `json:"value,omitempty"`
 	// 是否为动态配置（db:true）
-	IsDynamic    bool `json:"is_dynamic,omitempty"`
+	IsDynamic bool `json:"is_dynamic,omitempty"`
+	// 配置项状态，支持软删除
+	Status configitem.Status `json:"status,omitempty"`
+	// 创建时间
+	CreatedAt time.Time `json:"created_at,omitempty"`
+	// 更新时间
+	UpdatedAt    time.Time `json:"updated_at,omitempty"`
 	selectValues sql.SelectValues
 }
 
@@ -34,8 +41,10 @@ func (*Configitem) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case configitem.FieldID:
 			values[i] = new(sql.NullInt64)
-		case configitem.FieldKey, configitem.FieldValue:
+		case configitem.FieldKey, configitem.FieldValue, configitem.FieldStatus:
 			values[i] = new(sql.NullString)
+		case configitem.FieldCreatedAt, configitem.FieldUpdatedAt:
+			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -74,6 +83,24 @@ func (_m *Configitem) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field is_dynamic", values[i])
 			} else if value.Valid {
 				_m.IsDynamic = value.Bool
+			}
+		case configitem.FieldStatus:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field status", values[i])
+			} else if value.Valid {
+				_m.Status = configitem.Status(value.String)
+			}
+		case configitem.FieldCreatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field created_at", values[i])
+			} else if value.Valid {
+				_m.CreatedAt = value.Time
+			}
+		case configitem.FieldUpdatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
+			} else if value.Valid {
+				_m.UpdatedAt = value.Time
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -119,6 +146,15 @@ func (_m *Configitem) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("is_dynamic=")
 	builder.WriteString(fmt.Sprintf("%v", _m.IsDynamic))
+	builder.WriteString(", ")
+	builder.WriteString("status=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Status))
+	builder.WriteString(", ")
+	builder.WriteString("created_at=")
+	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("updated_at=")
+	builder.WriteString(_m.UpdatedAt.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }

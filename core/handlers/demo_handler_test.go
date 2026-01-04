@@ -42,8 +42,8 @@ func TestDemoHandler_Create(t *testing.T) {
 	}
 
 	location := w.Header().Get("Location")
-	if location != "/api/v1/demo/123" {
-		t.Errorf("Expected Location header '/api/v1/demo/123', got '%s'", location)
+	if location != "/api/v1/demo/new-resource-123" {
+		t.Errorf("Expected Location header '/api/v1/demo/new-resource-123', got '%s'", location)
 	}
 
 	var resp response.Response
@@ -110,12 +110,12 @@ func TestDemoHandler_List(t *testing.T) {
 	}
 }
 
-func TestDemoHandler_Error(t *testing.T) {
+func TestDemoHandler_ErrorNotFound(t *testing.T) {
 	handler := NewDemoHandler()
-	req := httptest.NewRequest(http.MethodGet, "/demo/error", nil)
+	req := httptest.NewRequest(http.MethodGet, "/demo/error/not-found", nil)
 	w := httptest.NewRecorder()
 
-	handler.Error(w, req)
+	handler.ErrorNotFound(w, req)
 
 	if w.Code != http.StatusNotFound {
 		t.Errorf("Expected status 404, got %d", w.Code)
@@ -134,20 +134,20 @@ func TestDemoHandler_Error(t *testing.T) {
 		t.Fatal("Expected error info to be present")
 	}
 
-	if resp.Error.Code != response.ErrCodeNotFound {
-		t.Errorf("Expected error code %s, got %s", response.ErrCodeNotFound, resp.Error.Code)
+	if resp.Error.Code != "CORE_RES_NOT_FOUND_001" {
+		t.Errorf("Expected error code CORE_RES_NOT_FOUND_001, got %s", resp.Error.Code)
 	}
 }
 
-func TestDemoHandler_Validate(t *testing.T) {
+func TestDemoHandler_ErrorValidation(t *testing.T) {
 	handler := NewDemoHandler()
-	req := httptest.NewRequest(http.MethodPost, "/demo/validate", nil)
+	req := httptest.NewRequest(http.MethodGet, "/demo/error/validation", nil)
 	w := httptest.NewRecorder()
 
-	handler.Validate(w, req)
+	handler.ErrorValidation(w, req)
 
-	if w.Code != http.StatusUnprocessableEntity {
-		t.Errorf("Expected status 422, got %d", w.Code)
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("Expected status 400, got %d", w.Code)
 	}
 
 	var resp response.Response
@@ -163,16 +163,91 @@ func TestDemoHandler_Validate(t *testing.T) {
 		t.Fatal("Expected error info to be present")
 	}
 
-	if resp.Error.Code != response.ErrCodeInvalidParam {
-		t.Errorf("Expected error code %s, got %s", response.ErrCodeInvalidParam, resp.Error.Code)
+	if resp.Error.Code != "CORE_VAL_INVALID_PARAM_001" {
+		t.Errorf("Expected error code CORE_VAL_INVALID_PARAM_001, got %s", resp.Error.Code)
+	}
+}
+
+func TestDemoHandler_ErrorAuth(t *testing.T) {
+	handler := NewDemoHandler()
+	req := httptest.NewRequest(http.MethodGet, "/demo/error/auth", nil)
+	w := httptest.NewRecorder()
+
+	handler.ErrorAuth(w, req)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("Expected status 401, got %d", w.Code)
 	}
 
-	details, ok := resp.Error.Details.(map[string]interface{})
-	if !ok {
-		t.Fatal("Expected error details to be a map")
+	var resp response.Response
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("Failed to unmarshal response: %v", err)
 	}
 
-	if details["field"] != "email" {
-		t.Errorf("Expected field 'email', got '%v'", details["field"])
+	if resp.Error.Code != "AUTH_AUTH_TOKEN_EXPIRED_002" {
+		t.Errorf("Expected error code AUTH_AUTH_TOKEN_EXPIRED_002, got %s", resp.Error.Code)
+	}
+}
+
+func TestDemoHandler_ErrorPermission(t *testing.T) {
+	handler := NewDemoHandler()
+	req := httptest.NewRequest(http.MethodGet, "/demo/error/permission", nil)
+	w := httptest.NewRecorder()
+
+	handler.ErrorPermission(w, req)
+
+	if w.Code != http.StatusForbidden {
+		t.Errorf("Expected status 403, got %d", w.Code)
+	}
+
+	var resp response.Response
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("Failed to unmarshal response: %v", err)
+	}
+
+	if resp.Error.Code != "AUTH_PERM_NO_PERMISSION_001" {
+		t.Errorf("Expected error code AUTH_PERM_NO_PERMISSION_001, got %s", resp.Error.Code)
+	}
+}
+
+func TestDemoHandler_ErrorBusiness(t *testing.T) {
+	handler := NewDemoHandler()
+	req := httptest.NewRequest(http.MethodGet, "/demo/error/business", nil)
+	w := httptest.NewRecorder()
+
+	handler.ErrorBusiness(w, req)
+
+	if w.Code != http.StatusUnprocessableEntity {
+		t.Errorf("Expected status 422, got %d", w.Code)
+	}
+
+	var resp response.Response
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("Failed to unmarshal response: %v", err)
+	}
+
+	if resp.Error.Code != "CORE_BIZ_CONFLICT_001" {
+		t.Errorf("Expected error code CORE_BIZ_CONFLICT_001, got %s", resp.Error.Code)
+	}
+}
+
+func TestDemoHandler_ErrorSystem(t *testing.T) {
+	handler := NewDemoHandler()
+	req := httptest.NewRequest(http.MethodGet, "/demo/error/system", nil)
+	w := httptest.NewRecorder()
+
+	handler.ErrorSystem(w, req)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("Expected status 500, got %d", w.Code)
+	}
+
+	var resp response.Response
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("Failed to unmarshal response: %v", err)
+	}
+
+	if resp.Error.Code != "CORE_SYS_INTERNAL_ERROR_001" {
+		t.Errorf("Expected error code CORE_SYS_INTERNAL_ERROR_001, got %s", resp.Error.Code)
 	}
 }

@@ -17,9 +17,10 @@
 - 使用 `gofmt` 和 `goimports` 格式化代码
 - 使用 `golangci-lint` 进行静态检查
 - 所有的代码和注释都采用英文
-- 公共代码
-  - API respone 使用统一的 pkg/response
-  - Log 处理，使用统一的 pkg/logger
+- **统一使用公共包**：
+  - **错误处理**: `apprun/pkg/errors` - 统一错误码和错误包装
+  - **API 响应**: `apprun/pkg/response` - 统一 HTTP 响应格式
+  - **日志处理**: `apprun/pkg/logger` - 统一日志输出
 
 ### 1.2 命名规范
 
@@ -208,35 +209,69 @@ func CreateUser(ctx context.Context, input *CreateUserInput) (*User, error) {
 
 ### 3.2 错误处理
 
+**必须使用统一的错误处理包**: `apprun/pkg/errors`
+
 ```go
-// ✅ 推荐：显式错误处理
+import "apprun/pkg/errors"
+
+// ✅ 推荐：使用 pkg/errors 创建业务错误
 func GetUser(ctx context.Context, id string) (*User, error) {
+    if id == "" {
+        return nil, errors.New(errors.ErrCodeInvalidParam, "User ID required")
+    }
+    
     user, err := repo.FindByID(ctx, id)
     if err != nil {
-        return nil, fmt.Errorf("failed to find user: %w", err)
+        // 包装底层错误，添加上下文
+        return nil, errors.Wrap(err, errors.ErrCodeInternalError, "Failed to find user").
+            WithContext(errors.ContextKeyUserID, id)
     }
+    
+    if user == nil {
+        return nil, errors.New(errors.ErrCodeNotFound, "User not found").
+            WithContext(errors.ContextKeyUserID, id)
+    }
+    
     return user, nil
 }
 
-// ✅ 推荐：自定义错误类型
-type NotFoundError struct {
-    Resource string
-    ID       string
+// ✅ 推荐：检查错误类型
+if errors.IsNotFound(err) {
+    // 处理资源不存在
 }
 
-func (e *NotFoundError) Error() string {
-    return fmt.Sprintf("%s with ID %s not found", e.Resource, e.ID)
+if errors.IsValidation(err) {
+    // 处理验证错误
 }
 
-// 使用
-if err != nil {
-    var notFoundErr *NotFoundError
-    if errors.As(err, &notFoundErr) {
-        return http.StatusNotFound, notFoundErr
+// ✅ 推荐：HTTP 层映射状态码
+import "apprun/pkg/errors/httpmap"
+
+func HandleError(w http.ResponseWriter, err error) {
+    status := httpmap.ToHTTPStatus(err)
+    w.WriteHeader(status)
+    
+    var appErr *errors.AppError
+    if errors.As(err, &appErr) {
+        json.NewEncoder(w).Encode(map[string]interface{}{
+            "error":   appErr.Code,
+            "message": appErr.Message,
+        })
     }
-    return http.StatusInternalServerError, err
+}
+
+// ❌ 避免：直接使用 fmt.Errorf 或 errors.New (stdlib)
+func GetUser(id string) error {
+    return fmt.Errorf("user not found")  // 不推荐
 }
 ```
+
+**错误处理规范**：
+- 所有业务错误必须使用 `pkg/errors` 创建
+- 使用预定义错误码常量（见 `pkg/errors/codes.go`）
+- 底层错误必须用 `Wrap/Wrapf` 包装，保留错误链
+- 添加有用的上下文信息（user_id, request_id 等）
+- HTTP 层使用 `httpmap.ToHTTPStatus` 映射状态码
 
 ### 3.3 上下文使用
 

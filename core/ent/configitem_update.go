@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -69,6 +70,26 @@ func (_u *ConfigitemUpdate) SetNillableIsDynamic(v *bool) *ConfigitemUpdate {
 	return _u
 }
 
+// SetStatus sets the "status" field.
+func (_u *ConfigitemUpdate) SetStatus(v configitem.Status) *ConfigitemUpdate {
+	_u.mutation.SetStatus(v)
+	return _u
+}
+
+// SetNillableStatus sets the "status" field if the given value is not nil.
+func (_u *ConfigitemUpdate) SetNillableStatus(v *configitem.Status) *ConfigitemUpdate {
+	if v != nil {
+		_u.SetStatus(*v)
+	}
+	return _u
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (_u *ConfigitemUpdate) SetUpdatedAt(v time.Time) *ConfigitemUpdate {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
+}
+
 // Mutation returns the ConfigitemMutation object of the builder.
 func (_u *ConfigitemUpdate) Mutation() *ConfigitemMutation {
 	return _u.mutation
@@ -76,6 +97,7 @@ func (_u *ConfigitemUpdate) Mutation() *ConfigitemMutation {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *ConfigitemUpdate) Save(ctx context.Context) (int, error) {
+	_u.defaults()
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -101,11 +123,24 @@ func (_u *ConfigitemUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (_u *ConfigitemUpdate) defaults() {
+	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		v := configitem.UpdateDefaultUpdatedAt()
+		_u.mutation.SetUpdatedAt(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (_u *ConfigitemUpdate) check() error {
 	if v, ok := _u.mutation.Key(); ok {
 		if err := configitem.KeyValidator(v); err != nil {
 			return &ValidationError{Name: "key", err: fmt.Errorf(`ent: validator failed for field "Configitem.key": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.Status(); ok {
+		if err := configitem.StatusValidator(v); err != nil {
+			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Configitem.status": %w`, err)}
 		}
 	}
 	return nil
@@ -131,6 +166,12 @@ func (_u *ConfigitemUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	}
 	if value, ok := _u.mutation.IsDynamic(); ok {
 		_spec.SetField(configitem.FieldIsDynamic, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.Status(); ok {
+		_spec.SetField(configitem.FieldStatus, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.UpdatedAt(); ok {
+		_spec.SetField(configitem.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -194,6 +235,26 @@ func (_u *ConfigitemUpdateOne) SetNillableIsDynamic(v *bool) *ConfigitemUpdateOn
 	return _u
 }
 
+// SetStatus sets the "status" field.
+func (_u *ConfigitemUpdateOne) SetStatus(v configitem.Status) *ConfigitemUpdateOne {
+	_u.mutation.SetStatus(v)
+	return _u
+}
+
+// SetNillableStatus sets the "status" field if the given value is not nil.
+func (_u *ConfigitemUpdateOne) SetNillableStatus(v *configitem.Status) *ConfigitemUpdateOne {
+	if v != nil {
+		_u.SetStatus(*v)
+	}
+	return _u
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (_u *ConfigitemUpdateOne) SetUpdatedAt(v time.Time) *ConfigitemUpdateOne {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
+}
+
 // Mutation returns the ConfigitemMutation object of the builder.
 func (_u *ConfigitemUpdateOne) Mutation() *ConfigitemMutation {
 	return _u.mutation
@@ -214,6 +275,7 @@ func (_u *ConfigitemUpdateOne) Select(field string, fields ...string) *Configite
 
 // Save executes the query and returns the updated Configitem entity.
 func (_u *ConfigitemUpdateOne) Save(ctx context.Context) (*Configitem, error) {
+	_u.defaults()
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -239,11 +301,24 @@ func (_u *ConfigitemUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (_u *ConfigitemUpdateOne) defaults() {
+	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		v := configitem.UpdateDefaultUpdatedAt()
+		_u.mutation.SetUpdatedAt(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (_u *ConfigitemUpdateOne) check() error {
 	if v, ok := _u.mutation.Key(); ok {
 		if err := configitem.KeyValidator(v); err != nil {
 			return &ValidationError{Name: "key", err: fmt.Errorf(`ent: validator failed for field "Configitem.key": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.Status(); ok {
+		if err := configitem.StatusValidator(v); err != nil {
+			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Configitem.status": %w`, err)}
 		}
 	}
 	return nil
@@ -286,6 +361,12 @@ func (_u *ConfigitemUpdateOne) sqlSave(ctx context.Context) (_node *Configitem, 
 	}
 	if value, ok := _u.mutation.IsDynamic(); ok {
 		_spec.SetField(configitem.FieldIsDynamic, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.Status(); ok {
+		_spec.SetField(configitem.FieldStatus, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.UpdatedAt(); ok {
+		_spec.SetField(configitem.FieldUpdatedAt, field.TypeTime, value)
 	}
 	_node = &Configitem{config: _u.config}
 	_spec.Assign = _node.assignValues

@@ -2,7 +2,7 @@ package server
 
 import (
 	"context"
-	"fmt"
+	"apprun/pkg/errors"
 	"log"
 	"net/http"
 	"os"
@@ -79,7 +79,7 @@ func Start(router http.Handler, cfg *Config) error {
 		// Start HTTPS in goroutine
 		go func() {
 			if err := httpsServer.ListenAndServeTLS(cfg.SSLCertFile, cfg.SSLKeyFile); err != nil && err != http.ErrServerClosed {
-				serverErrors <- fmt.Errorf("HTTPS server error: %w", err)
+				serverErrors <- errors.Wrap(err, errors.ErrCodeServerStartFailed, "HTTPS server error")
 			}
 		}()
 
@@ -88,7 +88,7 @@ func Start(router http.Handler, cfg *Config) error {
 			log.Printf("🌐 Starting HTTP server on :%s (for health checks)", cfg.HTTPPort)
 			go func() {
 				if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-					serverErrors <- fmt.Errorf("HTTP server error: %w", err)
+					serverErrors <- errors.Wrap(err, errors.ErrCodeServerStartFailed, "HTTP server error")
 				}
 			}()
 		}
@@ -124,7 +124,7 @@ func Start(router http.Handler, cfg *Config) error {
 
 		go func() {
 			if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-				serverErrors <- fmt.Errorf("HTTP server error: %w", err)
+				serverErrors <- errors.Wrap(err, errors.ErrCodeServerStartFailed, "HTTP server error")
 			}
 		}()
 
@@ -139,7 +139,7 @@ func Start(router http.Handler, cfg *Config) error {
 			defer cancel()
 
 			if err := httpServer.Shutdown(ctx); err != nil {
-				return fmt.Errorf("server shutdown error: %w", err)
+				return errors.Wrap(err, errors.ErrCodeServerShutdownFailed, "Server shutdown error")
 			}
 
 			log.Println("✅ Server gracefully stopped")

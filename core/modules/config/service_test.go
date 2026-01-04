@@ -167,7 +167,7 @@ poc:
 	// 尝试更新 db:false 的配置项（app.version）
 	err = service.UpdateConfig(ctx, "app.version", "2.0.0")
 	assert.Error(t, err, "should fail to update db:false config")
-	assert.Contains(t, err.Error(), "not allowed to be stored in database")
+	assert.Contains(t, err.Error(), "not allowed")
 }
 
 // TestService_DeleteDynamicConfig 测试删除动态配置

@@ -14,6 +14,37 @@
 
 ## Dev Agent Record
 
+### pkg/errors Integration (2026-01-04)
+**Refactoring Summary:**
+- ✅ Integrated with pkg/errors unified error handling framework (Story 03)
+- ✅ Added AppError() and AppErrorWithRequest() functions for pkg/errors support
+- ✅ HTTP status codes now automatically mapped via httpmap.ToHTTPStatus()
+- ✅ Deprecated old Error() function (backward compatible)
+- ✅ Removed pkg/response/codes.go (replaced by pkg/errors/codes.go)
+- ✅ Updated ValidationError() to use AppError() internally
+- ✅ All tests passing: 7 test functions, 74.6% coverage
+
+**Files Changed:**
+- `core/pkg/response/response.go` - Added AppError/AppErrorWithRequest functions
+- `core/pkg/response/response_test.go` - Added TestAppError with 4 test cases
+- `core/pkg/response/codes.go` → `codes.go.bak` - Removed (replaced by pkg/errors)
+- `core/pkg/response/codes_test.go` → `codes_test.go.bak` - No longer needed
+
+**Migration Path:**
+- Old code using Error() function continues to work (deprecated)
+- New code should use AppError() with pkg/errors error codes
+- ValidationError() still works but now uses AppError() internally
+- HTTP status codes automatically determined by error category (VAL→400, RES→404, etc.)
+
+**Benefits:**
+- Unified error handling across entire apprun project
+- Automatic HTTP status mapping based on error category
+- 114+ predefined error codes for all 13 modules
+- Type-safe context keys for structured error context
+- Consistent error format with wrapping support
+
+---
+
 ### Implementation Summary
 - Implemented all core response functions (Success, Created, NoContent, Error, List, ValidationError)
 - Added PaginationInfo and ListData structures for list responses

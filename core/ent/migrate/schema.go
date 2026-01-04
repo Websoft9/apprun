@@ -14,12 +14,27 @@ var (
 		{Name: "key", Type: field.TypeString, Unique: true},
 		{Name: "value", Type: field.TypeString},
 		{Name: "is_dynamic", Type: field.TypeBool, Default: false},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"active", "inactive"}, Default: "active"},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
 	}
 	// ConfigitemsTable holds the schema information for the "configitems" table.
 	ConfigitemsTable = &schema.Table{
 		Name:       "configitems",
 		Columns:    ConfigitemsColumns,
 		PrimaryKey: []*schema.Column{ConfigitemsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "configitem_key",
+				Unique:  true,
+				Columns: []*schema.Column{ConfigitemsColumns[1]},
+			},
+			{
+				Name:    "configitem_status",
+				Unique:  false,
+				Columns: []*schema.Column{ConfigitemsColumns[4]},
+			},
+		},
 	}
 	// ServersColumns holds the columns for the "servers" table.
 	ServersColumns = []*schema.Column{
