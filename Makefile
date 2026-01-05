@@ -7,12 +7,18 @@ help:
 	@echo "Available targets:"
 	@echo ""
 	@echo "Build & Test:"
-	@echo "  build          - Build the application"
+	@echo "  build          - Generate code and build the application"
+	@echo "  generate       - Generate Ent ORM code only"
 	@echo "  test-all       - Run all tests"
 	@echo "  test-unit      - Run unit tests"
 	@echo "  test-integration - Run integration tests"
 	@echo "  test-e2e       - Run end-to-end tests"
 	@echo "  swagger        - Generate Swagger API documentation"
+	@echo ""
+	@echo "Database Migration:"
+	@echo "  migrate-diff   - Generate migration from schema changes (requires NAME=xxx)"
+	@echo "  migrate-apply  - Apply pending migrations to dev database"
+	@echo "  migrate-status - Show migration status"
 	@echo ""
 	@echo "Development Environment (Story 1):"
 	@echo "  dev-up         - Start dev dependencies (postgres + redis)"
@@ -35,8 +41,49 @@ help:
 	@echo "  clean          - Clean build artifacts"
 
 # 构建
-build:
+build: generate
 	cd core && go build -o bin/server ./cmd/server
+
+# 代码生成 (Ent ORM)
+generate:
+	@echo "🔄 Generating Ent code..."
+	@cd core && go generate ./ent
+	@echo "✅ Ent code generated"
+
+# ============================================
+# Database Migration Commands
+# ============================================
+
+# Generate migration from schema changes
+# Usage: make migrate-diff NAME=add_project_table
+migrate-diff:
+ifndef NAME
+	$(error NAME is required. Usage: make migrate-diff NAME=add_project_table)
+endif
+	@echo "📝 Generating migration: $(NAME)..."
+	@cd core && go run -mod=mod ariga.io/atlas/cmd/atlas migrate diff $(NAME) \
+		--dir "file://migrations" \
+		--to "ent://ent/schema" \
+		--dev-url "docker://postgres/15/dev?search_path=public"
+	@echo "✅ Migration generated! Please review:"
+	@ls -la core/migrations/*.sql | tail -1
+	@echo ""
+	@echo "⚠️  IMPORTANT: Review the generated SQL before committing!"
+
+# Apply pending migrations to dev database
+migrate-apply:
+	@echo "🚀 Applying migrations to dev database..."
+	@cd core && go run -mod=mod ariga.io/atlas/cmd/atlas migrate apply \
+		--dir "file://migrations" \
+		--url "postgres://apprun:dev_password_123@localhost:5432/apprun_dev?sslmode=disable"
+	@echo "✅ Migrations applied!"
+
+# Show migration status
+migrate-status:
+	@echo "📊 Migration status:"
+	@cd core && go run -mod=mod ariga.io/atlas/cmd/atlas migrate status \
+		--dir "file://migrations" \
+		--url "postgres://apprun:dev_password_123@localhost:5432/apprun_dev?sslmode=disable"
 
 # Swagger 文档生成
 swagger:

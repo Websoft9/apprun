@@ -28,6 +28,10 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     -p=$(nproc) \
     -o /apprun ./cmd/server/main.go
 
+# Download Atlas CLI for migrations
+RUN go install ariga.io/atlas/cmd/atlas@latest && \
+    cp /go/bin/atlas /atlas
+
 # Stage 2: Production - Minimal runtime image
 FROM alpine:latest
 
@@ -40,9 +44,15 @@ RUN apk --no-cache add ca-certificates tzdata wget && \
 
 WORKDIR /app
 
-# Copy binary and config from builder
+# Copy binary, config, and migrations from builder
 COPY --from=builder /apprun /app/apprun
+COPY --from=builder /atlas /usr/local/bin/atlas
 COPY --from=builder /build/config /app/config
+COPY --from=builder /build/migrations /app/migrations
+
+# Copy entrypoint script
+COPY docker/scripts/docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
 
 # Set ownership
 RUN chown -R apprun:apprun /app
@@ -56,6 +66,9 @@ EXPOSE 8080 8443
 # Health check endpoint
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
+
+# Use entrypoint for migration handling
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
 
 # Run application
 CMD ["./apprun"]

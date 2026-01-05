@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 
 	"apprun/ent"
@@ -11,7 +12,8 @@ import (
 )
 
 // Connect establishes a database connection using the provided configuration
-// It also runs schema migration automatically
+// Note: This function only establishes the connection. For schema migrations,
+// use the Migrator from migrate.go or run migrations via CLI/CI/CD.
 func Connect(ctx context.Context, cfg *Config) (Client, error) {
 	if cfg == nil {
 		cfg = DefaultConfig()
@@ -21,16 +23,24 @@ func Connect(ctx context.Context, cfg *Config) (Client, error) {
 	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.DBName)
 
-	// Open connection
-	client, err := ent.Open(cfg.Driver, dsn)
+	// First, verify connection is reachable using database/sql directly
+	// This is necessary because ent.Open() does lazy connection
+	db, err := sql.Open(cfg.Driver, dsn)
 	if err != nil {
 		return nil, errors.Wrap(err, errors.ErrCodeDatabaseConnectFailed, "Failed to open database connection")
 	}
 
-	// Run schema migration
-	if err := client.Schema.Create(ctx); err != nil {
-		client.Close()
-		return nil, errors.Wrap(err, errors.ErrCodeDatabaseMigrateFailed, "Failed to create schema")
+	// Ping to verify connection is alive
+	if err := db.PingContext(ctx); err != nil {
+		db.Close()
+		return nil, errors.Wrap(err, errors.ErrCodeDatabaseConnectFailed, "Failed to connect to database")
+	}
+	db.Close() // Close the test connection
+
+	// Now open with Ent client
+	client, err := ent.Open(cfg.Driver, dsn)
+	if err != nil {
+		return nil, errors.Wrap(err, errors.ErrCodeDatabaseConnectFailed, "Failed to create ent client")
 	}
 
 	return &entClient{client: client}, nil

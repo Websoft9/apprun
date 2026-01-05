@@ -40,10 +40,12 @@ Story (Executable Tasks)
 | Sprint-0 | Story 02: 统一响应工具包 | Infrastructure | Done |
 | Sprint-0 | Story 03: 业务错误包装框架 | Infrastructure | Done |
 | Sprint-0 | Story 04: Ent Schema 配置管理 | Config | Done |
+| Sprint-0 | Story 05: # Story 5a: 数据库增量迁移 | Database | ✅ Done |
+| Sprint-0 | Story 05: # Story 5b: 服务端 CLI 框架 | CLI/Admin | Planning |
 | Sprint-0 | Story 05: CI/CD 流水线与 Linter | Infrastructure | Planning |
 | Sprint-0 | Story 06: 测试框架与工具集 | Infrastructure | Planning |
 | Sprint-0 | Story 07: 重构现有 Handlers | Infrastructure | Planning |
-| Sprint-0 | Story 08: i18n 国际化Infrastructure | Infrastructure | Planning |
+| Sprint-0 | Story 08: i18n 国际化基础设施 | Infrastructure | Planning |
 | Sprint-0 | Story 09: l10n Localization 本地化实施 | Infrastructure | Planning |
 | Sprint-0 | Story 10: Configuration Center Foundation |  | Done |
 | Sprint-0 | Story 11: Swagger API Documentation |  | Done |

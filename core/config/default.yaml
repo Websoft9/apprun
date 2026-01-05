@@ -10,6 +10,7 @@ database:
   user: apprun
   password: "dev_password_123"
   db_name: apprun_dev
+  auto_migrate: false  # Set to true for dev only; production must be false
 
 poc:
   enabled: true
@@ -20,6 +21,12 @@ logger:
   level: info
   output:
     targets: ["stdout"]
+
+# i18n configuration (internationalization)
+i18n:
+  default_language: "en-US"
+  supported_languages: ["en-US", "zh-CN"]
+  translations_path: "./pkg/i18n/testdata"  # Path to translation files
 
 # Server configuration (infrastructure, not managed by config center)
 # Override via environment variables following naming convention:

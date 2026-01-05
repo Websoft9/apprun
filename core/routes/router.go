@@ -3,6 +3,8 @@ package routes
 import (
 	"net/http"
 
+	"apprun/handlers"
+	internalMiddleware "apprun/internal/middleware"
 	configModule "apprun/modules/config"
 
 	"github.com/go-chi/chi/v5"
@@ -20,6 +22,9 @@ func SetupRoutes(configService *configModule.Service) *chi.Mux {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
+	// Use i18n language detector middleware
+	r.Use(internalMiddleware.LanguageDetector())
+
 	// Health check at root
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -32,6 +37,11 @@ func SetupRoutes(configService *configModule.Service) *chi.Mux {
 		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte("Hello, apprun API"))
+		})
+
+		// demo routes
+		r.Route("/demo", func(r chi.Router) {
+			r.Get("/i18n", handlers.I18nDemoHandler)
 		})
 
 		// feature/config routes (如果提供了配置服务)

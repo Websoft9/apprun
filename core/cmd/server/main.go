@@ -9,6 +9,7 @@ import (
 	"apprun/modules/config"
 	"apprun/pkg/database"
 	"apprun/pkg/env"
+	"apprun/pkg/i18n"
 	"apprun/pkg/logger"
 	"apprun/pkg/server"
 	"apprun/routes"
@@ -61,6 +62,24 @@ func main() {
 		log.Fatalf("❌ Failed to register logger config: %v", err)
 	}
 	log.Println("✅ Logger module registered with config center")
+
+	// Register i18n configuration with config center
+	if err := registry.Register("i18n", &i18n.Config{}); err != nil {
+		log.Fatalf("❌ Failed to register i18n config: %v", err)
+	}
+	log.Println("✅ i18n module registered with config center")
+
+	// Phase 1.5: Initialize i18n Infrastructure
+	// i18n system is initialized before business modules to support localized messages
+	i18nCfg := i18n.DefaultConfig()
+	// Override from environment if provided
+	if path := env.Get("I18N_LOCALES_PATH", ""); path != "" {
+		i18nCfg.TranslationsPath = path
+	}
+	if err := i18n.InitWithConfig(i18nCfg); err != nil {
+		log.Fatalf("❌ Failed to initialize i18n: %v", err)
+	}
+	log.Printf("✅ i18n system initialized (%s, %v)", i18nCfg.DefaultLanguage, i18nCfg.SupportedLanguages)
 
 	// Create configuration bootstrapper with registry
 	bootstrap := config.NewBootstrapWithRegistry(env.Get("CONFIG_DIR", "./config"), registry)

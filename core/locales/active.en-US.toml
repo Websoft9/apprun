@@ -1,0 +1,48 @@
+# English translation file
+# Error messages
+[errors.invalid_param]
+other = "Invalid request parameters"
+
+[errors.not_found]
+other = "Resource not found"
+
+[errors.unauthorized]
+other = "Unauthorized access"
+
+[errors.forbidden]
+other = "Forbidden"
+
+[errors.internal_error]
+other = "Internal server error"
+
+[errors.bad_request]
+other = "Bad request"
+
+[errors.conflict]
+other = "Resource conflict"
+
+[errors.validation_failed]
+other = "Validation failed"
+
+# Success messages
+[success.created]
+other = "Created successfully"
+
+[success.updated]
+other = "Updated successfully"
+
+[success.deleted]
+other = "Deleted successfully"
+
+[success.operation_completed]
+other = "Operation completed"
+
+# Common messages
+[common.welcome]
+other = "Welcome"
+
+[common.loading]
+other = "Loading..."
+
+[common.saving]
+other = "Saving..."
