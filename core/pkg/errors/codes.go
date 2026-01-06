@@ -88,7 +88,9 @@ const (
 // AUTH - Validation errors
 const (
 	ErrCodeAuthInvalidEmail = "AUTH_VAL_INVALID_EMAIL_001"
+	// #nosec G101 -- this is an error code constant, not a credential
 	ErrCodeAuthWeakPassword = "AUTH_VAL_WEAK_PASSWORD_002"
+	// #nosec G101 -- this is an error code constant, not a credential
 	ErrCodeAuthInvalidToken = "AUTH_VAL_INVALID_TOKEN_003"
 	ErrCodeAuthInvalidCode  = "AUTH_VAL_INVALID_CODE_004"
 	ErrCodeAuthMissingParam = "AUTH_VAL_MISSING_PARAM_005"
@@ -103,12 +105,14 @@ const (
 
 // AUTH - Authentication errors
 const (
+	// #nosec G101 -- this is an error code constant, not a credential
 	ErrCodeAuthInvalidCredentials = "AUTH_AUTH_INVALID_CREDENTIALS_001"
-	ErrCodeAuthTokenExpired       = "AUTH_AUTH_TOKEN_EXPIRED_002"
-	ErrCodeAuthSessionExpired     = "AUTH_AUTH_SESSION_EXPIRED_003"
-	ErrCodeAuthAccountDisabled    = "AUTH_AUTH_ACCOUNT_DISABLED_004"
-	ErrCodeAuthAccountLocked      = "AUTH_AUTH_ACCOUNT_LOCKED_005"
-	ErrCodeAuthTooManyAttempts    = "AUTH_AUTH_TOO_MANY_ATTEMPTS_006"
+	// #nosec G101 -- this is an error code constant, not a credential
+	ErrCodeAuthTokenExpired    = "AUTH_AUTH_TOKEN_EXPIRED_002"
+	ErrCodeAuthSessionExpired  = "AUTH_AUTH_SESSION_EXPIRED_003"
+	ErrCodeAuthAccountDisabled = "AUTH_AUTH_ACCOUNT_DISABLED_004"
+	ErrCodeAuthAccountLocked   = "AUTH_AUTH_ACCOUNT_LOCKED_005"
+	ErrCodeAuthTooManyAttempts = "AUTH_AUTH_TOO_MANY_ATTEMPTS_006"
 )
 
 // AUTH - Permission errors
@@ -122,7 +126,9 @@ const (
 const (
 	ErrCodeAuthEmailExists    = "AUTH_BIZ_EMAIL_EXISTS_001"
 	ErrCodeAuthUsernameExists = "AUTH_BIZ_USERNAME_EXISTS_002"
-	ErrCodeAuthTokenUsed      = "AUTH_BIZ_TOKEN_USED_003"
+	// #nosec G101 -- this is an error code constant, not a credential
+	ErrCodeAuthTokenUsed = "AUTH_BIZ_TOKEN_USED_003"
+	// #nosec G101 -- this is an error code constant, not a credential
 	ErrCodeAuthInvalidOldPass = "AUTH_BIZ_INVALID_OLD_PASS_004"
 )
 

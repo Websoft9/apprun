@@ -67,6 +67,3 @@ require (
 	golang.org/x/tools v0.40.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-// Tool dependencies (installed via go install in Dockerfile.base)
-// - ariga.io/atlas/cmd/atlas@latest: Database migration tool (prebuilt in base image)

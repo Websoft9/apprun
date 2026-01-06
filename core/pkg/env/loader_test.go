@@ -31,6 +31,7 @@ database:
   password: testpass
   db_name: testdb
 `
+	// #nosec G306 -- test file, 0644 is acceptable
 	err := os.WriteFile(configFile, []byte(configContent), 0644)
 	assert.NoError(t, err)
 
@@ -74,6 +75,7 @@ database:
   host: testhost
   port: 3306
 `
+	// #nosec G306 -- test file, 0644 is acceptable
 	err := os.WriteFile(configFile, []byte(configContent), 0644)
 	assert.NoError(t, err)
 
@@ -112,6 +114,7 @@ func TestLoadConfigToEnv_InvalidYAML(t *testing.T) {
 invalid yaml content
   no proper structure
 `
+	// #nosec G306 -- test file, 0644 is acceptable
 	err := os.WriteFile(configFile, []byte(configContent), 0644)
 	assert.NoError(t, err)
 

@@ -149,12 +149,14 @@ func AppErrorWithRequest(w http.ResponseWriter, r *http.Request, err error) {
 }
 
 // Error provides backward compatibility with old error code format
+//
 // Deprecated: Use AppError instead
 func Error(w http.ResponseWriter, code int, errCode, message string) {
 	ErrorWithRequest(w, nil, code, errCode, message)
 }
 
 // ErrorWithRequest provides backward compatibility
+//
 // Deprecated: Use AppErrorWithRequest instead
 func ErrorWithRequest(w http.ResponseWriter, r *http.Request, code int, errCode, message string) {
 	w.Header().Set("Content-Type", "application/json")
@@ -239,18 +241,20 @@ func NoContent(w http.ResponseWriter) {
 }
 
 // ValidationError provides backward compatibility
+//
 // Deprecated: Use AppError with errors.New(errors.ErrCodeInvalidParam, ...) instead
 func ValidationError(w http.ResponseWriter, field, message string) {
 	ValidationErrorWithRequest(w, nil, field, message)
 }
 
 // ValidationErrorWithRequest provides backward compatibility
+//
 // Deprecated: Use AppErrorWithRequest instead
 func ValidationErrorWithRequest(w http.ResponseWriter, r *http.Request, field, message string) {
 	// Create AppError for validation
 	err := errors.New(errors.ErrCodeInvalidParam, message)
 	if field != "" {
-		err.WithContext("field", field)
+		_ = err.WithContext("field", field)
 	}
 
 	AppErrorWithRequest(w, r, err)

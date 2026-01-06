@@ -101,6 +101,7 @@ poc:
   database: "postgres://user:pass@localhost:5432/apprun_poc"
   apikey: "test-api-key-12345"
 `
+	// #nosec G306 -- test file, 0644 is acceptable
 	err := os.WriteFile(filepath.Join(tmpDir, "default.yaml"), []byte(defaultYAML), 0644)
 	require.NoError(t, err)
 
@@ -164,6 +165,7 @@ poc:
   database: "postgres://user:pass@localhost:5432/apprun_poc"
   apikey: "test-api-key-12345"
 `
+	// #nosec G306 -- test file, 0644 is acceptable
 	err := os.WriteFile(filepath.Join(tmpDir, "default.yaml"), []byte(defaultYAML), 0644)
 	require.NoError(t, err)
 
@@ -360,6 +362,7 @@ poc:
   database: "postgres://user:pass@localhost:5432/apprun_poc"
   apikey: "test-api-key-12345"
 `
+	// #nosec G306 -- test file, 0644 is acceptable
 	err := os.WriteFile(filepath.Join(tmpDir, "default.yaml"), []byte(defaultYAML), 0644)
 	require.NoError(t, err)
 

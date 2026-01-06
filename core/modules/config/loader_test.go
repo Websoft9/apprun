@@ -42,6 +42,7 @@ database:
   host: "db.example.com"
   port: 3306
 `
+	// #nosec G306 -- test file, 0644 is acceptable
 	err := os.WriteFile(filepath.Join(tmpDir, "default.yaml"), []byte(defaultYAML), 0644)
 	require.NoError(t, err)
 
@@ -69,6 +70,7 @@ database:
   host: "localhost"
   port: 5432
 `
+	// #nosec G306 -- test file, 0644 is acceptable
 	err := os.WriteFile(filepath.Join(tmpDir, "default.yaml"), []byte(defaultYAML), 0644)
 	require.NoError(t, err)
 
@@ -78,6 +80,7 @@ database:
   host: "prod-db.example.com"
   port: 5433
 `
+	// #nosec G306 -- test file, 0644 is acceptable
 	err = os.WriteFile(filepath.Join(tmpDir, "database.yaml"), []byte(databaseYAML), 0644)
 	require.NoError(t, err)
 
@@ -97,6 +100,7 @@ database:
 func TestLoader_ConfD(t *testing.T) {
 	tmpDir := t.TempDir()
 	confDDir := filepath.Join(tmpDir, "conf_d")
+	// #nosec G301 -- test directory, 0755 is acceptable
 	require.NoError(t, os.Mkdir(confDDir, 0755))
 
 	// 创建 default.yaml
@@ -105,6 +109,7 @@ poc:
   enabled: false
   database: "default-db"
 `
+	// #nosec G306 -- test file, 0644 is acceptable
 	err := os.WriteFile(filepath.Join(tmpDir, "default.yaml"), []byte(defaultYAML), 0644)
 	require.NoError(t, err)
 
@@ -114,6 +119,7 @@ poc:
   enabled: true
   database: "custom-poc-db"
 `
+	// #nosec G306 -- test file, 0644 is acceptable
 	err = os.WriteFile(filepath.Join(confDDir, "custom-poc.yaml"), []byte(customYAML), 0644)
 	require.NoError(t, err)
 
@@ -141,6 +147,7 @@ poc:
   enabled: false
   api_key: "file-key"
 `
+	// #nosec G306 -- test file, 0644 is acceptable
 	err := os.WriteFile(filepath.Join(tmpDir, "default.yaml"), []byte(defaultYAML), 0644)
 	require.NoError(t, err)
 
@@ -182,6 +189,7 @@ app:
 database:
   host: "file-db.example.com"
 `
+	// #nosec G306 -- test file, 0644 is acceptable
 	err := os.WriteFile(filepath.Join(tmpDir, "default.yaml"), []byte(defaultYAML), 0644)
 	require.NoError(t, err)
 

@@ -44,6 +44,7 @@ logger:
     file_path: "/var/log/apprun.log"
     max_size: 100
 `
+	// #nosec G306 -- test file, 0644 is acceptable
 	err := os.WriteFile(defaultConfigPath, []byte(configContent), 0644)
 	require.NoError(t, err)
 
@@ -119,6 +120,7 @@ logger:
   output:
     targets: ["stdout"]
 `
+	// #nosec G306 -- test file, 0644 is acceptable
 	err := os.WriteFile(defaultConfigPath, []byte(configContent), 0644)
 	require.NoError(t, err)
 

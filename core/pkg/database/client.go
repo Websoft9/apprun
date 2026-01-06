@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"log"
 
 	"apprun/ent"
 )
@@ -48,7 +49,9 @@ func (c *entClient) Tx(ctx context.Context, fn func(tx *ent.Tx) error) error {
 
 	defer func() {
 		if v := recover(); v != nil {
-			tx.Rollback()
+			if err := tx.Rollback(); err != nil {
+				log.Printf("Failed to rollback transaction after panic: %v", err)
+			}
 			panic(v)
 		}
 	}()

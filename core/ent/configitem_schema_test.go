@@ -16,7 +16,11 @@ import (
 // TestConfigitem_UniqueKeyConstraint tests key unique constraint
 func TestConfigitem_UniqueKeyConstraint(t *testing.T) {
 	client := enttest.Open(t, "sqlite3", "file:ent?mode=memory&cache=shared&_fk=1")
-	defer client.Close()
+	defer func() {
+		if err := client.Close(); err != nil {
+			t.Logf("Failed to close client: %v", err)
+		}
+	}()
 
 	ctx := context.Background()
 
@@ -38,7 +42,11 @@ func TestConfigitem_UniqueKeyConstraint(t *testing.T) {
 // TestConfigitem_StatusEnum tests status enum validation
 func TestConfigitem_StatusEnum(t *testing.T) {
 	client := enttest.Open(t, "sqlite3", "file:ent?mode=memory&cache=shared&_fk=1")
-	defer client.Close()
+	defer func() {
+		if err := client.Close(); err != nil {
+			t.Logf("Failed to close client: %v", err)
+		}
+	}()
 
 	ctx := context.Background()
 
@@ -72,7 +80,11 @@ func TestConfigitem_StatusEnum(t *testing.T) {
 // TestConfigitem_AutoTimestamps tests created_at and updated_at
 func TestConfigitem_AutoTimestamps(t *testing.T) {
 	client := enttest.Open(t, "sqlite3", "file:ent?mode=memory&cache=shared&_fk=1")
-	defer client.Close()
+	defer func() {
+		if err := client.Close(); err != nil {
+			t.Logf("Failed to close client: %v", err)
+		}
+	}()
 
 	ctx := context.Background()
 	beforeCreate := time.Now()

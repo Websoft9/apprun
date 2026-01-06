@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 
 	"apprun/ent"
 	"apprun/pkg/errors"
@@ -32,10 +33,14 @@ func Connect(ctx context.Context, cfg *Config) (Client, error) {
 
 	// Ping to verify connection is alive
 	if err := db.PingContext(ctx); err != nil {
-		db.Close()
+		if closeErr := db.Close(); closeErr != nil {
+			log.Printf("Failed to close database after ping failure: %v", closeErr)
+		}
 		return nil, errors.Wrap(err, errors.ErrCodeDatabaseConnectFailed, "Failed to connect to database")
 	}
-	db.Close() // Close the test connection
+	if err := db.Close(); err != nil {
+		log.Printf("Warning: Failed to close test connection: %v", err)
+	} // Close the test connection
 
 	// Now open with Ent client
 	client, err := ent.Open(cfg.Driver, dsn)

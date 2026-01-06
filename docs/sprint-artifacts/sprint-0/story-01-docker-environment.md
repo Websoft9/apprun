@@ -53,7 +53,7 @@ As a developer and DevOps engineer, I want a flexible Docker environment with lo
 │ - Pre-installed Go dependencies         │
 │ - Build tools (git, make)               │
 │ - Atlas CLI (database migration tool)   │
-│ - Size: ~500MB (cached)                 │
+│ - Size: ~1.52GB (optimized multi-stage) │
 └─────────────────────────────────────────┘
               ↓
 ┌─────────────────────────────────────────┐

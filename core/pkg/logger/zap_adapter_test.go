@@ -165,7 +165,11 @@ func TestZapLogger_LevelFiltering(t *testing.T) {
 // TestZapLogger_MultipleTargets tests multi-target output
 func TestZapLogger_MultipleTargets(t *testing.T) {
 	tmpFile := "/tmp/test-logger.log"
-	defer os.Remove(tmpFile)
+	defer func() {
+		if err := os.Remove(tmpFile); err != nil {
+			t.Logf("Failed to remove temp file: %v", err)
+		}
+	}()
 
 	cfg := Config{
 		Level: LevelInfo,
@@ -178,7 +182,11 @@ func TestZapLogger_MultipleTargets(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create zap logger: %v", err)
 	}
-	defer log.Close()
+	defer func() {
+		if err := log.Close(); err != nil {
+			t.Logf("Failed to close logger: %v", err)
+		}
+	}()
 
 	log.Info("multi-target test")
 
@@ -206,7 +214,11 @@ func TestNewZapLogger_InvalidLevel(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Should degrade gracefully, got error: %v", err)
 	}
-	defer log.Close()
+	defer func() {
+		if err := log.Close(); err != nil {
+			t.Logf("Failed to close logger: %v", err)
+		}
+	}()
 
 	// Should still work with degraded level
 	log.Info("test message")
@@ -270,7 +282,11 @@ func TestNewZapLogger_FileOpenFailure(t *testing.T) {
 // TestZapLogger_Close tests Close method
 func TestZapLogger_Close(t *testing.T) {
 	tmpFile := "/tmp/test-close.log"
-	defer os.Remove(tmpFile)
+	defer func() {
+		if err := os.Remove(tmpFile); err != nil {
+			t.Logf("Failed to remove temp file: %v", err)
+		}
+	}()
 
 	cfg := Config{
 		Level: LevelInfo,

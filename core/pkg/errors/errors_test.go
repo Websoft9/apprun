@@ -55,7 +55,7 @@ func TestWrap(t *testing.T) {
 		if err.Message != "System error occurred" {
 			t.Errorf("Expected message 'System error occurred', got %s", err.Message)
 		}
-		if err.Err != originalErr {
+		if !errors.Is(err.Err, originalErr) {
 			t.Errorf("Expected underlying error to be original error")
 		}
 	})
@@ -80,7 +80,7 @@ func TestWrapf(t *testing.T) {
 		if err.Message != expected {
 			t.Errorf("Expected message %q, got %q", expected, err.Message)
 		}
-		if err.Err != originalErr {
+		if !errors.Is(err.Err, originalErr) {
 			t.Errorf("Expected underlying error to be original error")
 		}
 	})
@@ -117,7 +117,7 @@ func TestAppError_Unwrap(t *testing.T) {
 	err := Wrap(originalErr, "CORE_SYS_INTERNAL_ERROR_001", "System error")
 
 	unwrapped := err.Unwrap()
-	if unwrapped != originalErr {
+	if !errors.Is(unwrapped, originalErr) {
 		t.Errorf("Expected unwrapped error to be original error")
 	}
 
@@ -131,7 +131,7 @@ func TestAppError_WithContext(t *testing.T) {
 	err := New("CORE_VAL_INVALID_PARAM_001", "Invalid parameter")
 
 	// Test chaining with type-safe context keys
-	err.WithContext(ContextKeyUserID, "user123").
+	_ = err.WithContext(ContextKeyUserID, "user123").
 		WithContext(ContextKeyRequestID, "req456")
 
 	if err.Context == nil {
@@ -146,7 +146,7 @@ func TestAppError_WithContext(t *testing.T) {
 
 	// Test with string keys (backward compatibility)
 	err2 := New("CORE_VAL_INVALID_PARAM_001", "Invalid parameter")
-	err2.WithContext("custom_key", "custom_value")
+	_ = err2.WithContext("custom_key", "custom_value")
 
 	if err2.Context["custom_key"] != "custom_value" {
 		t.Errorf("Expected custom_key to be 'custom_value', got %v", err2.Context["custom_key"])

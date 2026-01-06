@@ -1,14 +1,19 @@
 package logger
 
 import (
-	"context"
 	"apprun/pkg/errors"
+	"context"
 	"os"
 	"strings"
 
 	"github.com/go-chi/chi/v5/middleware"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+)
+
+const (
+	outputStdout = "stdout"
+	outputStderr = "stderr"
 )
 
 // zapLogger wraps zap.Logger to implement our Logger interface
@@ -32,8 +37,8 @@ func validateConfig(cfg Config) error {
 
 		// Validate target format
 		if !strings.HasPrefix(target, "file:") &&
-			target != "stdout" &&
-			target != "stderr" {
+			target != outputStdout &&
+			target != outputStderr {
 			return errors.New(errors.ErrCodeLogInvalidConfig, "Invalid output target").WithContext("target", target)
 		}
 	}
@@ -109,7 +114,7 @@ func parseLevel(level Level) (zapcore.Level, error) {
 func parseOutputTargets(targets []string) ([]zapcore.WriteSyncer, []func() error, error) {
 	if len(targets) == 0 {
 		// Default to stdout
-		targets = []string{"stdout"}
+		targets = []string{outputStdout}
 	}
 
 	var syncers []zapcore.WriteSyncer
@@ -117,12 +122,14 @@ func parseOutputTargets(targets []string) ([]zapcore.WriteSyncer, []func() error
 
 	for _, target := range targets {
 		switch {
-		case target == "stdout":
+		case target == outputStdout:
 			syncers = append(syncers, zapcore.AddSync(os.Stdout))
 		case target == "stderr":
 			syncers = append(syncers, zapcore.AddSync(os.Stderr))
 		case strings.HasPrefix(target, "file:"):
 			filePath := strings.TrimPrefix(target, "file:")
+			// #nosec G304 -- file path is from config, not user input
+			// #nosec G302 -- log files need to be readable by monitoring tools
 			file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 			if err != nil {
 				return nil, nil, errors.Wrap(err, errors.ErrCodeLogFileOpenFailed, "Failed to open log file").WithContext("file", filePath)

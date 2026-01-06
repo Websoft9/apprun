@@ -26,6 +26,7 @@ func TestGenerateMigration(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Verify content
+	// #nosec G304 -- path is controlled in test, not user input
 	content, err := os.ReadFile(path)
 	require.NoError(t, err)
 	assert.Contains(t, string(content), "Migration: create_users")
@@ -62,6 +63,7 @@ func TestMigrationStatus(t *testing.T) {
 
 	// Create test migration file
 	migrationFile := filepath.Join(tempDir, "001_test.sql")
+	// #nosec G306 -- test file, 0644 is acceptable
 	err := os.WriteFile(migrationFile, []byte("-- test migration"), 0644)
 	require.NoError(t, err)
 

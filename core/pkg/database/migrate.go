@@ -6,6 +6,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -57,7 +58,9 @@ func NewMigratorFromConfig(ctx context.Context, cfg *Config) (*Migrator, error) 
 	}
 
 	if err := db.PingContext(ctx); err != nil {
-		db.Close()
+		if closeErr := db.Close(); closeErr != nil {
+			log.Printf("Failed to close database after ping failure: %v", closeErr)
+		}
 		return nil, errors.Wrap(err, errors.ErrCodeDatabaseConnectFailed, "failed to ping database")
 	}
 
@@ -125,7 +128,11 @@ func (m *Migrator) Status(ctx context.Context) (*MigrationStatus, error) {
 	if m.db != nil {
 		rows, err := m.db.QueryContext(ctx, "SELECT version FROM atlas_schema_revisions ORDER BY version")
 		if err == nil {
-			defer rows.Close()
+			defer func() {
+				if err := rows.Close(); err != nil {
+					log.Printf("Failed to close rows: %v", err)
+				}
+			}()
 			for rows.Next() {
 				var version string
 				if err := rows.Scan(&version); err == nil {
@@ -180,7 +187,11 @@ func AutoMigrateIfEnabled(ctx context.Context, cfg *Config) error {
 	if err != nil {
 		return err
 	}
-	defer migrator.Close()
+	defer func() {
+		if err := migrator.Close(); err != nil {
+			log.Printf("Failed to close migrator: %v", err)
+		}
+	}()
 
 	return migrator.ApplyMigrations(ctx)
 }
@@ -222,6 +233,7 @@ func GenerateMigration(ctx context.Context, name string, migrationsDir string) (
 
 `, name, version)
 
+	// #nosec G306 -- migration files need to be readable by team members
 	if err := os.WriteFile(filepath, []byte(content), 0644); err != nil {
 		return "", errors.Wrap(err, errors.ErrCodeDatabaseMigrateFailed, "failed to create migration file")
 	}

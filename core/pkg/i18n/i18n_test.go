@@ -16,6 +16,7 @@ func setupTestTranslations(t *testing.T) string {
 other = "你好"
 `
 	zhPath := filepath.Join(tmpDir, "active.zh-CN.toml")
+	// #nosec G306 -- test file, 0644 is acceptable
 	if err := os.WriteFile(zhPath, []byte(zhContent), 0644); err != nil {
 		t.Fatalf("Failed to create zh-CN test file: %v", err)
 	}
@@ -25,6 +26,7 @@ other = "你好"
 other = "Hello"
 `
 	enPath := filepath.Join(tmpDir, "active.en-US.toml")
+	// #nosec G306 -- test file, 0644 is acceptable
 	if err := os.WriteFile(enPath, []byte(enContent), 0644); err != nil {
 		t.Fatalf("Failed to create en-US test file: %v", err)
 	}
@@ -47,7 +49,9 @@ func TestInit(t *testing.T) {
 
 func TestIsSupported(t *testing.T) {
 	tmpDir := setupTestTranslations(t)
-	Init("en-US", []string{"en-US", "zh-CN"}, tmpDir)
+	if err := Init("en-US", []string{"en-US", "zh-CN"}, tmpDir); err != nil {
+		t.Fatalf("Failed to init i18n: %v", err)
+	}
 
 	tests := []struct {
 		lang     string
@@ -69,7 +73,9 @@ func TestIsSupported(t *testing.T) {
 
 func TestTranslate(t *testing.T) {
 	tmpDir := setupTestTranslations(t)
-	Init("en-US", []string{"en-US", "zh-CN"}, tmpDir)
+	if err := Init("en-US", []string{"en-US", "zh-CN"}, tmpDir); err != nil {
+		t.Fatalf("Failed to init i18n: %v", err)
+	}
 
 	tests := []struct {
 		lang      string
@@ -91,7 +97,9 @@ func TestTranslate(t *testing.T) {
 
 func TestContextFunctions(t *testing.T) {
 	tmpDir := setupTestTranslations(t)
-	Init("en-US", []string{"en-US", "zh-CN"}, tmpDir)
+	if err := Init("en-US", []string{"en-US", "zh-CN"}, tmpDir); err != nil {
+		t.Fatalf("Failed to init i18n: %v", err)
+	}
 
 	ctx := context.Background()
 

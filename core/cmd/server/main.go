@@ -28,7 +28,6 @@ import (
 // @license.name    Apache 2.0
 // @license.url     http://www.apache.org/licenses/LICENSE-2.0.html
 
-// @host            localhost:8080
 // @BasePath        /api
 
 // @schemes         http https
@@ -59,12 +58,14 @@ func main() {
 	// They are managed via environment variables loaded in Phase 0
 	registry := config.NewRegistry()
 	if err := registry.Register("logger", &logger.Config{}); err != nil {
+		cancel()
 		log.Fatalf("❌ Failed to register logger config: %v", err)
 	}
 	log.Println("✅ Logger module registered with config center")
 
 	// Register i18n configuration with config center
 	if err := registry.Register("i18n", &i18n.Config{}); err != nil {
+		cancel()
 		log.Fatalf("❌ Failed to register i18n config: %v", err)
 	}
 	log.Println("✅ i18n module registered with config center")
@@ -77,6 +78,7 @@ func main() {
 		i18nCfg.TranslationsPath = path
 	}
 	if err := i18n.InitWithConfig(i18nCfg); err != nil {
+		cancel()
 		log.Fatalf("❌ Failed to initialize i18n: %v", err)
 	}
 	log.Printf("✅ i18n system initialized (%s, %v)", i18nCfg.DefaultLanguage, i18nCfg.SupportedLanguages)
@@ -90,9 +92,14 @@ func main() {
 	dbCfg := database.DefaultConfig()
 	dbClient, err := database.Connect(ctx, dbCfg)
 	if err != nil {
+		cancel()
 		log.Fatalf("❌ Failed to connect to database: %v", err)
 	}
-	defer dbClient.Close()
+	defer func() {
+		if err := dbClient.Close(); err != nil {
+			log.Printf("⚠️  Warning: Failed to close database connection: %v", err)
+		}
+	}()
 	log.Println("✅ Database connected")
 
 	// Phase 3: Initialize Config Service (Layer 2 - Configuration Center)
@@ -123,7 +130,11 @@ func main() {
 		// Fallback to NopLogger if initialization fails
 	} else {
 		logger.SetLogger(businessLogger)
-		defer businessLogger.Close()
+		defer func() {
+			if err := businessLogger.Close(); err != nil {
+				log.Printf("⚠️  Warning: Failed to close business logger: %v", err)
+			}
+		}()
 		log.Println("✅ Business logger initialized (runtime logging ready)")
 	}
 

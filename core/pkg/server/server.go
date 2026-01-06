@@ -1,8 +1,8 @@
 package server
 
 import (
-	"context"
 	"apprun/pkg/errors"
+	"context"
 	"log"
 	"net/http"
 	"os"
@@ -55,8 +55,9 @@ func Start(router http.Handler, cfg *Config) error {
 
 	// Create HTTP server
 	httpServer := &http.Server{
-		Addr:    ":" + cfg.HTTPPort,
-		Handler: router,
+		Addr:              ":" + cfg.HTTPPort,
+		Handler:           router,
+		ReadHeaderTimeout: 10 * time.Second, // Prevent Slowloris attacks
 	}
 
 	// Channel to listen for errors
@@ -69,8 +70,9 @@ func Start(router http.Handler, cfg *Config) error {
 	if enableTLS {
 		// Start HTTPS server
 		httpsServer := &http.Server{
-			Addr:    ":" + cfg.HTTPSPort,
-			Handler: router,
+			Addr:              ":" + cfg.HTTPSPort,
+			Handler:           router,
+			ReadHeaderTimeout: 10 * time.Second, // Prevent Slowloris attacks
 		}
 
 		log.Printf("🔒 Starting HTTPS server on :%s", cfg.HTTPSPort)

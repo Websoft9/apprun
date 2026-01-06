@@ -20,10 +20,11 @@
 package httpmap
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 
-	"apprun/pkg/errors"
+	apperrors "apprun/pkg/errors"
 )
 
 // ToHTTPStatus maps an AppError to the appropriate HTTP status code
@@ -33,7 +34,8 @@ func ToHTTPStatus(err error) int {
 	}
 
 	// Try to convert to AppError
-	appErr, ok := err.(*errors.AppError)
+	appErr := &apperrors.AppError{}
+	ok := errors.As(err, &appErr)
 	if !ok {
 		// Not an AppError, return 500 as default
 		return http.StatusInternalServerError
@@ -42,26 +44,26 @@ func ToHTTPStatus(err error) int {
 	// Map based on category
 	category := appErr.Category()
 	switch category {
-	case errors.CategoryValidation:
+	case apperrors.CategoryValidation:
 		return http.StatusBadRequest // 400
 
-	case errors.CategoryResource:
+	case apperrors.CategoryResource:
 		// Check for NOT_FOUND in code
 		if strings.Contains(appErr.Code, "NOT_FOUND") {
 			return http.StatusNotFound // 404
 		}
 		return http.StatusBadRequest // 400 for other resource errors
 
-	case errors.CategoryAuth:
+	case apperrors.CategoryAuth:
 		return http.StatusUnauthorized // 401
 
-	case errors.CategoryPermission:
+	case apperrors.CategoryPermission:
 		return http.StatusForbidden // 403
 
-	case errors.CategoryBusiness:
+	case apperrors.CategoryBusiness:
 		return http.StatusUnprocessableEntity // 422
 
-	case errors.CategorySystem:
+	case apperrors.CategorySystem:
 		return http.StatusInternalServerError // 500
 
 	default:
