@@ -79,3 +79,30 @@ go test ./internal/middleware/...
 - Add new language: Add to `supported_languages` and create corresponding translation file.
 - Update translations: Modify `.toml` files, restart service to take effect.
 - Performance: Translation calls < 1ms, supports high concurrency.
+
+## Automated Translation Extraction
+
+The project includes automated tools to extract and merge translation keys:
+
+```bash
+# Extract translation keys from code
+make i18n-extract
+
+# Merge extracted keys to translation files (non-destructive)
+make i18n-merge
+
+# Extract and merge in one command
+make i18n
+
+# Build includes i18n automatically
+make build
+```
+
+The tools will:
+- Scan all Go files for `i18n.Translate()` and `i18n.TranslateContext()` calls
+- Extract message IDs (first or second parameter)
+- Create a template file with all keys
+- Merge new keys to existing translation files **without overwriting**
+- Create backups before merging
+
+This ensures translation files stay in sync with code changes.

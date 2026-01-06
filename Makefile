@@ -1,14 +1,17 @@
 # apprun Makefile
 
-.PHONY: help build test test-all test-unit test-integration test-e2e clean docker-build docker-up docker-down validate-stories sync-index dev-up dev-down run-local build-local test-local prod-up-local prod-down-local swagger
+.PHONY: help build test test-all test-unit test-integration test-e2e clean docker-build docker-up docker-down validate-stories sync-index dev-up dev-down run-local build-local test-local prod-up-local prod-down-local swagger i18n i18n-extract i18n-merge
 
 # 默认目标
 help:
 	@echo "Available targets:"
 	@echo ""
 	@echo "Build & Test:"
-	@echo "  build          - Generate code and build the application"
+	@echo "  build          - Generate code and build the application (includes i18n)"
 	@echo "  generate       - Generate Ent ORM code only"
+	@echo "  i18n           - Extract and merge translation keys"
+	@echo "  i18n-extract   - Extract translation keys from code"
+	@echo "  i18n-merge     - Merge extracted keys to translation files"
 	@echo "  test-all       - Run all tests"
 	@echo "  test-unit      - Run unit tests"
 	@echo "  test-integration - Run integration tests"
@@ -41,7 +44,7 @@ help:
 	@echo "  clean          - Clean build artifacts"
 
 # 构建
-build: generate
+build: i18n generate
 	cd core && go build -o bin/server ./cmd/server
 
 # 代码生成 (Ent ORM)
@@ -49,6 +52,28 @@ generate:
 	@echo "🔄 Generating Ent code..."
 	@cd core && go generate ./ent
 	@echo "✅ Ent code generated"
+
+# ============================================
+# i18n Commands (Story 8)
+# ============================================
+
+# Extract and merge translation keys
+i18n: i18n-extract i18n-merge
+
+# Extract translation keys from code
+i18n-extract:
+	@echo "🔍 Extracting translation keys from code..."
+	@go run scripts/i18n-extract.go -source=./core -output=./core/locales/template.toml
+	@echo "✅ Translation keys extracted"
+
+# Merge extracted keys to translation files
+i18n-merge:
+	@echo "🔄 Merging translations to en-US..."
+	@cd core && go run ../scripts/i18n-merge.go -template=./locales/template.toml -target=./locales/active.en-US.toml
+	@echo "🔄 Merging translations to zh-CN..."
+	@cd core && go run ../scripts/i18n-merge.go -template=./locales/template.toml -target=./locales/active.zh-CN.toml
+	@echo "✅ Translations merged"
+	@echo "⚠️  Please review and translate new keys in core/locales/"
 
 # ============================================
 # Database Migration Commands

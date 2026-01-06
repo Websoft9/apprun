@@ -1,48 +1,11 @@
-# 中文翻译文件
-# 错误消息
-[errors.invalid_param]
-other = "请求参数无效"
+# Translation file
+# Last updated: 2026-01-06 10:34:10
 
-[errors.not_found]
-other = "资源未找到"
+[common]
+  other = ""
 
-[errors.unauthorized]
-other = "未授权访问"
+[errors]
+  other = ""
 
-[errors.forbidden]
-other = "禁止访问"
-
-[errors.internal_error]
-other = "服务器内部错误"
-
-[errors.bad_request]
-other = "请求格式错误"
-
-[errors.conflict]
-other = "资源冲突"
-
-[errors.validation_failed]
-other = "数据验证失败"
-
-# 成功消息
-[success.created]
-other = "创建成功"
-
-[success.updated]
-other = "更新成功"
-
-[success.deleted]
-other = "删除成功"
-
-[success.operation_completed]
-other = "操作完成"
-
-# 通用消息
-[common.welcome]
-other = "欢迎使用"
-
-[common.loading]
-other = "加载中..."
-
-[common.saving]
-other = "保存中..."
+[success]
+  other = ""
