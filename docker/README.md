@@ -30,15 +30,69 @@ Base image is automatically rebuilt:
 ## Architecture
 
 ```
-apprun-base:latest (500MB)
+apprun-base:latest (599MB)
 ├── golang:1.24-alpine
 ├── Build tools (git, make)
 ├── All Go dependencies (cached)
-└── Pre-compiled stdlib
+├── Atlas CLI (from official image)
+└── Multi-arch support (amd64/arm64)
       ↓
-apprun:latest (144MB)
-└── Application binary only
+apprun:latest (178MB)
+└── Application binary + configs
 ```
+
+## GitHub Actions Workflows
+
+### 1. Build Base Image (`.github/workflows/build-base.yml`)
+
+**Purpose**: Build and publish base image to GHCR
+
+**Triggers**:
+- **Weekly**: Every Sunday 2 AM UTC
+- **On change**: When `go.mod`/`go.sum`/`Dockerfile.base` modified
+- **Manual**: Workflow dispatch with force rebuild option
+
+**Output**: `ghcr.io/websoft9/apprun-base:latest`
+
+**Usage**:
+```bash
+# Manual trigger via GitHub UI:
+Actions > Build Base Image > Run workflow > Force rebuild ✓
+```
+
+### 2. Docker Build and Publish (`.github/workflows/docker-build.yml`)
+
+**Purpose**: Build and publish application image
+
+**Triggers**:
+- Push to `main`/`develop` branches
+- Tags matching `v*`
+- Pull requests (build only, no push)
+
+**Dependencies**: Requires base image from GHCR
+
+**Behavior**:
+- ✅ Auto-pulls base image from `ghcr.io/websoft9/apprun-base:latest`
+- ⚠️ Shows warning if base image not found
+- 🔄 Falls back to full build if necessary
+
+**Output**: `ghcr.io/websoft9/apprun:latest`
+
+## First-Time Setup
+
+If you're setting up CI for the first time:
+
+1. **Build base image first**:
+   ```bash
+   # Go to GitHub Actions
+   Actions > Build Base Image > Run workflow > Force rebuild ✓
+   ```
+
+2. **Wait for completion** (~5-10 minutes)
+
+3. **Then build application**:
+   - Push to main branch
+   - Or trigger docker-build.yml manually
 
 ## When to Rebuild
 
