@@ -23,6 +23,49 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/demo/i18n": {
+            "get": {
+                "description": "Demonstrates internationalization with context-based translation",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "demo"
+                ],
+                "summary": "i18n Demo",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Language code (en-US, zh-CN)",
+                        "name": "lang",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "additionalProperties": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/config": {
             "get": {
                 "description": "Query a single configuration item by key, returns value, source and dynamic flag",
@@ -55,13 +98,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Missing key parameter",
                         "schema": {
-                            "$ref": "#/definitions/config.ErrorResponse"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "404": {
                         "description": "Configuration not found",
                         "schema": {
-                            "$ref": "#/definitions/config.ErrorResponse"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -99,7 +142,7 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request or config not allowed to store in database",
                         "schema": {
-                            "$ref": "#/definitions/config.ErrorResponse"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -137,7 +180,7 @@ const docTemplate = `{
                     "400": {
                         "description": "Missing key parameter or deletion failed",
                         "schema": {
-                            "$ref": "#/definitions/config.ErrorResponse"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -190,7 +233,7 @@ const docTemplate = `{
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/config.ErrorResponse"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -198,19 +241,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "config.ErrorResponse": {
-            "type": "object",
-            "properties": {
-                "details": {
-                    "type": "string",
-                    "example": ""
-                },
-                "error": {
-                    "type": "string",
-                    "example": "missing 'key' query parameter"
-                }
-            }
-        },
         "config.GetConfigResponse": {
             "type": "object",
             "properties": {
@@ -279,17 +309,42 @@ const docTemplate = `{
                     "type": "string",
                     "example": "poc.enabled"
                 },
-                "message": {
-                    "type": "string",
-                    "example": "config updated successfully"
-                },
-                "success": {
-                    "type": "boolean",
-                    "example": true
-                },
                 "value": {
                     "type": "string",
                     "example": "true"
+                }
+            }
+        },
+        "response.ErrorInfo": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "details": {},
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.Response": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "data": {},
+                "error": {
+                    "$ref": "#/definitions/response.ErrorInfo"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "request_id": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
                 }
             }
         }
@@ -299,7 +354,7 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "",
+	Host:             "localhost:8080",
 	BasePath:         "/api",
 	Schemes:          []string{"http", "https"},
 	Title:            "AppRun API",

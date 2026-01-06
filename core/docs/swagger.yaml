@@ -1,14 +1,5 @@
 basePath: /api
 definitions:
-  config.ErrorResponse:
-    properties:
-      details:
-        example: ""
-        type: string
-      error:
-        example: missing 'key' query parameter
-        type: string
-    type: object
   config.GetConfigResponse:
     properties:
       is_dynamic:
@@ -59,16 +50,33 @@ definitions:
       key:
         example: poc.enabled
         type: string
-      message:
-        example: config updated successfully
-        type: string
-      success:
-        example: true
-        type: boolean
       value:
         example: "true"
         type: string
     type: object
+  response.ErrorInfo:
+    properties:
+      code:
+        type: string
+      details: {}
+      message:
+        type: string
+    type: object
+  response.Response:
+    properties:
+      code:
+        type: integer
+      data: {}
+      error:
+        $ref: '#/definitions/response.ErrorInfo'
+      message:
+        type: string
+      request_id:
+        type: string
+      success:
+        type: boolean
+    type: object
+host: localhost:8080
 info:
   contact:
     email: support@websoft9.com
@@ -81,6 +89,31 @@ info:
   title: AppRun API
   version: "1.0"
 paths:
+  /api/demo/i18n:
+    get:
+      description: Demonstrates internationalization with context-based translation
+      parameters:
+      - description: Language code (en-US, zh-CN)
+        in: query
+        name: lang
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  additionalProperties:
+                    type: string
+                  type: object
+              type: object
+      summary: i18n Demo
+      tags:
+      - demo
   /config:
     delete:
       consumes:
@@ -107,7 +140,7 @@ paths:
         "400":
           description: Missing key parameter or deletion failed
           schema:
-            $ref: '#/definitions/config.ErrorResponse'
+            $ref: '#/definitions/response.Response'
       summary: Delete configuration item
       tags:
       - config
@@ -132,11 +165,11 @@ paths:
         "400":
           description: Missing key parameter
           schema:
-            $ref: '#/definitions/config.ErrorResponse'
+            $ref: '#/definitions/response.Response'
         "404":
           description: Configuration not found
           schema:
-            $ref: '#/definitions/config.ErrorResponse'
+            $ref: '#/definitions/response.Response'
       summary: Get configuration item
       tags:
       - config
@@ -164,7 +197,7 @@ paths:
         "400":
           description: Invalid request or config not allowed to store in database
           schema:
-            $ref: '#/definitions/config.ErrorResponse'
+            $ref: '#/definitions/response.Response'
       summary: Update configuration item
       tags:
       - config
@@ -205,7 +238,7 @@ paths:
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/config.ErrorResponse'
+            $ref: '#/definitions/response.Response'
       summary: List dynamic configurations
       tags:
       - config

@@ -18,8 +18,52 @@
         },
         "version": "1.0"
     },
+    "host": "localhost:8080",
     "basePath": "/api",
     "paths": {
+        "/api/demo/i18n": {
+            "get": {
+                "description": "Demonstrates internationalization with context-based translation",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "demo"
+                ],
+                "summary": "i18n Demo",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Language code (en-US, zh-CN)",
+                        "name": "lang",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "additionalProperties": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/config": {
             "get": {
                 "description": "Query a single configuration item by key, returns value, source and dynamic flag",
@@ -52,13 +96,13 @@
                     "400": {
                         "description": "Missing key parameter",
                         "schema": {
-                            "$ref": "#/definitions/config.ErrorResponse"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "404": {
                         "description": "Configuration not found",
                         "schema": {
-                            "$ref": "#/definitions/config.ErrorResponse"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -96,7 +140,7 @@
                     "400": {
                         "description": "Invalid request or config not allowed to store in database",
                         "schema": {
-                            "$ref": "#/definitions/config.ErrorResponse"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -134,7 +178,7 @@
                     "400": {
                         "description": "Missing key parameter or deletion failed",
                         "schema": {
-                            "$ref": "#/definitions/config.ErrorResponse"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -187,7 +231,7 @@
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/config.ErrorResponse"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -195,19 +239,6 @@
         }
     },
     "definitions": {
-        "config.ErrorResponse": {
-            "type": "object",
-            "properties": {
-                "details": {
-                    "type": "string",
-                    "example": ""
-                },
-                "error": {
-                    "type": "string",
-                    "example": "missing 'key' query parameter"
-                }
-            }
-        },
         "config.GetConfigResponse": {
             "type": "object",
             "properties": {
@@ -276,17 +307,42 @@
                     "type": "string",
                     "example": "poc.enabled"
                 },
-                "message": {
-                    "type": "string",
-                    "example": "config updated successfully"
-                },
-                "success": {
-                    "type": "boolean",
-                    "example": true
-                },
                 "value": {
                     "type": "string",
                     "example": "true"
+                }
+            }
+        },
+        "response.ErrorInfo": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "details": {},
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.Response": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "data": {},
+                "error": {
+                    "$ref": "#/definitions/response.ErrorInfo"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "request_id": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
                 }
             }
         }
