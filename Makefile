@@ -1,6 +1,6 @@
 # apprun Makefile
 
-.PHONY: help build test test-all test-unit test-integration test-e2e clean docker-build docker-up docker-down validate-stories sync-index dev-up dev-down run-local build-local build-base pull-base test-local prod-up-local prod-down-local swagger i18n i18n-extract i18n-merge
+.PHONY: help build test test-all test-unit test-integration test-e2e clean docker-build docker-up docker-down validate-stories sync-index dev-up dev-down run-local build-local build-base pull-base test-local prod-up-local prod-down-local swagger i18n i18n-extract i18n-merge lint lint-fix
 
 # 默认目标
 help:
@@ -12,6 +12,8 @@ help:
 	@echo "  i18n           - Extract and merge translation keys"
 	@echo "  i18n-extract   - Extract translation keys from code"
 	@echo "  i18n-merge     - Merge extracted keys to translation files"
+	@echo "  lint           - Run golangci-lint (same as CI)"
+	@echo "  lint-fix       - Run golangci-lint with auto-fix"
 	@echo "  test-all       - Run all tests"
 	@echo "  test-unit      - Run unit tests"
 	@echo "  test-integration - Run integration tests"
@@ -118,6 +120,38 @@ swagger:
 	@cd core && swag init -g cmd/server/main.go -o docs
 	@echo "✅ Swagger docs generated in core/docs/"
 	@echo "Access at: http://localhost:$${HTTP_PORT:-8080}/api/docs/"
+
+# ============================================
+# Code Quality (Story 5 - CI/CD)
+# ============================================
+
+# Run linter (same configuration as CI)
+lint:
+	@echo "🔍 Running golangci-lint..."
+	@which golangci-lint > /dev/null 2>&1 || { \
+		echo "❌ golangci-lint not installed"; \
+		echo "📥 Install with: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $$(go env GOPATH)/bin"; \
+		echo "💡 Then add $$(go env GOPATH)/bin to your PATH"; \
+		exit 1; \
+	}
+	@cd core && golangci-lint run --timeout=5m --config=../.golangci.yml
+	@echo "✅ Linting completed"
+
+# Run linter with auto-fix
+lint-fix:
+	@echo "🔧 Running golangci-lint with auto-fix..."
+	@which golangci-lint > /dev/null 2>&1 || { \
+		echo "❌ golangci-lint not installed"; \
+		echo "📥 Install with: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $$(go env GOPATH)/bin"; \
+		echo "💡 Then add $$(go env GOPATH)/bin to your PATH"; \
+		exit 1; \
+	}
+	@cd core && golangci-lint run --timeout=5m --config=../.golangci.yml --fix
+	@echo "✅ Linting with fixes completed"
+
+# ============================================
+# Testing
+# ============================================
 
 # 测试
 test-all: test-unit test-integration
