@@ -47,7 +47,26 @@ The base image supports both AMD64 and ARM64 architectures:
 
 - **AMD64**: Native x86_64 support
 - **ARM64**: Via QEMU emulation in CI/CD
-- **Atlas CLI**: Official image supports both architectures
+- **Atlas CLI**: Downloaded directly from official releases
+
+### Atlas CLI Installation Method
+
+**Previous approach** (deprecated):
+```dockerfile
+COPY --from=arigaio/atlas:latest /atlas /go/bin/atlas
+```
+❌ Problem: Atlas Docker image contains `unknown/unknown` platform layers
+
+**Current approach** (recommended):
+```dockerfile
+RUN curl -sSL -o /go/bin/atlas \
+    "https://release.ariga.io/atlas/atlas-linux-${ATLAS_ARCH}-latest"
+```
+✅ Benefits:
+- Clean manifest (only `linux/amd64` and `linux/arm64`)
+- No `unknown/unknown` pollution
+- Faster downloads
+- Direct architecture control
 
 ### Testing Multi-Arch Builds
 
