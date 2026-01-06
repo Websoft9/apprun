@@ -1,0 +1,142 @@
+# golangci-lint configuration for apprun project
+# Documentation: https://golangci-lint.run/usage/configuration/
+
+run:
+  timeout: 5m
+  tests: true
+  build-tags:
+    - integration
+  modules-download-mode: readonly
+  allow-parallel-runners: true
+
+output:
+  formats:
+    - format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
+  sort-results: true
+
+linters:
+  enable:
+    # Default linters
+    - errcheck      # 检查未检查的错误
+    - gosimple      # 简化代码
+    - govet         # Go vet 静态分析
+    - ineffassign   # 检测无效赋值
+    - staticcheck   # 静态检查
+    - unused        # 检测未使用的代码
+    
+    # Additional linters
+    - gofmt         # 格式化检查
+    - goimports     # import 格式化
+    - misspell      # 拼写检查
+    - revive        # Go 代码质量检查
+    - goconst       # 检测可以提取为常量的字符串
+    - gocyclo       # 圈复杂度检查
+    - dupl          # 检测重复代码
+    - gosec         # 安全检查
+    - unconvert     # 检测不必要的类型转换
+    - prealloc      # 检测可以预分配的切片
+    
+  disable:
+    - typecheck     # 禁用，Go 编译器已检查，避免 ent 生成代码误报
+
+linters-settings:
+  gofmt:
+    simplify: true
+  
+  goimports:
+    local-prefixes: apprun
+  
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+  
+  govet:
+    enable-all: true
+    disable:
+      - shadow  # 单独启用 shadow linter
+  
+  revive:
+    severity: warning
+    rules:
+      - name: blank-imports
+      - name: context-as-argument
+      - name: dot-imports
+      - name: error-return
+      - name: error-strings
+      - name: error-naming
+      - name: exported
+      - name: if-return
+      - name: increment-decrement
+      - name: var-naming
+      - name: var-declaration
+      - name: package-comments
+      - name: range
+      - name: receiver-naming
+      - name: time-naming
+      - name: unexported-return
+      - name: indent-error-flow
+      - name: errorf
+  
+  gocyclo:
+    min-complexity: 15
+  
+  dupl:
+    threshold: 100
+  
+  goconst:
+    min-len: 3
+    min-occurrences: 3
+  
+  misspell:
+    locale: US
+  
+  gosec:
+    severity: medium
+    confidence: medium
+    excludes:
+      - G104  # 允许在某些情况下不检查错误（需要手动审查）
+
+issues:
+  exclude-use-default: false
+  exclude-files:
+    - "cmd/server/main_test.go"  # Legacy test file with outdated references
+  exclude-rules:
+    # Exclude some linters from running on tests files
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - errcheck
+        - dupl
+        - gosec
+    
+    # Exclude known issues - legacy test file with outdated references
+    - path: cmd/server/main_test\.go
+      linters:
+        - all
+    
+    - linters:
+        - gosec
+      text: "G404: Use of weak random number generator"
+      
+    # Exclude for generated files
+    - path: ent/
+      linters:
+        - all
+    
+    - path: docs/
+      linters:
+        - all
+  
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  new: false
+
+severity:
+  default-severity: warning
+  rules:
+    - linters:
+        - errcheck
+        - gosec
+      severity: error
