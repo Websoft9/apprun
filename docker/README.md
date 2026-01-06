@@ -41,6 +41,29 @@ apprun:latest (178MB)
 └── Application binary + configs
 ```
 
+## Multi-Architecture Support
+
+The base image supports both AMD64 and ARM64 architectures:
+
+- **AMD64**: Native x86_64 support
+- **ARM64**: Via QEMU emulation in CI/CD
+- **Atlas CLI**: Official image supports both architectures
+
+### Testing Multi-Arch Builds
+
+```bash
+# Test locally (requires Docker Desktop with Buildx)
+./scripts/test-multi-arch.sh
+
+# Manual build for specific architecture
+docker buildx build \
+  --platform linux/amd64 \
+  --file docker/Dockerfile.base \
+  --tag apprun-base:amd64 \
+  --load \
+  .
+```
+
 ## GitHub Actions Workflows
 
 ### 1. Build Base Image (`.github/workflows/build-base.yml`)
