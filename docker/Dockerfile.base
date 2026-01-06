@@ -39,6 +39,10 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 # Pre-compile standard library for faster builds
 RUN go install -v std
 
+# Install Atlas CLI for database migrations (prebuilt in base)
+RUN go install ariga.io/atlas/cmd/atlas@latest && \
+    echo "✅ Atlas CLI installed: $(atlas version)"
+
 # Verify dependencies are properly cached
 RUN echo "✅ Go dependencies cached successfully" && \
     ls -lh /go/pkg/mod/cache/download | head -n 10

@@ -52,6 +52,7 @@ As a developer and DevOps engineer, I want a flexible Docker environment with lo
 │ - golang:1.24-alpine                    │
 │ - Pre-installed Go dependencies         │
 │ - Build tools (git, make)               │
+│ - Atlas CLI (database migration tool)   │
 │ - Size: ~500MB (cached)                 │
 └─────────────────────────────────────────┘
               ↓
@@ -80,6 +81,7 @@ ENV GOPROXY=https://goproxy.cn,direct
 RUN apk add --no-cache git make
 COPY go.mod go.sum ./
 RUN go mod download
+RUN go install ariga.io/atlas/cmd/atlas@latest  # Prebuilt migration tool
 ```
 
 **Dockerfile** (Application layer):
@@ -87,9 +89,11 @@ RUN go mod download
 FROM apprun-base:latest AS builder
 COPY . .
 RUN make build
+# Atlas CLI already available from base image
 
 FROM alpine:latest
 COPY --from=builder /apprun /app/
+COPY --from=builder /go/bin/atlas /usr/local/bin/  # Reuse prebuilt Atlas
 - Expose: 8080 (HTTP), 8443 (HTTPS)
 - Size target: < 30MB
 ```
@@ -98,6 +102,7 @@ COPY --from=builder /apprun /app/
 - **Cold build** (first time): ~5-8 min
 - **Warm build** (with base): ~1-2 min (60-80% faster)
 - **CI/CD builds**: Cached base image reduces pipeline time
+- **Atlas CLI**: Prebuilt in base, saves ~20-30 seconds per build
 
 ### TLS Support
 ```go
@@ -214,6 +219,8 @@ make build-local  # Uses cached base, only builds app code
 - ✅ Reduced network dependency downloads
 - ✅ Consistent dependency versions across team
 - ✅ CI/CD pipeline time reduced from ~8min to ~2min
+- ✅ Atlas CLI prebuilt, saves ~20-30s per build
+- ✅ No duplicate tool installations
 
 ---
 

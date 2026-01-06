@@ -27,9 +27,8 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     -p=$(nproc) \
     -o /apprun ./cmd/server/main.go
 
-# Download Atlas CLI for migrations
-RUN go install ariga.io/atlas/cmd/atlas@latest && \
-    cp /go/bin/atlas /atlas
+# Atlas CLI is prebuilt in base image, no need to reinstall
+# This saves ~20-30 seconds build time per build
 
 # Stage 2: Production - Minimal runtime image
 FROM alpine:latest
@@ -45,7 +44,7 @@ WORKDIR /app
 
 # Copy binary, config, and migrations from builder
 COPY --from=builder /apprun /app/apprun
-COPY --from=builder /atlas /usr/local/bin/atlas
+COPY --from=builder /go/bin/atlas /usr/local/bin/atlas
 COPY --from=builder /build/config /app/config
 COPY --from=builder /build/migrations /app/migrations
 
