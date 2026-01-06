@@ -1,0 +1,119 @@
+name: Build Base Image
+
+on:
+  # Weekly schedule (every Sunday at 2 AM UTC)
+  schedule:
+    - cron: '0 2 * * 0'
+  
+  # Manual trigger
+  workflow_dispatch:
+    inputs:
+      force_rebuild:
+        description: 'Force rebuild even if no changes'
+        required: false
+        type: boolean
+        default: false
+  
+  # Trigger on go.mod changes
+  push:
+    branches: [main, develop]
+    paths:
+      - 'core/go.mod'
+      - 'core/go.sum'
+      - 'docker/Dockerfile.base'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}-base
+
+jobs:
+  build-base:
+    name: Build and Push Base Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest
+            type=schedule,pattern={{date 'YYYYMMDD'}}
+            type=sha,prefix=sha-,format=short
+
+      - name: Check if rebuild needed
+        id: check
+        run: |
+          # Get last commit date of go.mod
+          GOMOD_DATE=$(git log -1 --format=%ct core/go.mod core/go.sum 2>/dev/null || echo 0)
+          CURRENT_DATE=$(date +%s)
+          DAYS_SINCE=$((($CURRENT_DATE - $GOMOD_DATE) / 86400))
+          
+          echo "days_since_change=$DAYS_SINCE" >> $GITHUB_OUTPUT
+          
+          if [ "${{ github.event.inputs.force_rebuild }}" = "true" ]; then
+            echo "rebuild=true" >> $GITHUB_OUTPUT
+            echo "reason=Manual force rebuild" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            echo "rebuild=true" >> $GITHUB_OUTPUT
+            echo "reason=go.mod/go.sum changed" >> $GITHUB_OUTPUT
+          elif [ $DAYS_SINCE -gt 7 ]; then
+            echo "rebuild=true" >> $GITHUB_OUTPUT
+            echo "reason=Weekly scheduled rebuild" >> $GITHUB_OUTPUT
+          else
+            echo "rebuild=false" >> $GITHUB_OUTPUT
+            echo "reason=No changes in last 7 days" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build and push base image
+        if: steps.check.outputs.rebuild == 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/Dockerfile.base
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BUILD_DATE=${{ github.event.repository.updated_at }}
+            VERSION=${{ steps.meta.outputs.version }}
+
+      - name: Image digest
+        if: steps.check.outputs.rebuild == 'true'
+        run: |
+          echo "✅ Base image built and pushed"
+          echo "📦 Tags: ${{ steps.meta.outputs.tags }}"
+          echo "📝 Reason: ${{ steps.check.outputs.reason }}"
+
+      - name: Skip build
+        if: steps.check.outputs.rebuild == 'false'
+        run: |
+          echo "⏭️ Skipping build"
+          echo "📝 Reason: ${{ steps.check.outputs.reason }}"
+          echo "💡 Last go.mod change: ${{ steps.check.outputs.days_since_change }} days ago"
+
+      - name: Update dependent workflows
+        if: steps.check.outputs.rebuild == 'true'
+        run: |
+          echo "🔔 Base image updated, application images should be rebuilt"
+          # Optional: Trigger docker-build.yml workflow
+          # gh workflow run docker-build.yml

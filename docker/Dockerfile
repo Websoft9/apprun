@@ -1,23 +1,22 @@
 # Multi-stage Dockerfile for apprun
-# Stage 1: Builder - Compile Go binary
-FROM golang:1.24-alpine AS builder
+# Uses apprun-base for faster incremental builds
 
-# Set GOPROXY for faster downloads
-ENV GOPROXY=https://goproxy.cn,https://proxy.golang.org,direct \
-    CGO_ENABLED=0 \
+# Stage 1: Builder - Compile Go binary
+# Use local tag as fallback if GHCR not available
+FROM apprun-base:latest AS builder
+
+# Build arguments
+ARG BUILD_DATE
+ARG VERSION=dev
+ARG COMMIT_SHA=unknown
+
+ENV CGO_ENABLED=0 \
     GOOS=linux \
     GOARCH=amd64
 
 WORKDIR /build
 
-# Install build dependencies
-RUN apk add --no-cache git make
-
-# Copy go module files
-COPY core/go.mod core/go.sum ./
-RUN go mod download
-
-# Copy source code
+# Copy source code (dependencies already cached in base image)
 COPY core/ ./
 
 # Build static binary with cache optimization

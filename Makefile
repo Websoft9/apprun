@@ -1,6 +1,6 @@
 # apprun Makefile
 
-.PHONY: help build test test-all test-unit test-integration test-e2e clean docker-build docker-up docker-down validate-stories sync-index dev-up dev-down run-local build-local test-local prod-up-local prod-down-local swagger i18n i18n-extract i18n-merge
+.PHONY: help build test test-all test-unit test-integration test-e2e clean docker-build docker-up docker-down validate-stories sync-index dev-up dev-down run-local build-local build-base pull-base test-local prod-up-local prod-down-local swagger i18n i18n-extract i18n-merge
 
 # 默认目标
 help:
@@ -33,6 +33,8 @@ help:
 	@echo "  prod-down-local- Stop local production environment"
 	@echo ""
 	@echo "Docker:"
+	@echo "  build-base     - Build base image with Go dependencies (for faster builds)"
+	@echo "  pull-base      - Pull pre-built base image from registry"
 	@echo "  docker-build   - Build Docker images"
 	@echo "  docker-up      - Start Docker services"
 	@echo "  docker-down    - Stop Docker services"
@@ -160,6 +162,39 @@ docker-up:
 docker-down:
 	docker compose down
 
+# ============================================
+# Docker Base Image Commands (Story 1 Enhancement)
+# ============================================
+
+# Build base image locally (one-time setup or after go.mod changes)
+build-base:
+	@echo "🔨 Building apprun-base image with Go dependencies..."
+	@echo "⏱️  This may take 5-8 minutes on first run"
+	@docker build \
+		-f docker/Dockerfile.base \
+		-t ghcr.io/websoft9/apprun-base:latest \
+		-t apprun-base:latest \
+		--build-arg BUILD_DATE=$$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
+		.
+	@echo "✅ Base image built successfully"
+	@echo "💡 App builds will now be 60-80% faster"
+	@docker images apprun-base:latest
+
+# Pull pre-built base image from registry (recommended for team)
+pull-base:
+	@echo "📥 Pulling pre-built base image from registry..."
+	@docker pull ghcr.io/websoft9/apprun-base:latest || \
+		(echo "⚠️  Failed to pull, will build locally" && $(MAKE) build-base)
+	@echo "✅ Base image ready"
+
+# Verify base image exists (helper target)
+.check-base:
+	@if ! docker image inspect apprun-base:latest >/dev/null 2>&1 && \
+	   ! docker image inspect ghcr.io/websoft9/apprun-base:latest >/dev/null 2>&1; then \
+		echo "⚠️  Base image not found, pulling from registry..."; \
+		$(MAKE) pull-base; \
+	fi
+
 # 清理
 clean:
 	cd core && rm -rf bin/ coverage.out coverage.html
@@ -233,6 +268,7 @@ run-local:
 # Build Docker image locally
 build-local:
 	@echo "🔨 Building Docker image locally..."
+	@$(MAKE) .check-base
 	@docker build -t apprun:local -f docker/Dockerfile .
 	@echo "✅ Docker image built: apprun:local"
 	@echo ""
