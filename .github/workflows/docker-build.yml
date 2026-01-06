@@ -39,7 +39,9 @@ jobs:
       - name: Check and pull base image
         id: base-image
         run: |
-          BASE_IMAGE="${{ env.REGISTRY }}/${{ github.repository_owner }}/apprun-base:latest"
+          # Convert owner to lowercase for Docker registry compatibility
+          OWNER_LOWERCASE=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          BASE_IMAGE="${{ env.REGISTRY }}/${OWNER_LOWERCASE}/apprun-base:latest"
           echo "base_image=${BASE_IMAGE}" >> $GITHUB_OUTPUT
           
           # Try to pull the base image

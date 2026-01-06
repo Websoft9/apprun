@@ -24,7 +24,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository_owner }}/apprun-base
+  IMAGE_NAME: apprun-base
 
 jobs:
   build-base:
@@ -48,11 +48,20 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Prepare image name
+        id: image-name
+        run: |
+          # Convert repository owner to lowercase for Docker registry compatibility
+          OWNER_LOWERCASE=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          FULL_IMAGE_NAME="${{ env.REGISTRY }}/${OWNER_LOWERCASE}/${{ env.IMAGE_NAME }}"
+          echo "full_name=${FULL_IMAGE_NAME}" >> $GITHUB_OUTPUT
+          echo "📦 Base image will be: ${FULL_IMAGE_NAME}"
+
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ steps.image-name.outputs.full_name }}
           tags: |
             type=raw,value=latest
             type=schedule,pattern={{date 'YYYYMMDD'}}
