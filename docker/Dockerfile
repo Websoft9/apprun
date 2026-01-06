@@ -1,14 +1,18 @@
 # Multi-stage Dockerfile for apprun
 # Uses apprun-base for faster incremental builds
 
-# Stage 1: Builder - Compile Go binary
-# Use local tag as fallback if GHCR not available
-FROM apprun-base:latest AS builder
+# Global build arguments (must be before FROM to use in FROM)
+ARG BASE_IMAGE=apprun-base:latest
 
-# Build arguments
+# Stage 1: Builder - Compile Go binary
+# Supports both local and GHCR base images
+FROM ${BASE_IMAGE} AS builder
+
+# Re-declare build arguments for this stage
 ARG BUILD_DATE
 ARG VERSION=dev
 ARG COMMIT_SHA=unknown
+ARG BASE_IMAGE
 
 ENV CGO_ENABLED=0 \
     GOOS=linux \
