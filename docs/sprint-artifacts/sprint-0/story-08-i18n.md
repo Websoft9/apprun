@@ -30,6 +30,8 @@
 ### 功能要求
 - [ ] 集成 `go-i18n` 库 (v2)
 - [ ] 创建翻译文件（TOML 格式）
+- [ ] 创建语言元数据文件（`languages.yaml`）
+- [ ] 实现语言元数据管理（加载、查询、API）
 - [ ] 实现语言检测中间件
 - [ ] 实现翻译函数（支持 Context）
 - [ ] 支持 zh-CN、en-US 两种语言
@@ -52,6 +54,7 @@
 ### Phase 1: 依赖和文件结构 (30 分钟)
 - [ ] 添加依赖：`go get github.com/nicksnyder/go-i18n/v2 github.com/BurntSushi/toml`
 - [ ] 创建 `core/locales/` 目录
+- [ ] 创建 `core/locales/languages.yaml`（语言元数据配置）
 - [ ] 创建 `core/pkg/i18n/` 目录
 - [ ] 创建 `core/pkg/middleware/` 目录
 
@@ -61,7 +64,8 @@
 - [ ] 添加常用错误和成功消息
 
 ### Phase 3: pkg/i18n 核心包 (2 小时)
-- [ ] 实现 `i18n.go`：Init、Translate、GetLanguage 等函数
+- [ ] 实现 `i18n.go`：Init、Translate、IsSupported 等函数
+- [ ] 实现 `languages.go`：LoadLanguageMetadata、GetSupportedLanguages 等函数
 - [ ] 实现 `context.go`：Context 辅助函数
 - [ ] 编写单元测试
 
@@ -85,11 +89,13 @@
 ```
 core/
 ├── locales/
+│   ├── languages.yaml        # 语言元数据（新增）
 │   ├── active.zh-CN.toml
 │   └── active.en-US.toml
 ├── pkg/
 │   ├── i18n/
 │   │   ├── i18n.go
+│   │   ├── languages.go      # 语言元数据管理（新增）
 │   │   ├── context.go
 │   │   └── i18n_test.go
 │   └── middleware/
@@ -97,6 +103,101 @@ core/
 │       └── language_test.go
 └── main.go
 ```
+
+### 语言元数据管理
+
+**目的**：维护支持的语言列表及其显示名称，用于：
+- 前端语言选择器（下拉菜单）
+- API 返回支持的语言列表
+- 语言验证和国际化信息展示
+
+**维护位置**：`core/locales/languages.yaml`
+```yaml
+# 语言元数据配置文件
+languages:
+  en-US:
+    code: "en-US"           # BCP 47 标准代码
+    name: "English"         # 原生名称
+    display_name: "English (United States)"  # 显示名称
+    direction: "ltr"        # 文字方向 (ltr/rtl)
+    enabled: true           # 是否启用
+  zh-CN:
+    code: "zh-CN"
+    name: "中文"
+    display_name: "中文（简体）"
+    direction: "ltr"
+    enabled: true
+  zh-TW:
+    code: "zh-TW"
+    name: "中文"
+    display_name: "中文（繁體）"
+    direction: "ltr"
+    enabled: false          # 预留，暂未启用
+  ar-SA:
+    code: "ar-SA"
+    name: "العربية"
+    display_name: "Arabic (Saudi Arabia)"
+    direction: "rtl"        # 阿拉伯语从右到左
+    enabled: false
+```
+
+**API 设计**：
+```go
+// pkg/i18n/languages.go
+type LanguageMetadata struct {
+    Code       string `json:"code" yaml:"code"`
+    NativeName string `json:"native_name" yaml:"native_name"` // 原生名称 (English, 中文)
+    Icon       string `json:"icon" yaml:"icon"`               // 图标/Emoji (🇺🇸, 🇨🇳)
+    Direction  string `json:"direction" yaml:"direction"`
+    Enabled    bool   `json:"enabled" yaml:"enabled"`
+    IsDefault  bool   `json:"is_default" yaml:"is_default"`   // 是否为系统默认语言
+}
+
+// GetSupportedLanguages 获取所有已启用的语言
+func GetSupportedLanguages() []LanguageMetadata
+
+// GetLanguageMetadata 获取指定语言的元数据
+func GetLanguageMetadata(code string) *LanguageMetadata
+```
+
+**配置示例**：
+```yaml
+# languages.yaml
+languages:
+  en-US:
+    code: "en-US"
+    native_name: "English"
+    icon: "🇺🇸"
+    direction: "ltr"
+    enabled: true
+    is_default: true
+  zh-CN:
+    code: "zh-CN"
+    native_name: "中文"
+    icon: "🇨🇳"
+    direction: "ltr"
+    enabled: true
+    is_default: false
+```
+
+**使用场景**：
+```go
+// 1. API: 获取支持的语言列表
+GET /api/languages
+Response: [
+  {"code": "en-US", "native_name": "English", "icon": "🇺🇸", "direction": "ltr", "is_default": true},
+  {"code": "zh-CN", "native_name": "中文", "icon": "🇨🇳", "direction": "ltr", "is_default": false}
+]
+
+// 2. 前端语言选择器
+// 使用 native_name 确保用户能识别自己的语言
+<select>
+  <option value="en-US">🇺🇸 English</option>
+  <option value="zh-CN">🇨🇳 中文</option>
+</select>
+```
+
+---
 
 ### 翻译文件示例
 
@@ -124,11 +225,35 @@ func Init(defaultLang string, supportedLangs []string, translationsPath string) 
 // 翻译（基础版本）
 func Translate(lang, messageID string, data map[string]interface{}) string
 
-// 获取支持的语言列表
-func GetSupportedLanguages() []string
+// 获取支持的语言列表（已启用）
+func GetSupportedLanguages() []LanguageMetadata
 
 // 检查语言是否支持
 func IsSupported(lang string) bool
+```
+
+**pkg/i18n/languages.go** (新增)
+```go
+// 语言元数据
+type LanguageMetadata struct {
+    Code        string `json:"code" yaml:"code"`
+    Name        string `json:"name" yaml:"name"`
+    DisplayName string `json:"display_name" yaml:"display_name"`
+    Direction   string `json:"direction" yaml:"direction"`
+    Enabled     bool   `json:"enabled" yaml:"enabled"`
+}
+
+// 加载语言元数据（从 languages.yaml）
+func LoadLanguageMetadata(path string) error
+
+// 获取所有已启用的语言元数据
+func GetSupportedLanguages() []LanguageMetadata
+
+// 获取指定语言的元数据
+func GetLanguageMetadata(code string) *LanguageMetadata
+
+// 获取语言的显示名称
+func GetLanguageName(code string) string
 ```
 
 **pkg/i18n/context.go**
@@ -205,10 +330,12 @@ func LanguageDetector() func(next http.Handler) http.Handler
 
 **pkg/i18n 测试**
 - [ ] 初始化成功，加载所有语言文件
+- [ ] 语言元数据加载和查询正常
 - [ ] 翻译返回正确的本地化文本
 - [ ] 翻译键不存在时返回 fallback
 - [ ] 支持模板变量插值
 - [ ] Context 函数正确存取语言
+- [ ] `GetSupportedLanguages()` 返回正确的元数据列表
 
 **中间件测试**
 - [ ] Query 参数优先级最高
@@ -233,11 +360,18 @@ func LanguageDetector() func(next http.Handler) http.Handler
 
 ### 初始化（main.go）
 ```go
-// 1. 初始化 i18n
-i18n.Init("en-US", []string{"en-US", "zh-CN"})
+// 1. 初始化 i18n（加载翻译文件和语言元数据）
+i18n.Init("en-US", []string{"en-US", "zh-CN"}, "locales")
+i18n.LoadLanguageMetadata("locales/languages.yaml")
 
 // 2. 注册中间件
 r.Use(middleware.LanguageDetector())
+
+// 3. 提供语言列表 API
+r.Get("/api/languages", func(w http.ResponseWriter, r *http.Request) {
+    languages := i18n.GetSupportedLanguages()
+    json.NewEncoder(w).Encode(languages)
+})
 ```
 
 ### Handler 中使用
@@ -251,9 +385,17 @@ func demoHandler(w http.ResponseWriter, r *http.Request) {
 
 ### 测试语言切换
 ```bash
+# 测试翻译
 curl "http://localhost:8080/api/demo?lang=zh-CN"  # 中文
 curl "http://localhost:8080/api/demo?lang=en-US"  # 英文
 curl -H "Accept-Language: zh-CN" "http://localhost:8080/api/demo"  # Header
+
+# 获取支持的语言列表
+curl "http://localhost:8080/api/languages"
+# Response: [
+#   {"code": "en-US", "native_name": "English", "icon": "🇺🇸", "direction": "ltr", "enabled": true, "is_default": true},
+#   {"code": "zh-CN", "native_name": "中文", "icon": "🇨🇳", "direction": "ltr", "enabled": true, "is_default": false}
+# ]
 ```
 
 ---
@@ -282,6 +424,41 @@ curl -H "Accept-Language: zh-CN" "http://localhost:8080/api/demo"  # Header
 
 - [go-i18n 官方文档](https://github.com/nicksnyder/go-i18n)
 - [Story 9: l10n 本地化](./story-09-l10n.md)
+
+---
+
+## 与 Story 09 (l10n) 的关系
+
+**Story 08 (i18n)** 和 **Story 09 (l10n)** 是互补关系，各司其职：
+
+| 维度 | Story 08 (i18n) | Story 09 (l10n) |
+|------|-----------------|-----------------|
+| **职责** | 文本翻译和语言管理 | 数字/货币/时间格式化 |
+| **核心功能** | 翻译消息、错误码 | 格式化显示值 |
+| **元数据** | 语言名称、方向 | 国家格式规则、时区 |
+| **配置文件** | `languages.yaml`, `active.*.toml` | `countries.yaml` (可选) |
+| **用户配置** | `user.language` | `user.country`, `user.timezone` |
+| **依赖关系** | 独立 | 依赖 Story 08 的语言信息 |
+
+**集成示例**：
+```go
+func GetProduct(w http.ResponseWriter, r *http.Request) {
+    // Story 08: 获取语言（用于翻译）
+    lang := i18n.GetLanguage(r.Context())
+    
+    // Story 09: 获取国家和时区（用于格式化）
+    l10nInfo := l10n.FromContext(r.Context())
+    
+    product := productRepo.FindByID(123)
+    
+    response.Success(w, map[string]interface{}{
+        "id": product.ID,
+        "name": i18n.TranslateContext(r.Context(), "product.name", nil), // Story 08
+        "price": l10n.FormatCurrency(product.Price, "USD", l10nInfo.Country), // Story 09
+        "created_at": l10n.FormatTime(product.CreatedAt, l10nInfo.Timezone, lang), // Story 09
+    })
+}
+```
 
 ---
 

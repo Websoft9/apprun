@@ -1,100 +1,60 @@
-# Story 9: l10n Localization 本地化实施
-# Sprint 0: Infrastructure建设
+# Story 9: Localization (l10n) - 本地化支持
+# Sprint 0: Infrastructure 建设
 
 **Priority**: P1  
 **Effort**: 2 天  
 **Owner**: Backend Dev  
-**Dependencies**: Story 8 (i18n 基础设施)  
+**Dependencies**: Story 8 (i18n)  
 **Status**: Planning  
-**Module**: Infrastructure  
+**Module**: pkg/l10n  
 **Issue**: #TBD  
-**Related**: [API 设计规范](../../standards/api-design.md#i18n), [i18n Standards](../../standards/i18n-standards.md)
+**Related**: [Story 8: i18n](./story-08-i18n.md)
 
 ---
 
 ## User Story
 
-作为国际化应用开发者，我需要实现本地化基础设施，使应用能够根据用户的地区偏好，自动格式化日期时间、数字货币等数据，提供符合本地习惯的用户体验。
+作为国际化应用用户，我希望系统能自动适配我的时区、国家和语言偏好，正确显示时间、日期、数字和货币格式，让我获得符合本地习惯的体验。
 
 ---
 
-## 核心问题
+## 核心目标
 
-本地化需要解决的具体问题：
-
-### 1. 时区处理
-- **问题**：用户分布在不同时区，时间显示混乱
-- **需求**：
-  - 数据库使用 UTC 统一存储
-  - API 返回时自动转换为用户时区
-  - 支持系统级默认时区配置
-  - 支持用户级时区偏好设置
-
-### 2. 日期时间格式
-- **问题**：不同地区日期格式不同
-- **需求**：
-  - 美国：`MM/DD/YYYY 02:30 PM`
-  - 欧洲：`DD/MM/YYYY 14:30`
-  - 中国：`YYYY年MM月DD日 14:30`
-  - ISO 8601：`2024-01-15T14:30:00+08:00`
-
-### 3. 数字格式
-- **问题**：千位分隔符和小数点表示不同
-- **需求**：
-  - 美国：`1,234,567.89`
-  - 欧洲：`1.234.567,89`
-  - 中国：`1,234,567.89`
-
-### 4. 货币格式
-- **问题**：货币符号位置和格式不同
-- **需求**：
-  - 美元：`$1,234.56`
-  - 欧元：`1.234,56 €`
-  - 人民币：`¥1,234.56` 或 `CNY 1,234.56`
-
----
-
-## Acceptance Criteria
-
-- [ ] 实现时区中间件，从请求头或用户配置读取时区
-- [ ] 在 Config 表支持系统级时区配置（`app.timezone`）
-- [ ] 在 Users 表添加用户级时区字段（`timezone`）
-- [ ] 提供时间格式化工具函数（根据语言和时区）
-- [ ] 提供数字格式化工具函数（千位分隔符、小数点）
-- [ ] 提供货币格式化工具函数（货币符号、位置）
-- [ ] API 响应时间使用 RFC 3339 格式包含时区信息
-- [ ] 单元测试覆盖所有格式化函数
-- [ ] 文档说明时区配置和使用方法
+1. **时区管理**：自动检测并存储用户时区，时间统一使用 UTC 存储
+2. **国家/地区设置**：用户可选择国家，影响数字和货币显示格式
+3. **格式化工具**：提供时间、日期、数字、货币的本地化格式化函数
+4. **无缝集成**：复用 Story 8 的 i18n 基础设施
 
 ---
 
 ## Technical Design
 
-### 架构分层
+### 架构图
 
 ```
 ┌─────────────────────────────────────────┐
-│ API Layer                               │
-│  • 请求：检测用户时区/语言               │
-│  • 响应：格式化数据                      │
+│ HTTP Layer                              │
+│  • Accept-Language (语言)               │
+│  • X-Timezone (时区)                    │
+│  • X-Country (国家)                     │
 └─────────────────────────────────────────┘
               ↓
 ┌─────────────────────────────────────────┐
-│ Middleware Layer                        │
-│  • timezone.Middleware                  │
-│  • language.Middleware (Story 8)        │
+│ Middleware                              │
+│  • l10n.Middleware → Context            │
 └─────────────────────────────────────────┘
               ↓
 ┌─────────────────────────────────────────┐
-│ Business Layer                          │
-│  • 使用 UTC 时间                         │
-│  • 调用 l10n 工具格式化                  │
+│ pkg/l10n (Pure Logic)                   │
+│  • FormatTime(t, tz, lang)              │
+│  • FormatNumber(n, country)             │
+│  • FormatCurrency(amt, curr, country)   │
 └─────────────────────────────────────────┘
               ↓
 ┌─────────────────────────────────────────┐
-│ Data Layer                              │
-│  • 数据库: TIMESTAMP WITH TIME ZONE     │
-│  • 存储: UTC 时间                        │
+│ Dependencies                            │
+│  • time (stdlib)                        │
+│  • golang.org/x/text (v0.32.0)          │
 └─────────────────────────────────────────┘
 ```
 
@@ -102,82 +62,202 @@
 
 ```
 core/pkg/l10n/
-├── timezone.go       # 时区工具
-├── datetime.go       # 日期时间格式化
+├── config.go         # 配置结构体
+├── context.go        # Context 助手函数
+├── time.go           # 时间格式化
 ├── number.go         # 数字格式化
 ├── currency.go       # 货币格式化
 └── l10n_test.go      # 单元测试
 
-core/pkg/middleware/
-└── timezone.go       # 时区中间件
+core/internal/middleware/
+└── l10n.go           # l10n 中间件
 ```
 
-### 配置结构
+### 配置设计
+
+```go
+// pkg/l10n/config.go
+type Config struct {
+    DefaultTimezone string `yaml:"default_timezone"` // IANA 格式
+    DefaultCountry  string `yaml:"default_country"`  // ISO 3166-1 alpha-2
+}
+```
 
 ```yaml
 # config/default.yaml
-app:
-  timezone: "Asia/Shanghai"  # 系统默认时区（IANA 格式）
+l10n:
+  default_timezone: "UTC"
+  default_country: "US"
 ```
 
+### 数据库设计
+
 ```sql
--- 用户表增加时区字段
+-- Users 表扩展
 ALTER TABLE users ADD COLUMN timezone VARCHAR(50) DEFAULT 'UTC';
+ALTER TABLE users ADD COLUMN country VARCHAR(2); -- ISO 3166-1 alpha-2
+CREATE INDEX idx_users_timezone ON users(timezone);
+CREATE INDEX idx_users_country ON users(country);
 ```
+
+---
+
+## Core Functions
+
+### 1. 时区与时间格式化
+
+```go
+// FormatTime 格式化时间到用户时区
+func FormatTime(t time.Time, timezone, lang string) (string, error)
+
+// ParseTime 解析时间字符串
+func ParseTime(s, timezone string) (time.Time, error)
+
+// LoadLocation 加载时区
+func LoadLocation(timezone string) (*time.Location, error)
+```
+
+### 2. 数字与货币格式化
+
+```go
+// FormatNumber 根据国家格式化数字
+func FormatNumber(n interface{}, country string) string
+
+// FormatCurrency 根据国家和货币格式化金额
+func FormatCurrency(amount float64, currencyCode, country string) string
+
+// GetCountryFormat 获取国家格式规则
+func GetCountryFormat(country string) CountryFormat
+```
+
+### 3. Context 助手
+
+```go
+// FromContext 从 Context 获取 l10n 信息
+func FromContext(ctx context.Context) *L10nInfo
+
+// WithL10n 将 l10n 信息注入 Context
+func WithL10n(ctx context.Context, info *L10nInfo) context.Context
+
+type L10nInfo struct {
+    Timezone string
+    Country  string
+    Language string // 来自 Story 8
+}
+```
+
+---
+
+## Acceptance Criteria
+
+### Must Have
+- [ ] **Database**: Users 表添加 `timezone`, `country` 字段
+- [ ] **Config**: 配置支持 `l10n.default_timezone`, `l10n.default_country`
+- [ ] **Middleware**: 实现 l10n 中间件（检测时区、国家并注入 Context）
+- [ ] **Pkg**: 实现时间格式化函数（UTC ↔ 用户时区转换）
+- [ ] **Pkg**: 实现数字格式化函数（支持 6 个国家：US, CN, DE, FR, JP, GB）
+- [ ] **Pkg**: 实现货币格式化函数（支持 5 种货币：USD, CNY, EUR, JPY, GBP）
+- [ ] **API**: 提供用户偏好设置接口 `PATCH /api/users/me/preferences`
+- [ ] **Tests**: 单元测试覆盖率 > 80%
+- [ ] **Docs**: API 文档和使用示例
+
+### Should Have
+- [ ] 支持更多国家和货币
+- [ ] 日期格式本地化（年月日顺序）
+- [ ] API 响应时间自动转换为用户时区
 
 ---
 
 ## Implementation Tasks
 
-### Task 1: 系统级时区配置
-- 在 `Config.App` 添加 `Timezone` 字段
-- 验证器支持 IANA 时区名称
-- 启动时加载系统时区
+### Day 1: 核心实现
 
-### Task 2: 用户级时区支持
-- 用户表添加 `timezone` 字段
-- 用户注册时使用系统默认时区
-- 提供用户时区更新 API
+**上午：数据库与配置**
+- [ ] Migration: 添加 `users.timezone`, `users.country` 字段
+- [ ] 配置：`l10n.Config` 结构体和默认值
+- [ ] `pkg/l10n/config.go`: 配置加载
+- [ ] `pkg/l10n/context.go`: Context 助手函数
 
-### Task 3: 时区中间件
-- 从请求头 `Accept-Timezone` 或 `X-Timezone` 读取
-- 从用户配置读取时区偏好
-- 存储到请求上下文 `context.Context`
+**下午：格式化逻辑**
+- [ ] `pkg/l10n/time.go`: 时区转换和时间格式化
+- [ ] `pkg/l10n/number.go`: 数字格式化（使用 x/text/message）
+- [ ] `pkg/l10n/currency.go`: 货币格式化
+- [ ] 国家格式规则映射表
 
-### Task 4: 格式化工具函数
-- `FormatDateTime(t time.Time, lang, tz string) string`
-- `FormatNumber(n float64, lang string) string`
-- `FormatCurrency(amount float64, currency, lang string) string`
+### Day 2: 中间件、API 与测试
 
-### Task 5: API 响应标准化
-- 时间字段使用 RFC 3339 格式
-- 包含时区偏移信息
-- 示例：`2024-01-15T14:30:00+08:00`
+**上午：中间件与 API**
+- [ ] `internal/middleware/l10n.go`: l10n 中间件
+  - [ ] 从请求头读取时区和国家
+  - [ ] 从用户配置读取（需认证）
+  - [ ] 注入 Context
+- [ ] API: `PATCH /api/users/me/preferences` 支持 timezone/country 设置
+
+**下午：测试与文档**
+- [ ] 单元测试：时间、数字、货币格式化
+- [ ] 集成测试：中间件和 API
+- [ ] 文档：`pkg/l10n/README.md` 和 API 使用示例
 
 ---
 
 ## API Examples
 
-### 请求示例
+### 1. 设置用户偏好
+
 ```http
-GET /api/users/123
-Accept-Language: zh-CN
-Accept-Timezone: Asia/Shanghai
+PATCH /api/users/me/preferences
+Content-Type: application/json
+Authorization: Bearer {token}
+
+{
+  "timezone": "Asia/Shanghai",
+  "country": "CN",
+  "language": "zh-CN"
+}
 ```
 
-### 响应示例
+### 2. 获取本地化数据
+
+```http
+GET /api/products/123
+Accept-Language: zh-CN
+X-Timezone: Asia/Shanghai
+X-Country: CN
+```
+
+**响应**：
 ```json
 {
   "id": 123,
-  "name": "张三",
-  "created_at": "2024-01-15T14:30:00+08:00",
-  "balance": {
+  "name": "产品 A",
+  "price": {
     "amount": 1234.56,
     "formatted": "¥1,234.56",
     "currency": "CNY"
   },
-  "timezone": "Asia/Shanghai",
-  "language": "zh-CN"
+  "stock": "1,000",
+  "created_at": "2024-01-15T14:30:00+08:00"
+}
+```
+
+### 3. Handler 示例
+
+```go
+func GetProduct(w http.ResponseWriter, r *http.Request) {
+    l10nInfo := l10n.FromContext(r.Context())
+    product := productRepo.FindByID(123)
+    
+    response.Success(w, map[string]interface{}{
+        "id": product.ID,
+        "name": product.Name,
+        "price": map[string]interface{}{
+            "amount": product.Price,
+            "formatted": l10n.FormatCurrency(product.Price, "CNY", l10nInfo.Country),
+            "currency": "CNY",
+        },
+        "stock": l10n.FormatNumber(product.Stock, l10nInfo.Country),
+        "created_at": l10n.FormatTime(product.CreatedAt, l10nInfo.Timezone, l10nInfo.Language),
+    })
 }
 ```
 
@@ -186,59 +266,54 @@ Accept-Timezone: Asia/Shanghai
 ## Testing Strategy
 
 ### 单元测试
-- 时区转换：UTC ↔ 用户时区
-- 日期格式化：多语言、多格式
-- 数字格式化：千位分隔符、小数点
-- 货币格式化：符号位置、格式
+
+**时区转换**：
+- UTC → 用户时区
+- 边界：不同时区偏移（+08:00, -05:00, +00:00）
+
+**数字格式化**：
+- US/CN: `1234567.89` → `"1,234,567.89"`
+- DE: `1234567.89` → `"1.234.567,89"`
+- FR: `1234567.89` → `"1 234 567,89"`
+
+**货币格式化**：
+- USD + US: `1234.56` → `"$1,234.56"`
+- CNY + CN: `1234.56` → `"¥1,234.56"`
+- EUR + DE: `1234.56` → `"1.234,56 €"`
+- JPY + JP: `1234.56` → `"¥1,235"` (无小数)
 
 ### 集成测试
-- 中间件：请求头时区提取
-- API 响应：时间字段格式正确
-- 用户配置：时区设置生效
-
-### 测试用例
-```
-时区：UTC, Asia/Shanghai, America/New_York, Europe/London
-语言：en-US, zh-CN, de-DE, fr-FR
-货币：USD, CNY, EUR, JPY
-```
+- 中间件：检测时区和国家
+- API：用户偏好设置和读取
+- Handler：格式化数据在响应中正确显示
 
 ---
 
 ## Dependencies
 
-- **Story 8**: i18n 基础设施（语言检测中间件）
-- **Config 模块**: 系统配置支持
-- **User 模块**: 用户表结构
+- **Story 8**: i18n 语言检测（复用语言信息）
+- **golang.org/x/text**: v0.32.0 (已在项目中)
 
 ---
 
 ## Non-Goals
 
-本 Story 不包含：
-- ❌ 复杂的地区规则（如节假日、工作日）
+- ❌ 货币转换（需要汇率 API）
 - ❌ 地址格式化
 - ❌ 电话号码格式化
-- ❌ 度量单位转换（英里 vs 公里）
+- ❌ 度量单位转换
 
 ---
 
 ## Benefits
 
-1. **用户体验**：时间、数字、货币自动本地化
-2. **全球化支持**：轻松支持新地区
-3. **数据一致性**：统一使用 UTC 存储
-4. **开发效率**：工具函数可复用
+1. **简化设计**：时区、国家、格式化统一在一个模块
+2. **用户体验**：时间、数字、货币自动本地化
+3. **开发效率**：工具函数可复用
+4. **配置灵活**：平台默认 + 用户偏好
 
 ---
 
-## Related Documentation
-
-- [i18n Standards](../../standards/i18n-standards.md)
-- [API Design - i18n Guidelines](../../standards/api-design.md#i18n)
-- [Story 8 - i18n Infrastructure](./story-08-i18n.md)
-
----
-
-**Created**: 2024-12-01  
-**Updated**: 2025-12-31
+**Created**: 2026-01-06  
+**Maintainer**: Winston (Architect Agent)  
+**Status**: Planning

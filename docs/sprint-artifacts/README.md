@@ -45,8 +45,10 @@ Story (Executable Tasks)
 | Sprint-0 | Story 05: CI/CD 流水线与 Linter | Infrastructure | Planning |
 | Sprint-0 | Story 06: 测试框架与工具集 | Infrastructure | Planning |
 | Sprint-0 | Story 07: 重构现有 Handlers | Infrastructure | Planning |
+| Sprint-0 | Story 08: Database Field i18n 数据库字段国际化 | Infrastructure | Planning |
+| Sprint-0 | Story 08: # Story 8b: i18n Integration Plan - i18n 集成计划 | Infrastructure | Planning |
 | Sprint-0 | Story 08: i18n 国际化基础设施 | Infrastructure | Planning |
-| Sprint-0 | Story 09: l10n Localization 本地化实施 | Infrastructure | Planning |
+| Sprint-0 | Story 09: Localization (l10n) - 本地化支持 | pkg/l10n | Planning |
 | Sprint-0 | Story 10: Configuration Center Foundation |  | Done |
 | Sprint-0 | Story 11: Swagger API Documentation |  | Done |
 | Sprint-0 | Story 12: 日志防腐层 | Infrastructure | Done |
