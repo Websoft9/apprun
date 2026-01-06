@@ -63,14 +63,25 @@ RUN apk add --no-cache \
     git \
     make \
     ca-certificates \
-    tzdata
+    tzdata \
+    curl
 
 # Copy ONLY the downloaded dependencies (not source code)
 COPY --from=deps /go/pkg /go/pkg
 
-# Copy Atlas CLI binary from official Docker image (multi-arch support)
-# Atlas official images: arigaio/atlas:latest
-COPY --from=arigaio/atlas:latest /atlas /go/bin/atlas
+# Download Atlas CLI binary directly from official releases
+# Avoids 'unknown/unknown' platform issues from Docker image
+RUN ATLAS_ARCH=$(case ${TARGETARCH:-amd64} in \
+        amd64) echo "amd64" ;; \
+        arm64) echo "arm64" ;; \
+        *) echo "amd64" ;; \
+    esac) && \
+    echo "📥 Downloading Atlas CLI for linux-${ATLAS_ARCH}..." && \
+    curl -sSL -o /go/bin/atlas \
+        "https://release.ariga.io/atlas/atlas-linux-${ATLAS_ARCH}-latest" && \
+    chmod +x /go/bin/atlas && \
+    /go/bin/atlas version && \
+    echo "✅ Atlas CLI installed successfully"
 
 # Set working directory
 WORKDIR /build
