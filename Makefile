@@ -7,7 +7,7 @@ help:
 	@echo "Available targets:"
 	@echo ""
 	@echo "Build & Test:"
-	@echo "  build          - Generate code and build the application (includes i18n)"
+	@echo "  build          - Generate code and build the application (includes i18n, swagger)"
 	@echo "  generate       - Generate Ent ORM code only"
 	@echo "  i18n           - Extract and merge translation keys"
 	@echo "  i18n-extract   - Extract translation keys from code"
@@ -44,7 +44,7 @@ help:
 	@echo "  clean          - Clean build artifacts"
 
 # 构建
-build: i18n generate
+build: i18n swagger generate
 	cd core && go build -o bin/server ./cmd/server
 
 # 代码生成 (Ent ORM)
