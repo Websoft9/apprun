@@ -5,7 +5,7 @@
 # ============================================
 # Stage 1: Download dependencies only
 # ============================================
-FROM golang:1.24-alpine AS deps
+FROM golang:1.25.5-alpine AS deps
 
 # Build arguments for multi-architecture support
 ARG TARGETARCH
@@ -39,7 +39,7 @@ RUN go mod download && go mod verify
 # ============================================
 # Stage 2: Clean base with only compiled cache
 # ============================================
-FROM golang:1.24-alpine
+FROM golang:1.25.5-alpine
 
 # Build arguments for multi-architecture support
 ARG TARGETARCH
