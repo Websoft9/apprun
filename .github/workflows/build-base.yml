@@ -14,9 +14,9 @@ on:
         type: boolean
         default: false
   
-  # Trigger on go.mod changes
+  # Trigger on go.mod changes (main branch only)
   push:
-    branches: [main, develop]
+    branches: [main]
     paths:
       - 'core/go.mod'
       - 'core/go.sum'

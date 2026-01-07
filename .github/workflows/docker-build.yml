@@ -1,14 +1,13 @@
 name: Docker Build and Publish
 
 on:
-  # Triggered automatically when CI completes on main/develop
+  # Triggered automatically when CI completes on main (production)
   workflow_run:
     workflows: ["CI Pipeline"]
     types:
       - completed
     branches:
       - main
-      - develop
   
   # Manual trigger and tags
   workflow_dispatch:
@@ -16,6 +15,8 @@ on:
   push:
     tags:
       - 'v*'
+  
+  # PR: build but don't push (test only)
   pull_request:
     branches:
       - main
