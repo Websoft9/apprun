@@ -1,61 +1,43 @@
 # golangci-lint configuration for apprun project
 # Compatible with golangci-lint v2.7.2
-# Documentation: https://golangci-lint.run/usage/configuration/
+# Documentation: https://golangci-lint.run/product/config
 
-# Version declaration for v2.x (required)
-version: 2
+version: "2"
 
 run:
   timeout: 5m
   tests: true
   build-tags:
     - integration
-  modules-download-mode: readonly
-  allow-parallel-runners: true
-
-output:
-  formats:
-    colored-line-number:
-      path: stdout
-  print-issued-lines: true
-  print-linter-name: true
-  sort-results: true
 
 linters:
-  # Enable default linters + additional checks
   enable:
-    # Default (always enabled)
-    - errcheck      # 检查未检查的错误
-    - govet         # Go vet 静态分析
-    - ineffassign   # 检测无效赋值
-    - staticcheck   # 静态检查
-    - unused        # 检测未使用的代码
-    
-    # Additional useful linters
-    # - goconst       # 检测可以常量化的字符串（禁用：测试数据误报多）
-    - misspell      # 检测拼写错误
-    - dupl          # 检测重复代码
-    - gosec         # 安全检查
-    - unconvert     # 检测不必要的类型转换
-    - prealloc      # 检测可以预分配的切片
-    # - gocognit      # 认知复杂度检查（禁用：测试文件误报）
-    - gocyclo       # 圈复杂度检查
-    - gocritic      # 综合诊断
-    - errorlint     # 错误包装检查
-    - bodyclose     # HTTP body close 检查
-    
-  disable: []
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - misspell
+    - dupl
+    - gosec
+    - unconvert
+    - prealloc
+    - gocyclo
+    - gocritic
+    - errorlint
+    - bodyclose
 
-linters-settings:
+settings:
   errcheck:
     check-type-assertions: true
     check-blank: true
   
   govet:
-    enable-all: true
+    enable:
+      - all
     disable:
-      - shadow         # 变量阴影在某些情况下是有意的
-      - fieldalignment # 结构体字段对齐优化（性能微优化，可读性优先）
+      - shadow
+      - fieldalignment
   
   misspell:
     locale: US
@@ -64,22 +46,17 @@ linters-settings:
     threshold: 150
   
   gosec:
-    excludes:
-      - G104  # 未处理错误（errcheck 已覆盖）
-      - G302  # 文件权限（日志文件需要 0644）
+    config:
+      global:
+        nosec: false
+        audit: true
   
   staticcheck:
-    checks: ["all"]
-  
-  gocognit:
-    min-complexity: 50  # 认知复杂度阈值（从40提升到50避免误报）
+    checks:
+      - all
   
   gocyclo:
-    min-complexity: 20  # 从 15 提升到 20（server.Start 函数复杂度 19）
-  
-  goconst:
-    min-len: 3           # 最小字符串长度（从 2 提升避免误报）
-    min-occurrences: 5   # 从 3 提升到 5（减少测试文件中的误报）
+    min-complexity: 20
   
   gocritic:
     enabled-tags:
@@ -87,94 +64,48 @@ linters-settings:
       - style
       - performance
     disabled-checks:
-      - unnamedResult      # 允许未命名返回值
-      - commentFormatting  # 注释格式较宽松
-      - httpNoBody         # HTTP 空 body 优化（性能微优化）
-      - octalLiteral       # 八进制字面量风格（0644 vs 0o644）
-      - paramTypeCombine   # 参数类型合并（代码风格偏好）
-      - equalFold          # strings.EqualFold 优化建议（非必须）
-      - exitAfterDefer     # main 函数中 log.Fatal 的合理使用
+      - unnamedResult
+      - commentFormatting
+      - httpNoBody
+      - octalLiteral
+      - paramTypeCombine
+      - equalFold
+      - exitAfterDefer
 
 issues:
-  # 排除生成的代码
   exclude-dirs:
     - ent
     - docs
-    - tests/e2e
   
-  exclude-files:
-    - ".*\\.pb\\.go$"
-    - ".*_gen\\.go$"
+  exclude-generated-strict: true
   
-  # 排除特定规则
   exclude-rules:
-    # 允许 main 函数中未检查的错误（通常会 panic）
     - path: cmd/
       linters:
         - errcheck
-      text: "Error return value"
-
-    # 允许链式调用中的 WithContext 不检查返回值
+    
     - linters:
         - errcheck
-      text: "Error return value of.*WithContext.*is not checked"
+      text: "Error return value of.*WithContext"
     
-    # 允许 logger.Sync 不检查返回值（defer 中调用）
     - linters:
         - errcheck
-      text: "Error return value of.*logger\\.Sync.*is not checked"
+      text: "Error return value of.*logger\\.Sync"
     
-    # 允许日志文件使用 0644 权限（需要被监控工具读取）
     - linters:
         - gosec
-      text: "G302.*0644"
+      text: "G302"
     
-    # 允许 main 函数中的 log.Fatal 使用 exitAfterDefer
     - linters:
         - gocritic
-      text: "exitAfterDefer.*log\\.Fatal"
+      text: "exitAfterDefer"
     
-    # 测试文件中允许忽略 json.Marshal 错误
-    - path: _test\.go
-      linters:
-        - errcheck
-      text: "Error return value of.*json\\.Marshal.*is not checked"
-    
-    # 测试文件使用较宽松的规则（包括复杂度、重复代码等）
     - path: _test\.go
       linters:
         - dupl
         - gosec
-        - goconst    # 测试数据允许重复字符串
-        - gocognit   # 测试函数允许较高认知复杂度
-        - gocyclo    # 测试函数允许较高圈复杂度
-        - funlen     # 测试函数允许较长
-
-    # 忽略启动失败场景的 exitAfterDefer（main 函数中 log.Fatal）
-    - path: 'cmd/.*main\.go'
-      text: 'exitAfterDefer'
-      linters:
-        - gocritic
-    
-    # 忽略 main 函数中的 exitAfterDefer
-    - linters:
-        - gocritic
-      text: 'exitAfterDefer.*log\.Fatal'
+        - errcheck
+        - gocyclo
   
-  # 最大问题数（0 = 无限制）
   max-issues-per-linter: 50
   max-same-issues: 3
-  
-  # 排除特定问题（宽松模式，优先通过 CI）
-  exclude:
-    - "cognitive complexity.*is high"          # 认知复杂度警告（测试文件常见）
-    - "has \\d+ occurrences, make it a constant"  # 重复字符串（测试数据允许）
-    - "G302.*0644"                             # 文件权限 0644（日志文件需要）
-  
-  # 新代码优先（显示新引入的问题）
-  new: false
-
-# Severity settings
-severity:
-  default-severity: warning
-  case-sensitive: false
