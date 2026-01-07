@@ -87,7 +87,6 @@ ls -lh core/docs/swagger.*   # Should have .json and .yaml
 
 ### Production Deployment
 - Docker: TBD
-- Kubernetes: TBD
 - Cloud Providers: TBD
 
 ---
