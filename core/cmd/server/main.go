@@ -32,10 +32,16 @@ import (
 
 // @schemes         http https
 func main() {
+	if err := run(); err != nil {
+		log.Fatalf("❌ %v", err)
+	}
+}
+
+func run() error {
 	// Recover from panics during startup (e.g., missing required environment variables)
 	defer func() {
 		if r := recover(); r != nil {
-			log.Fatalf("❌ Startup failed: %v", r)
+			log.Printf("❌ Startup panic: %v", r)
 		}
 	}()
 
@@ -58,15 +64,13 @@ func main() {
 	// They are managed via environment variables loaded in Phase 0
 	registry := config.NewRegistry()
 	if err := registry.Register("logger", &logger.Config{}); err != nil {
-		cancel()
-		log.Fatalf("❌ Failed to register logger config: %v", err)
+		return err
 	}
 	log.Println("✅ Logger module registered with config center")
 
 	// Register i18n configuration with config center
 	if err := registry.Register("i18n", &i18n.Config{}); err != nil {
-		cancel()
-		log.Fatalf("❌ Failed to register i18n config: %v", err)
+		return err
 	}
 	log.Println("✅ i18n module registered with config center")
 
@@ -78,8 +82,7 @@ func main() {
 		i18nCfg.TranslationsPath = path
 	}
 	if err := i18n.InitWithConfig(i18nCfg); err != nil {
-		cancel()
-		log.Fatalf("❌ Failed to initialize i18n: %v", err)
+		return err
 	}
 	log.Printf("✅ i18n system initialized (%s, %v)", i18nCfg.DefaultLanguage, i18nCfg.SupportedLanguages)
 
@@ -92,8 +95,7 @@ func main() {
 	dbCfg := database.DefaultConfig()
 	dbClient, err := database.Connect(ctx, dbCfg)
 	if err != nil {
-		cancel()
-		log.Fatalf("❌ Failed to connect to database: %v", err)
+		return err
 	}
 	defer func() {
 		if err := dbClient.Close(); err != nil {
@@ -164,7 +166,5 @@ func main() {
 
 	// Phase 7: Start HTTP/HTTPS Server (enters runtime phase)
 	// From this point, handlers will use logger.L() for business logging
-	if err := server.Start(router, serverCfg); err != nil {
-		log.Fatalf("❌ Server failed: %v", err)
-	}
+	return server.Start(router, serverCfg)
 }

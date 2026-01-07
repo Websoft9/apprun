@@ -129,8 +129,7 @@ func parseOutputTargets(targets []string) ([]zapcore.WriteSyncer, []func() error
 		case strings.HasPrefix(target, "file:"):
 			filePath := strings.TrimPrefix(target, "file:")
 			// #nosec G304 -- file path is from config, not user input
-			// #nosec G302 -- log files need to be readable by monitoring tools (0644 is acceptable)
-			file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644) // #nosec G302
+			file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 			if err != nil {
 				return nil, nil, errors.Wrap(err, errors.ErrCodeLogFileOpenFailed, "Failed to open log file").WithContext("file", filePath)
 			}
