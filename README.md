@@ -28,9 +28,11 @@ A lightweight BaaS (Backend as a Service) framework for developers, SDD (spec-dr
 
 ### Prerequisites
 - Go 1.25.5+
-- golangci-lint 2.7.2+
+- golangci-lint v2.7.2+
 - PostgreSQL 14+
 - Redis 7+ (optional, for caching)
+- Docker v28+
+- Govulncheck 
 
 ### Quick Start
 
