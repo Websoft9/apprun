@@ -56,6 +56,7 @@ Story (Executable Tasks)
 | Sprint-1 | Story 14: HTTP Server Package | Infrastructure | Done |
 | Sprint-1 | Story 15: Environment Variable Utility Package | Infrastructure | Done |
 | Sprint-1 | Story 16: Database Anti-Corruption Layer | Infrastructure | Done ✅ |
+| Sprint-1 | Story 17: Go 版本升级到 1.25.5 | Infrastructure | ✅ Done |
 <!-- MAPPING_TABLE_END -->
 
 ---
