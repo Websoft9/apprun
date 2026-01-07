@@ -1,3 +1,4 @@
+// Package routes provides HTTP routing configuration and middleware setup.
 package routes
 
 import (

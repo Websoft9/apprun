@@ -1,3 +1,5 @@
+// Package i18n provides internationalization support for the application,
+// including context-based language management.
 package i18n
 
 import (

@@ -1,3 +1,5 @@
+// Package i18n provides internationalization support for the application,
+// including message translation, language detection, and locale management.
 package i18n
 
 // Config defines the configuration for the i18n system

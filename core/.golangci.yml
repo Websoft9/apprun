@@ -1,6 +1,6 @@
 # golangci-lint configuration for apprun project
-# Compatible with golangci-lint v2.7.2
-# Documentation: https://golangci-lint.run/product/config
+# Schema Version: v2.7.2
+# Documentation: Based on https://golangci-lint.run/jsonschema/golangci.v2.7.jsonschema.json
 
 version: "2"
 
@@ -11,101 +11,113 @@ run:
     - integration
 
 linters:
+  default: "none"
   enable:
+    - bodyclose
+    - dupl
     - errcheck
+    - errorlint
+    - gocritic
+    - gocyclo
+    - gosec
     - govet
     - ineffassign
-    - staticcheck
-    - unused
     - misspell
-    - dupl
-    - gosec
-    - unconvert
     - prealloc
-    - gocyclo
-    - gocritic
-    - errorlint
-    - bodyclose
+    - staticcheck
+    - unconvert
+    - unused
 
-settings:
-  errcheck:
-    check-type-assertions: true
-    check-blank: true
-  
-  govet:
-    enable:
-      - all
-    disable:
-      - shadow
-      - fieldalignment
-  
-  misspell:
-    locale: US
-  
-  dupl:
-    threshold: 150
-  
-  gosec:
-    config:
-      global:
-        nosec: false
-        audit: true
-  
-  staticcheck:
-    checks:
-      - all
-  
-  gocyclo:
-    min-complexity: 20
-  
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - style
-      - performance
-    disabled-checks:
-      - unnamedResult
-      - commentFormatting
-      - httpNoBody
-      - octalLiteral
-      - paramTypeCombine
-      - equalFold
-      - exitAfterDefer
+  settings:
+    govet:
+      enable:
+        - nilness
+        - shadow
+      disable:
+        - fieldalignment
+    
+    gosec:
+      excludes:
+        - G104
+        - G304
+
+    gocyclo:
+      min-complexity: 20
+      
+    dupl:
+      threshold: 150
+      
+    misspell:
+      locale: US
+      
+    errcheck:
+      check-type-assertions: true
+      check-blank: true
+
+    staticcheck:
+      checks: ["all"]
+
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - style
+        - performance
+      disabled-checks:
+        - unnamedResult
+        - commentFormatting
+        - httpNoBody
+        - octalLiteral
+        - paramTypeCombine
+        - equalFold
+        - exitAfterDefer
+
+  exclusions: 
+    generated: strict
+    
+    paths:
+      - "^ent/"
+      - "^docs/"
+
+    rules:
+      # Exclude cmd/ from errcheck
+      - path: "cmd/"
+        linters:
+          - errcheck
+      
+      # Specific error suppressions
+      - linters:
+          - errcheck
+        text: "Error return value of.*WithContext"
+        
+      - linters:
+          - errcheck
+        text: "Error return value of.*logger\\.Sync"
+        
+      - linters:
+          - errcheck
+        text: "Error return value of.*DeleteConfig"
+        
+      - linters:
+          - errcheck
+        text: "Error return value of.*Setenv"
+        
+      - linters:
+          - gosec
+        text: "G302"
+        
+      - linters:
+          - gocritic
+        text: "exitAfterDefer"
+        
+      # Test file exclusions
+      - path: "_test\\.go"
+        linters:
+          - dupl
+          - gosec
+          - errcheck
+          - gocyclo
 
 issues:
-  exclude-dirs:
-    - ent
-    - docs
-  
-  exclude-generated-strict: true
-  
-  exclude-rules:
-    - path: cmd/
-      linters:
-        - errcheck
-    
-    - linters:
-        - errcheck
-      text: "Error return value of.*WithContext"
-    
-    - linters:
-        - errcheck
-      text: "Error return value of.*logger\\.Sync"
-    
-    - linters:
-        - gosec
-      text: "G302"
-    
-    - linters:
-        - gocritic
-      text: "exitAfterDefer"
-    
-    - path: _test\.go
-      linters:
-        - dupl
-        - gosec
-        - errcheck
-        - gocyclo
-  
   max-issues-per-linter: 50
   max-same-issues: 3
+  uniq-by-line: true

@@ -16,7 +16,6 @@
 //   - BIZ (Business)      -> 422 Unprocessable Entity
 //   - SYS (System)        -> 500 Internal Server Error
 //   - Unknown/nil         -> 500 Internal Server Error
-
 package httpmap
 
 import (

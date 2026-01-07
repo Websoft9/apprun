@@ -134,6 +134,34 @@ lint:
 		echo "💡 Then add $$(go env GOPATH)/bin to your PATH"; \
 		exit 1; \
 	}
+	@echo "🔧 Verifying golangci-lint configuration..."
+	@cd core && ( \
+		for i in 1 2 3; do \
+			output=$$(golangci-lint config verify --config=.golangci.yml 2>&1); \
+			exit_code=$$?; \
+			if [ $$exit_code -eq 0 ]; then \
+				echo "✅ Configuration verified"; \
+				break; \
+			else \
+				if echo "$$output" | grep -q -i "timeout\|deadline\|network"; then \
+					if [ $$i -lt 3 ]; then \
+						echo "⚠️  Network timeout on attempt $$i/3, retrying in 2 seconds..."; \
+						sleep 2; \
+					else \
+						echo "❌ Config verification failed after 3 attempts due to network timeout"; \
+						echo "💡 Please check your internet connection or try again later"; \
+						exit 1; \
+					fi \
+				else \
+					echo "❌ Config verification failed:"; \
+					echo "$$output"; \
+					exit 1; \
+				fi \
+			fi \
+		done \
+	)
+	@echo ""
+	@echo "🔍 Running lint checks..."
 	@cd core && golangci-lint run --timeout=5m --config=.golangci.yml
 	@echo "✅ Linting completed"
 	@echo ""

@@ -183,8 +183,8 @@ func TestZapLogger_MultipleTargets(t *testing.T) {
 		t.Fatalf("Failed to create zap logger: %v", err)
 	}
 	defer func() {
-		if err := log.Close(); err != nil {
-			t.Logf("Failed to close logger: %v", err)
+		if closeErr := log.Close(); closeErr != nil {
+			t.Logf("Failed to close logger: %v", closeErr)
 		}
 	}()
 

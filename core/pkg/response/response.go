@@ -1,4 +1,6 @@
-// core/pkg/response/response.go
+// Package response provides standardized HTTP response handling utilities
+// for the apprun application, including JSON response formatting and
+// internationalization support.
 package response
 
 import (

@@ -462,11 +462,11 @@ poc:
 		// 删除后仍可能从配置文件或默认值返回，所以不检查 404
 		// 只验证不再是我们设置的值
 		if w.Code == http.StatusOK {
-			var response GetConfigResponse
-			err := json.NewDecoder(w.Body).Decode(&response)
+			var resp GetConfigResponse
+			err := json.NewDecoder(w.Body).Decode(&resp)
 			require.NoError(t, err)
 			// 验证返回的是默认值，而不是我们设置的值
-			assert.NotEqual(t, testValue, response.Value)
+			assert.NotEqual(t, testValue, resp.Value)
 		}
 	})
 }

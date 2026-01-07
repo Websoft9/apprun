@@ -98,8 +98,8 @@ func run() error {
 		return err
 	}
 	defer func() {
-		if err := dbClient.Close(); err != nil {
-			log.Printf("⚠️  Warning: Failed to close database connection: %v", err)
+		if closeErr := dbClient.Close(); closeErr != nil {
+			log.Printf("⚠️  Warning: Failed to close database connection: %v", closeErr)
 		}
 	}()
 	log.Println("✅ Database connected")

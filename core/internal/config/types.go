@@ -1,3 +1,4 @@
+// Package config defines the configuration types and structures for the application.
 package config
 
 // Config is the root define source of all configuration items

@@ -32,14 +32,14 @@ func Connect(ctx context.Context, cfg *Config) (Client, error) {
 	}
 
 	// Ping to verify connection is alive
-	if err := db.PingContext(ctx); err != nil {
+	if pingErr := db.PingContext(ctx); pingErr != nil {
 		if closeErr := db.Close(); closeErr != nil {
 			log.Printf("Failed to close database after ping failure: %v", closeErr)
 		}
-		return nil, errors.Wrap(err, errors.ErrCodeDatabaseConnectFailed, "Failed to connect to database")
+		return nil, errors.Wrap(pingErr, errors.ErrCodeDatabaseConnectFailed, "Failed to connect to database")
 	}
-	if err := db.Close(); err != nil {
-		log.Printf("Warning: Failed to close test connection: %v", err)
+	if closeErr := db.Close(); closeErr != nil {
+		log.Printf("Warning: Failed to close test connection: %v", closeErr)
 	} // Close the test connection
 
 	// Now open with Ent client

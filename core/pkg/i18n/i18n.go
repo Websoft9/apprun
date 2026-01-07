@@ -20,7 +20,7 @@ var (
 	initError       error
 )
 
-// Init initializes the i18n system with the provided configuration
+// InitWithConfig initializes the i18n system with the provided configuration.
 func InitWithConfig(cfg Config) error {
 	return Init(cfg.DefaultLanguage, cfg.SupportedLanguages, cfg.TranslationsPath)
 }

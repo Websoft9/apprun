@@ -1,3 +1,5 @@
+// Package env provides utilities for loading configuration from YAML files
+// and environment variables, with automatic type conversion and priority handling.
 package env
 
 import (
@@ -110,7 +112,7 @@ func setEnvIfNotExists(key, value string) {
 		return // Don't set empty values
 	}
 	if os.Getenv(key) == "" {
-		_ = os.Setenv(key, value) // Ignore error as it's just a default value
+		_ = os.Setenv(key, value) // Intentionally ignore error for default values
 	}
 	// If env var already exists, skip (higher priority)
 }

@@ -1,3 +1,6 @@
+// Package config provides the configuration management module,
+// including service initialization, dynamic configuration loading,
+// and integration with the configuration center database.
 package config
 
 import (

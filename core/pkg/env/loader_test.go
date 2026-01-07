@@ -80,11 +80,11 @@ database:
 	assert.NoError(t, err)
 
 	// Set environment variable before loading config (using new naming convention)
-	if err := os.Setenv("SERVER_HTTP_PORT", "8888"); err != nil {
-		t.Fatalf("Failed to set env: %v", err)
+	if setErr := os.Setenv("SERVER_HTTP_PORT", "8888"); setErr != nil {
+		t.Fatalf("Failed to set env: %v", setErr)
 	}
-	if err := os.Setenv("DATABASE_HOST", "prodhost"); err != nil {
-		t.Fatalf("Failed to set env: %v", err)
+	if setErr := os.Setenv("DATABASE_HOST", "prodhost"); setErr != nil {
+		t.Fatalf("Failed to set env: %v", setErr)
 	}
 
 	// Load config to env

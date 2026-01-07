@@ -1,3 +1,5 @@
+// Package middleware provides HTTP middleware components for request processing,
+// including language detection and internationalization support.
 package middleware
 
 import (

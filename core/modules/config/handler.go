@@ -1,3 +1,4 @@
+// Package config provides HTTP handlers for configuration management endpoints.
 package config
 
 import (

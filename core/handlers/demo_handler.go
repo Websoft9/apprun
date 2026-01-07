@@ -1,3 +1,5 @@
+// Package handlers provides HTTP request handlers for the application.
+// It includes demo handlers for testing and reference implementations.
 package handlers
 
 import (

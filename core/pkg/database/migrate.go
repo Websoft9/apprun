@@ -222,7 +222,7 @@ func GenerateMigration(ctx context.Context, name string, migrationsDir string) (
 
 	version := sqlCount + 1
 	filename := fmt.Sprintf("%03d_%s.sql", version, name)
-	filepath := filepath.Join(migrationsDir, filename)
+	filePath := filepath.Join(migrationsDir, filename)
 
 	// Create empty migration file with header
 	content := fmt.Sprintf(`-- Migration: %s
@@ -234,9 +234,9 @@ func GenerateMigration(ctx context.Context, name string, migrationsDir string) (
 `, name, version)
 
 	// #nosec G306 -- migration files need to be readable by team members
-	if err := os.WriteFile(filepath, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(filePath, []byte(content), 0644); err != nil {
 		return "", errors.Wrap(err, errors.ErrCodeDatabaseMigrateFailed, "failed to create migration file")
 	}
 
-	return filepath, nil
+	return filePath, nil
 }
