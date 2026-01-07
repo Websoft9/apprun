@@ -1,6 +1,9 @@
 # golangci-lint configuration for apprun project
-# Compatible with golangci-lint v1.64+
+# Compatible with golangci-lint v2.7.2
 # Documentation: https://golangci-lint.run/usage/configuration/
+
+# Version declaration for v2.x (required)
+version: 2
 
 run:
   timeout: 5m
