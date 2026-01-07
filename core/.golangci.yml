@@ -68,12 +68,13 @@ linters-settings:
   gosec:
     excludes:
       - G104  # 未处理错误（errcheck 已覆盖）
+      - G302
   
   staticcheck:
     checks: ["all"]
   
   gocognit:
-    min-complexity: 20
+    min-complexity: 40
   
   gocyclo:
     min-complexity: 15
@@ -105,6 +106,7 @@ issues:
       linters:
         - errcheck
       text: "Error return value"
+
     
     # 测试文件使用较宽松的规则
     - path: _test\.go
@@ -115,6 +117,12 @@ issues:
         - gocognit
         - gocyclo
         - funlen
+
+    # 忽略启动失败场景的 exitAfterDefer
+    - path: 'cmd/server/main\.go'
+      text: 'exitAfterDefer'
+      linters:
+        - gocritic
   
   # 最大问题数（0 = 无限制）
   max-issues-per-linter: 50

@@ -39,15 +39,19 @@ RUN go mod download && go mod verify
 # ============================================
 # Stage 2: Clean base with only compiled cache
 # ============================================
-FROM --platform=${TARGETOS}/${TARGETARCH} golang:1.24-alpine
+FROM golang:1.24-alpine
 
 # Build arguments for multi-architecture support
 ARG TARGETARCH
 ARG TARGETOS=linux
+ARG BUILD_DATE
+ARG VERSION=latest
 
 LABEL maintainer="Websoft9 <help@websoft9.com>"
 LABEL org.opencontainers.image.source="https://github.com/Websoft9/apprun"
 LABEL org.opencontainers.image.description="AppRun base image with pre-installed Go dependencies"
+LABEL org.opencontainers.image.created="${BUILD_DATE}"
+LABEL org.opencontainers.image.version="${VERSION}"
 
 # Set build environment
 ENV GOPROXY=https://goproxy.cn,https://proxy.golang.org,direct \
@@ -91,11 +95,6 @@ RUN echo "✅ Go dependencies cached successfully" && \
     echo "✅ Target architecture: ${TARGETARCH:-amd64}" && \
     echo "✅ Atlas CLI: $(/go/bin/atlas version)"
 
-# Image metadata
-ARG BUILD_DATE
-ARG VERSION=latest
-LABEL org.opencontainers.image.created="${BUILD_DATE}"
-LABEL org.opencontainers.image.version="${VERSION}"
-
 # Default command (for verification)
+CMD ["go", "version"]
 CMD ["go", "version"]

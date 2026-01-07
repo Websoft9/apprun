@@ -126,7 +126,9 @@ func TestContextFunctions(t *testing.T) {
 
 func TestGetSupportedLanguages(t *testing.T) {
 	tmpDir := setupTestTranslations(t)
-	Init("en-US", []string{"en-US", "zh-CN"}, tmpDir)
+	if err := Init("en-US", []string{"en-US", "zh-CN"}, tmpDir); err != nil {
+		t.Fatalf("Failed to init i18n: %v", err)
+	}
 
 	langs := GetSupportedLanguages()
 	if len(langs) != 2 {
@@ -197,7 +199,9 @@ func TestLoadTranslations_SkipNonTOML(t *testing.T) {
 
 func TestIsSupported_LanguageVariants(t *testing.T) {
 	tmpDir := setupTestTranslations(t)
-	Init("en-US", []string{"en-US", "zh-CN"}, tmpDir)
+	if err := Init("en-US", []string{"en-US", "zh-CN"}, tmpDir); err != nil {
+		t.Fatalf("Failed to init i18n: %v", err)
+	}
 
 	tests := []struct {
 		lang     string
@@ -222,7 +226,9 @@ func TestIsSupported_LanguageVariants(t *testing.T) {
 
 func TestGetMatchedLanguage(t *testing.T) {
 	tmpDir := setupTestTranslations(t)
-	Init("en-US", []string{"en-US", "zh-CN"}, tmpDir)
+	if err := Init("en-US", []string{"en-US", "zh-CN"}, tmpDir); err != nil {
+		t.Fatalf("Failed to init i18n: %v", err)
+	}
 
 	tests := []struct {
 		lang     string

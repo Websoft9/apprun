@@ -175,11 +175,15 @@ func TestLoader_EnvOverride(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// 设置环境变量（Viper 自动将 . 转换为 _）
-	os.Setenv("APP_NAME", "env-app")
-	os.Setenv("DATABASE_HOST", "env-db.example.com")
+	if err := os.Setenv("APP_NAME", "env-app"); err != nil {
+		t.Fatalf("Failed to set env: %v", err)
+	}
+	if err := os.Setenv("DATABASE_HOST", "env-db.example.com"); err != nil {
+		t.Fatalf("Failed to set env: %v", err)
+	}
 	defer func() {
-		os.Unsetenv("APP_NAME")
-		os.Unsetenv("DATABASE_HOST")
+		_ = os.Unsetenv("APP_NAME")
+		_ = os.Unsetenv("DATABASE_HOST")
 	}()
 
 	// 创建 default.yaml

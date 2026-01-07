@@ -21,10 +21,10 @@ go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 ```bash
 # 在项目根目录运行
 cd core
-golangci-lint run --config=../.golangci.yml
+golangci-lint run --config=.golangci.yml
 
 # 自动修复部分问题
-golangci-lint run --config=../.golangci.yml --fix
+golangci-lint run --config=.golangci.yml --fix
 ```
 
 ### 运行测试
@@ -159,7 +159,7 @@ func TestYourFunction(t *testing.T) {
    ```bash
    make lint  # 如果 Makefile 中有定义
    # 或
-   cd core && golangci-lint run --config=../.golangci.yml
+   cd core && golangci-lint run --config=.golangci.yml
    ```
 
 2. **提交前运行测试**

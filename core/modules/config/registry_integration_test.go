@@ -184,6 +184,7 @@ user:
   max_sessions: 5
   session_timeout: 3600
 `
+	// #nosec G306 -- test file, 0644 is acceptable
 	err := os.WriteFile(defaultConfigPath, []byte(configContent), 0644)
 	require.NoError(t, err)
 
@@ -254,6 +255,7 @@ poc:
   database: "postgres://user:pass@localhost:5432/test"
   apikey: "testapikey1234567890"
 `
+	// #nosec G306 -- test file, 0644 is acceptable
 	err := os.WriteFile(defaultConfigPath, []byte(configContent), 0644)
 	require.NoError(t, err)
 

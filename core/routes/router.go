@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"log"
 	"net/http"
 
 	"apprun/handlers"
@@ -28,7 +29,9 @@ func SetupRoutes(configService *configModule.Service) *chi.Mux {
 	// Health check at root
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status":"ok","service":"apprun"}`))
+		if _, err := w.Write([]byte(`{"status":"ok","service":"apprun"}`)); err != nil {
+			log.Printf("Failed to write health check response: %v", err)
+		}
 	})
 
 	// API routes group
@@ -36,7 +39,9 @@ func SetupRoutes(configService *configModule.Service) *chi.Mux {
 		// root route
 		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("Hello, apprun API"))
+			if _, err := w.Write([]byte("Hello, apprun API")); err != nil {
+				log.Printf("Failed to write API root response: %v", err)
+			}
 		})
 
 		// demo routes

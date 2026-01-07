@@ -110,7 +110,7 @@ func setEnvIfNotExists(key, value string) {
 		return // Don't set empty values
 	}
 	if os.Getenv(key) == "" {
-		os.Setenv(key, value)
+		_ = os.Setenv(key, value) // Ignore error as it's just a default value
 	}
 	// If env var already exists, skip (higher priority)
 }

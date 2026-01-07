@@ -31,6 +31,7 @@ poc:
   database: "http://localhost:5432/poc"
   apikey: "test-api-key-12345"
 `
+	// #nosec G306 -- test file, 0644 is acceptable
 	err := os.WriteFile(filepath.Join(tmpDir, "default.yaml"), []byte(validYAML), 0644)
 	require.NoError(t, err)
 
@@ -71,6 +72,7 @@ database:
   password: "short"
   dbname: "testdb"
 `
+	// #nosec G306 -- test file, 0644 is acceptable
 	err := os.WriteFile(filepath.Join(tmpDir, "default.yaml"), []byte(invalidYAML), 0644)
 	require.NoError(t, err)
 
@@ -106,6 +108,7 @@ poc:
   database: "http://localhost:5432/poc"
   apikey: "test-api-key-12345"
 `
+	// #nosec G306 -- test file, 0644 is acceptable
 	err := os.WriteFile(filepath.Join(tmpDir, "default.yaml"), []byte(defaultYAML), 0644)
 	require.NoError(t, err)
 
@@ -151,6 +154,7 @@ poc:
   database: "http://localhost:5432/poc"
   apikey: "test-api-key-12345"
 `
+	// #nosec G306 -- test file, 0644 is acceptable
 	err := os.WriteFile(filepath.Join(tmpDir, "default.yaml"), []byte(defaultYAML), 0644)
 	require.NoError(t, err)
 
@@ -191,6 +195,7 @@ poc:
   database: "http://localhost:5432/poc"
   apikey: "test-api-key-12345"
 `
+	// #nosec G306 -- test file, 0644 is acceptable
 	err := os.WriteFile(filepath.Join(tmpDir, "default.yaml"), []byte(defaultYAML), 0644)
 	require.NoError(t, err)
 

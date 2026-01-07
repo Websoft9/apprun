@@ -134,7 +134,7 @@ lint:
 		echo "💡 Then add $$(go env GOPATH)/bin to your PATH"; \
 		exit 1; \
 	}
-	@cd core && golangci-lint run --timeout=5m --config=../.golangci.yml
+	@cd core && golangci-lint run --timeout=5m --config=.golangci.yml
 	@echo "✅ Linting completed"
 
 # Run linter with auto-fix
@@ -146,7 +146,7 @@ lint-fix:
 		echo "💡 Then add $$(go env GOPATH)/bin to your PATH"; \
 		exit 1; \
 	}
-	@cd core && golangci-lint run --timeout=5m --config=../.golangci.yml --fix
+	@cd core && golangci-lint run --timeout=5m --config=.golangci.yml --fix
 	@echo "✅ Linting with fixes completed"
 
 # ============================================

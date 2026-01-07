@@ -80,8 +80,12 @@ database:
 	assert.NoError(t, err)
 
 	// Set environment variable before loading config (using new naming convention)
-	os.Setenv("SERVER_HTTP_PORT", "8888")
-	os.Setenv("DATABASE_HOST", "prodhost")
+	if err := os.Setenv("SERVER_HTTP_PORT", "8888"); err != nil {
+		t.Fatalf("Failed to set env: %v", err)
+	}
+	if err := os.Setenv("DATABASE_HOST", "prodhost"); err != nil {
+		t.Fatalf("Failed to set env: %v", err)
+	}
 
 	// Load config to env
 	err = LoadConfigToEnv(tempDir)
@@ -139,24 +143,24 @@ func TestSetEnvIfNotExists(t *testing.T) {
 	assert.Equal(t, "", os.Getenv("TEST_EMPTY"))
 
 	// Cleanup
-	os.Unsetenv("TEST_VAR")
-	os.Unsetenv("TEST_EMPTY")
+	_ = os.Unsetenv("TEST_VAR")
+	_ = os.Unsetenv("TEST_EMPTY")
 }
 
 func clearTestEnvVars() {
 	// Clear server env vars (new naming convention: SERVER_*)
-	os.Unsetenv("SERVER_HTTP_PORT")
-	os.Unsetenv("SERVER_HTTPS_PORT")
-	os.Unsetenv("SERVER_SSL_CERT_FILE")
-	os.Unsetenv("SERVER_SSL_KEY_FILE")
-	os.Unsetenv("SERVER_SHUTDOWN_TIMEOUT")
-	os.Unsetenv("SERVER_ENABLE_HTTP_WITH_HTTPS")
+	_ = os.Unsetenv("SERVER_HTTP_PORT")
+	_ = os.Unsetenv("SERVER_HTTPS_PORT")
+	_ = os.Unsetenv("SERVER_SSL_CERT_FILE")
+	_ = os.Unsetenv("SERVER_SSL_KEY_FILE")
+	_ = os.Unsetenv("SERVER_SHUTDOWN_TIMEOUT")
+	_ = os.Unsetenv("SERVER_ENABLE_HTTP_WITH_HTTPS")
 
 	// Clear database env vars (new naming convention: DATABASE_*)
-	os.Unsetenv("DATABASE_DRIVER")
-	os.Unsetenv("DATABASE_HOST")
-	os.Unsetenv("DATABASE_PORT")
-	os.Unsetenv("DATABASE_USER")
-	os.Unsetenv("DATABASE_PASSWORD")
-	os.Unsetenv("DATABASE_DB_NAME")
+	_ = os.Unsetenv("DATABASE_DRIVER")
+	_ = os.Unsetenv("DATABASE_HOST")
+	_ = os.Unsetenv("DATABASE_PORT")
+	_ = os.Unsetenv("DATABASE_USER")
+	_ = os.Unsetenv("DATABASE_PASSWORD")
+	_ = os.Unsetenv("DATABASE_DB_NAME")
 }

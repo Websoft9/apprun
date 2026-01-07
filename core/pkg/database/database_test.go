@@ -10,19 +10,19 @@ import (
 
 func TestDefaultConfig(t *testing.T) {
 	// Set environment variables (new naming convention: DATABASE_*)
-	os.Setenv("DATABASE_DRIVER", "postgres")
-	os.Setenv("DATABASE_HOST", "testhost")
-	os.Setenv("DATABASE_PORT", "5433")
-	os.Setenv("DATABASE_USER", "testuser")
-	os.Setenv("DATABASE_PASSWORD", "testpassword123")
-	os.Setenv("DATABASE_DB_NAME", "testdb")
+	_ = os.Setenv("DATABASE_DRIVER", "postgres")
+	_ = os.Setenv("DATABASE_HOST", "testhost")
+	_ = os.Setenv("DATABASE_PORT", "5433")
+	_ = os.Setenv("DATABASE_USER", "testuser")
+	_ = os.Setenv("DATABASE_PASSWORD", "testpassword123")
+	_ = os.Setenv("DATABASE_DB_NAME", "testdb")
 	defer func() {
-		os.Unsetenv("DATABASE_DRIVER")
-		os.Unsetenv("DATABASE_HOST")
-		os.Unsetenv("DATABASE_PORT")
-		os.Unsetenv("DATABASE_USER")
-		os.Unsetenv("DATABASE_PASSWORD")
-		os.Unsetenv("DATABASE_DB_NAME")
+		_ = os.Unsetenv("DATABASE_DRIVER")
+		_ = os.Unsetenv("DATABASE_HOST")
+		_ = os.Unsetenv("DATABASE_PORT")
+		_ = os.Unsetenv("DATABASE_USER")
+		_ = os.Unsetenv("DATABASE_PASSWORD")
+		_ = os.Unsetenv("DATABASE_DB_NAME")
 	}()
 
 	cfg := DefaultConfig()
@@ -37,8 +37,10 @@ func TestDefaultConfig(t *testing.T) {
 
 func TestDefaultConfig_Defaults(t *testing.T) {
 	// Set only required password (new naming convention: DATABASE_PASSWORD)
-	os.Setenv("DATABASE_PASSWORD", "required123")
-	defer os.Unsetenv("DATABASE_PASSWORD")
+	_ = os.Setenv("DATABASE_PASSWORD", "required123")
+	defer func() {
+		_ = os.Unsetenv("DATABASE_PASSWORD")
+	}()
 
 	cfg := DefaultConfig()
 

@@ -120,10 +120,16 @@ func TestConfigitem_AutoTimestamps(t *testing.T) {
 
 	// Verify updated_at changed
 	assert.True(t, updated.UpdatedAt.After(item.UpdatedAt) || updated.UpdatedAt.Equal(beforeUpdate))
-} // TestConfigitem_StatusIndex tests status index for filtering
+}
+
+// TestConfigitem_StatusIndex tests status index for filtering
 func TestConfigitem_StatusIndex(t *testing.T) {
 	client := enttest.Open(t, "sqlite3", "file:ent?mode=memory&cache=shared&_fk=1")
-	defer client.Close()
+	defer func() {
+		if err := client.Close(); err != nil {
+			t.Logf("Failed to close client: %v", err)
+		}
+	}()
 
 	ctx := context.Background()
 
@@ -167,7 +173,11 @@ func TestConfigitem_StatusIndex(t *testing.T) {
 // TestConfigitem_SoftDelete tests soft delete behavior
 func TestConfigitem_SoftDelete(t *testing.T) {
 	client := enttest.Open(t, "sqlite3", "file:ent?mode=memory&cache=shared&_fk=1")
-	defer client.Close()
+	defer func() {
+		if err := client.Close(); err != nil {
+			t.Logf("Failed to close client: %v", err)
+		}
+	}()
 
 	ctx := context.Background()
 
