@@ -192,8 +192,8 @@ func (s *Service) UpdateConfig(ctx context.Context, key string, value string) er
 
 	// 验证新配置
 	if err := s.validator.Struct(newCfg); err != nil {
-		// 回滚：删除刚刚设置的值
-		_ = s.provider.DeleteConfig(ctx, key)
+		// 回滚：删除刚刚设置的值（忽略回滚错误，主错误已经存在）
+		_ = s.provider.DeleteConfig(ctx, key) // #nosec G104
 		return errors.Wrap(err, errors.ErrCodeConfigInvalidValue, "New config validation failed, rolled back").
 			WithContext("key", key)
 	}

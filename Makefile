@@ -136,6 +136,14 @@ lint:
 	}
 	@cd core && golangci-lint run --timeout=5m --config=.golangci.yml
 	@echo "✅ Linting completed"
+	@echo ""
+	@echo "🔒 Running govulncheck (dependency vulnerability scan)..."
+	@which govulncheck > /dev/null 2>&1 || { \
+		echo "📥 Installing govulncheck..."; \
+		go install golang.org/x/vuln/cmd/govulncheck@latest; \
+	}
+	@cd core && govulncheck ./...
+	@echo "✅ Vulnerability check completed"
 
 # Run linter with auto-fix
 lint-fix:
