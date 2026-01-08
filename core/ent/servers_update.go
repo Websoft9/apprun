@@ -5,7 +5,7 @@ package ent
 import (
 	"apprun/ent/predicate"
 	"apprun/ent/servers"
-	"apprun/ent/users"
+	"apprun/ent/user"
 	"context"
 	"errors"
 	"fmt"
@@ -56,14 +56,14 @@ func (_u *ServersUpdate) SetNillableIP(v *string) *ServersUpdate {
 	return _u
 }
 
-// SetOwnerID sets the "owner" edge to the Users entity by ID.
-func (_u *ServersUpdate) SetOwnerID(id int) *ServersUpdate {
+// SetOwnerID sets the "owner" edge to the User entity by ID.
+func (_u *ServersUpdate) SetOwnerID(id int64) *ServersUpdate {
 	_u.mutation.SetOwnerID(id)
 	return _u
 }
 
-// SetOwner sets the "owner" edge to the Users entity.
-func (_u *ServersUpdate) SetOwner(v *Users) *ServersUpdate {
+// SetOwner sets the "owner" edge to the User entity.
+func (_u *ServersUpdate) SetOwner(v *User) *ServersUpdate {
 	return _u.SetOwnerID(v.ID)
 }
 
@@ -72,7 +72,7 @@ func (_u *ServersUpdate) Mutation() *ServersMutation {
 	return _u.mutation
 }
 
-// ClearOwner clears the "owner" edge to the Users entity.
+// ClearOwner clears the "owner" edge to the User entity.
 func (_u *ServersUpdate) ClearOwner() *ServersUpdate {
 	_u.mutation.ClearOwner()
 	return _u
@@ -144,7 +144,7 @@ func (_u *ServersUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Columns: []string{servers.OwnerColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(users.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt64),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -157,7 +157,7 @@ func (_u *ServersUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Columns: []string{servers.OwnerColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(users.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt64),
 			},
 		}
 		for _, k := range nodes {
@@ -213,14 +213,14 @@ func (_u *ServersUpdateOne) SetNillableIP(v *string) *ServersUpdateOne {
 	return _u
 }
 
-// SetOwnerID sets the "owner" edge to the Users entity by ID.
-func (_u *ServersUpdateOne) SetOwnerID(id int) *ServersUpdateOne {
+// SetOwnerID sets the "owner" edge to the User entity by ID.
+func (_u *ServersUpdateOne) SetOwnerID(id int64) *ServersUpdateOne {
 	_u.mutation.SetOwnerID(id)
 	return _u
 }
 
-// SetOwner sets the "owner" edge to the Users entity.
-func (_u *ServersUpdateOne) SetOwner(v *Users) *ServersUpdateOne {
+// SetOwner sets the "owner" edge to the User entity.
+func (_u *ServersUpdateOne) SetOwner(v *User) *ServersUpdateOne {
 	return _u.SetOwnerID(v.ID)
 }
 
@@ -229,7 +229,7 @@ func (_u *ServersUpdateOne) Mutation() *ServersMutation {
 	return _u.mutation
 }
 
-// ClearOwner clears the "owner" edge to the Users entity.
+// ClearOwner clears the "owner" edge to the User entity.
 func (_u *ServersUpdateOne) ClearOwner() *ServersUpdateOne {
 	_u.mutation.ClearOwner()
 	return _u
@@ -331,7 +331,7 @@ func (_u *ServersUpdateOne) sqlSave(ctx context.Context) (_node *Servers, err er
 			Columns: []string{servers.OwnerColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(users.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt64),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -344,7 +344,7 @@ func (_u *ServersUpdateOne) sqlSave(ctx context.Context) (_node *Servers, err er
 			Columns: []string{servers.OwnerColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(users.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt64),
 			},
 		}
 		for _, k := range nodes {

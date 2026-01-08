@@ -23,3 +23,15 @@ func DefaultConfig() Config {
 		TranslationsPath:   "./locales",
 	}
 }
+
+// NewI18nFromConfig initializes the i18n system from configuration
+// This is the factory connector pattern required by Story 10a
+// Returns error if initialization fails
+func NewI18nFromConfig(cfg *Config) error {
+	if cfg == nil {
+		defaultCfg := DefaultConfig()
+		cfg = &defaultCfg
+	}
+
+	return InitWithConfig(*cfg)
+}

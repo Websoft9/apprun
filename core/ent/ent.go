@@ -5,7 +5,7 @@ package ent
 import (
 	"apprun/ent/configitem"
 	"apprun/ent/servers"
-	"apprun/ent/users"
+	"apprun/ent/user"
 	"context"
 	"errors"
 	"fmt"
@@ -77,7 +77,7 @@ func checkColumn(t, c string) error {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
 			configitem.Table: configitem.ValidColumn,
 			servers.Table:    servers.ValidColumn,
-			users.Table:      users.ValidColumn,
+			user.Table:       user.ValidColumn,
 		})
 	})
 	return columnCheck(t, c)

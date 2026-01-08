@@ -681,9 +681,324 @@ type Cache interface {
 
 ## 8. 配置管理
 
-### 8.1 配置结构
+### 8.1 配置中心架构
+
+apprun 使用 **Config Center Registry Pattern**，模块配置独立定义在各自包内，通过注册表统一管理。
+
+**设计原则**：
+- **Business Cohesion**: 模块配置定义在模块包内（如 `pkg/i18n/config.go`，`internal/jwt/config.go`）
+- **Centralized Management**: Config Center 通过 Registry 统一管理所有模块配置
+- **Three-Layer Model**: Business Structs (Source) → Config Center (Mapper) → Data Sources (YAML/DB/Env)
+
+### 8.2 模块配置标准结构
+
+**每个需要配置的模块必须包含 `config.go` 文件**，定义模块配置结构和工厂函数。
+
+#### 8.2.1 Config.go 标准模板
 
 ```go
+// pkg/yourmodule/config.go 或 internal/yourmodule/config.go
+package yourmodule
+
+import "time"
+
+// Config defines the configuration for YourModule
+// Tags: yaml (YAML key), default (default value), db (allow database storage), validate (validation rules)
+type Config struct {
+    // Add your configuration fields here
+    Enabled bool   `yaml:"enabled" default:"true" db:"true" validate:""`
+    Timeout string `yaml:"timeout" default:"30s" db:"false" validate:"required"`
+    
+    // Nested configuration
+    Advanced AdvancedConfig `yaml:"advanced"`
+}
+
+// AdvancedConfig defines advanced configuration options
+type AdvancedConfig struct {
+    MaxRetries int `yaml:"max_retries" default:"3" db:"false" validate:"min=0,max=10"`
+}
+
+// DefaultConfig returns the default configuration
+func DefaultConfig() Config {
+    return Config{
+        Enabled: true,
+        Timeout: "30s",
+        Advanced: AdvancedConfig{
+            MaxRetries: 3,
+        },
+    }
+}
+
+// ToRuntimeConfig converts Config to runtime configuration
+// Use this when you need to parse or transform config values
+func (c *Config) ToRuntimeConfig() (*RuntimeConfig, error) {
+    timeout, err := time.ParseDuration(c.Timeout)
+    if err != nil {
+        return nil, err
+    }
+    
+    return &RuntimeConfig{
+        Enabled:    c.Enabled,
+        Timeout:    timeout, // Parsed duration
+        MaxRetries: c.Advanced.MaxRetries,
+    }, nil
+}
+
+// RuntimeConfig is the internal configuration used by module at runtime
+// Use parsed/transformed types (time.Duration, *url.URL, etc.)
+type RuntimeConfig struct {
+    Enabled    bool
+    Timeout    time.Duration // Parsed from string
+    MaxRetries int
+}
+```
+
+#### 8.2.2 配置注册（main.go）
+
+```go
+// cmd/server/main.go
+
+import (
+    "apprun/modules/config"
+    "apprun/pkg/i18n"
+    "apprun/internal/jwt"
+    "apprun/pkg/yourmodule"
+)
+
+func initializeConfigRegistry() *config.ConfigRegistry {
+    registry := config.NewRegistry()
+    
+    // Register module configurations
+    if err := registry.Register("logger", &logger.Config{}); err != nil {
+        log.Fatalf("Failed to register logger config: %v", err)
+    }
+    
+    if err := registry.Register("i18n", &i18n.Config{}); err != nil {
+        log.Fatalf("Failed to register i18n config: %v", err)
+    }
+    
+    if err := registry.Register("jwt", &jwt.Config{}); err != nil {
+        log.Fatalf("Failed to register jwt config: %v", err)
+    }
+    
+    // Register your module
+    if err := registry.Register("yourmodule", &yourmodule.Config{}); err != nil {
+        log.Fatalf("Failed to register yourmodule config: %v", err)
+    }
+    
+    return registry
+}
+```
+
+#### 8.2.3 配置文件（YAML）
+
+```yaml
+# config/default.yaml
+
+# Your module configuration
+yourmodule:
+  enabled: true
+  timeout: 30s
+  advanced:
+    max_retries: 3
+
+# JWT configuration example
+jwt:
+  secret: ${JWT_SECRET}  # Environment variable
+  expiry: 24h
+  issuer: "apprun"
+  whitelist_paths:
+    - /api/v1/auth/register
+    - /api/v1/auth/login
+    - /health
+```
+
+### 8.3 工厂函数作为"配置连接器"
+
+**工厂函数是模块与配置中心的连接桥梁**，提供优雅的初始化方式。
+
+#### 8.3.1 工厂函数标准模板
+
+```go
+// pkg/yourmodule/yourmodule.go
+
+// NewServiceFromConfig creates a service instance from configuration (recommended)
+// This is the "Config Connector" - bridges module and Config Center
+func NewServiceFromConfig(cfg *Config) (*Service, error) {
+    // Convert to runtime config
+    runtimeCfg, err := cfg.ToRuntimeConfig()
+    if err != nil {
+        return nil, fmt.Errorf("failed to convert config: %w", err)
+    }
+    
+    // Initialize service with runtime config
+    return NewService(runtimeCfg), nil
+}
+
+// NewService creates a service instance from runtime configuration
+// Use this for direct initialization (testing, advanced use cases)
+func NewService(runtimeCfg *RuntimeConfig) *Service {
+    return &Service{
+        enabled:    runtimeCfg.Enabled,
+        timeout:    runtimeCfg.Timeout,
+        maxRetries: runtimeCfg.MaxRetries,
+    }
+}
+```
+
+#### 8.3.2 使用模式
+
+**模式 1: 配置中心模式（推荐生产环境）**
+```go
+// Application startup - load from Config Center
+registry := config.NewRegistry()
+registry.Register("yourmodule", &yourmodule.Config{})
+
+bootstrap := config.NewBootstrapWithRegistry("./config", registry)
+configService, _ := bootstrap.CreateService(ctx, dbClient)
+
+// Get module config from registry and initialize
+yourmoduleCfg := &yourmodule.Config{
+    // Config loaded from YAML/Env/DB by Config Center
+}
+service, err := yourmodule.NewServiceFromConfig(yourmoduleCfg)
+```
+
+**模式 2: 直接配置模式（测试/简单场景）**
+```go
+// Testing - direct configuration without Config Center
+cfg := &yourmodule.Config{
+    Enabled: true,
+    Timeout: "5s",
+}
+service, err := yourmodule.NewServiceFromConfig(cfg)
+```
+
+**模式 3: Runtime Config 模式（高级场景）**
+```go
+// Advanced - bypass config conversion for performance
+runtimeCfg := &yourmodule.RuntimeConfig{
+    Enabled:    true,
+    Timeout:    5 * time.Second,
+    MaxRetries: 3,
+}
+service := yourmodule.NewService(runtimeCfg)
+```
+
+### 8.4 配置优先级（6-Layer System）
+
+Config Center 使用 6 层优先级系统，**从低到高**：
+
+1. **Struct Tag Defaults** - `default:"value"` tag
+2. **default.yaml** - Base configuration file
+3. **Specialized Files** - `database.yaml`, `server.yaml`, etc.
+4. **conf_d/ Directory** - Additional config files
+5. **Database** - Only for `db:"true"` fields
+6. **Environment Variables** - Highest priority
+
+```bash
+# Example: Override JWT secret via environment
+export JWT_SECRET="production-secret-key"
+export JWT_EXPIRY="1h"
+```
+
+### 8.5 配置标签说明
+
+| Tag | Description | Example | Required |
+|-----|-------------|---------|----------|
+| `yaml` | YAML key name | `yaml:"timeout"` | Yes |
+| `default` | Default value | `default:"30s"` | Recommended |
+| `db` | Allow database storage | `db:"true"` or `db:"false"` | Yes |
+| `validate` | Validation rules | `validate:"required,min=1"` | Optional |
+| `json` | JSON key (for API) | `json:"timeout"` | Optional |
+
+**Validation Rules** (using go-playground/validator):
+- `required` - Field must be non-zero
+- `min=N` / `max=N` - Min/max value for numbers
+- `len=N` - Exact length for strings/slices
+- `oneof=A B C` - Value must be one of the options
+- `url` / `email` - Format validation
+
+### 8.6 实际案例对比
+
+#### JWT Module (已实现)
+
+```go
+// internal/jwt/config.go
+type Config struct {
+    Secret         string   `yaml:"secret" default:"" db:"false" validate:"required,min=32"`
+    Expiry         string   `yaml:"expiry" default:"24h" db:"false" validate:"required"`
+    Issuer         string   `yaml:"issuer" default:"apprun" db:"false"`
+    WhitelistPaths []string `yaml:"whitelist_paths" default:"[...]" db:"false"`
+}
+
+func (c *Config) ToRuntimeConfig() (*RuntimeConfig, error) {
+    duration, err := time.ParseDuration(c.Expiry)
+    if err != nil {
+        return nil, err
+    }
+    
+    whitelist := make(map[string]bool, len(c.WhitelistPaths))
+    for _, path := range c.WhitelistPaths {
+        whitelist[path] = true
+    }
+    
+    return &RuntimeConfig{
+        Secret:    c.Secret,
+        Expiry:    duration,
+        Issuer:    c.Issuer,
+        Whitelist: whitelist,
+    }, nil
+}
+
+// modules/auth/middleware/auth.go
+func NewJWTMiddlewareFromConfig(cfg *jwt.Config) (*JWTMiddleware, error) {
+    runtimeCfg, err := cfg.ToRuntimeConfig()
+    if err != nil {
+        return nil, err
+    }
+    return NewJWTMiddleware(runtimeCfg), nil
+}
+```
+
+#### i18n Module (参考实现)
+
+```go
+// pkg/i18n/config.go
+type Config struct {
+    DefaultLanguage     string   `yaml:"default_language" default:"en-US" db:"false"`
+    SupportedLanguages  []string `yaml:"supported_languages" db:"false"`
+    TranslationsPath    string   `yaml:"translations_path" default:"./locales" db:"false"`
+}
+
+// pkg/i18n/i18n.go
+func InitWithConfig(cfg *Config) error {
+    // Load translations based on config
+    return loadTranslations(cfg.TranslationsPath, cfg.SupportedLanguages)
+}
+```
+
+### 8.7 最佳实践
+
+**✅ DO**:
+- 每个模块定义独立的 `config.go`
+- 使用 `DefaultConfig()` 提供合理默认值
+- 提供 `ToRuntimeConfig()` 处理类型转换
+- 创建工厂函数 `NewXXXFromConfig(cfg *Config)` 作为配置连接器
+- 在 `main.go` 中注册所有模块配置
+- 使用环境变量覆盖敏感配置（如密钥）
+
+**❌ DON'T**:
+- ❌ 在 `internal/config/types.go` 中定义业务模块配置（违反 Registry Pattern）
+- ❌ 在模块内部直接读取配置文件（破坏解耦）
+- ❌ 硬编码配置值（如白名单路径、超时时间）
+- ❌ 使用全局变量存储配置（不利于测试）
+- ❌ 跳过配置验证（validate tag）
+
+### 8.8 旧配置结构（已废弃）
+
+```go
+// ❌ OLD - 不符合 Registry Pattern
 // internal/config/config.go
 
 type Config struct {
@@ -722,6 +1037,11 @@ func Load(path string) (*Config, error) {
     return &config, nil
 }
 ```
+
+**迁移说明**: 
+- 旧的全局 Config 结构已被 Registry Pattern 替代
+- 每个模块现在独立定义配置
+- 参考 `pkg/i18n/config.go` 和 `internal/jwt/config.go` 作为标准实现
 
 ---
 

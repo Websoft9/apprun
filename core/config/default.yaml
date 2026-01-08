@@ -28,6 +28,17 @@ i18n:
   supported_languages: ["en-US", "zh-CN"]
   translations_path: "./pkg/i18n/testdata"  # Path to translation files
 
+# JWT configuration
+jwt:
+  secret: ${JWT_SECRET}  # Must be set via environment variable (≥32 characters)
+  expiry: 24h            # Token expiration time
+  issuer: "apprun"       # Token issuer
+  whitelist_paths:       # Paths that bypass JWT authentication
+    - /api/v1/auth/register
+    - /api/v1/auth/login
+    - /health
+    - /metrics
+
 # Server configuration (infrastructure, not managed by config center)
 # Override via environment variables following naming convention:
 # Pattern: {GROUP}_UPPERCASE_{KEY}_UPPERCASE

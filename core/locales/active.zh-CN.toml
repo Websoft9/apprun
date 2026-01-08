@@ -1,11 +1,40 @@
 # Translation file
-# Last updated: 2026-01-07 11:31:43
+# Last updated: 2026-01-08 18:08:23
 
 [common]
   other = ""
 
 [errors]
   other = ""
+
+# 认证错误
+[auth.error.invalid_request_body]
+  other = "请求体格式错误"
+
+[auth.error.email_required]
+  other = "邮箱为必填项"
+
+[auth.error.password_required]
+  other = "密码为必填项"
+
+[auth.error.invalid_email]
+  other = "邮箱格式不正确"
+
+[auth.error.email_exists]
+  other = "该邮箱已被注册"
+
+[auth.error.username_exists]
+  other = "用户名已被占用"
+
+[auth.error.weak_password]
+  other = "密码强度不符合要求"
+
+[auth.error.registration_failed]
+  other = "注册失败"
+
+# 认证成功消息
+[auth.success.registration]
+  other = "注册成功"
 
 [success]
   other = ""

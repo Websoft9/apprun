@@ -5,7 +5,7 @@
 **负责人**: Architect Agent  
 **状态**: Planning  
 **优先级**: P0 (必需)  
-**预估工作量**: 3-4 周
+**预估工作量**: 7-8 天 (MVP)
 
 ---
 
@@ -24,8 +24,9 @@
 
 ### 1.3 验收标准
 
-- [ ] 用户可通过 Kratos 登录（Web 端 + API）
+- [ ] 用户可通过 API 注册和登录（Email + Password）
 - [ ] JWT Token 正确签发和验证
+- [ ] 密码安全存储（bcrypt hashing）
 - [ ] 项目级权限隔离正常工作
 - [ ] 资源级权限控制生效
 - [ ] API 响应时间 P95 < 100ms
@@ -39,42 +40,67 @@
 
 ### 2.1 架构设计
 
-#### 集成方式
-- **Ory Kratos**: 用户身份管理（共享数据库）
-- **JWT**: API 客户端认证
+#### 技术栈
+- **bcrypt**: 密码哈希 (golang.org/x/crypto/bcrypt)
+- **JWT**: Token 认证 (github.com/golang-jwt/jwt/v5)
 - **Casbin**: RBAC 权限引擎
 - **中间件**: Chi Router 中间件链
+- **Session Store**: 可选的 Cookie Session (github.com/gorilla/sessions)
 
 #### 认证流程
 
-**Web 端**：
+**注册流程**：
 ```
-用户 → Kratos UI → 登录成功 → Session Cookie
-     → apprun API (携带 Cookie) → 验证 Session → 业务逻辑
+用户 → POST /api/v1/auth/register (email, password, name)
+     → 验证邮箱格式
+     → 密码强度检查
+     → bcrypt.GenerateFromPassword
+     → 存储到数据库
+     → 返回 User 对象
 ```
 
-**API 客户端**：
+**登录流程**：
 ```
-用户 → Kratos 登录 → Session
-     → POST /api/v1/auth/token (携带 Session) → JWT Token
-     → API 请求 (携带 JWT) → 验证 JWT → 业务逻辑
+用户 → POST /api/v1/auth/login (email, password)
+     → 查询用户
+     → bcrypt.CompareHashAndPassword
+     → 生成 JWT Token (access + refresh)
+     → 返回 Token
+```
+
+**API 访问流程**：
+```
+客户端 → API 请求 (Authorization: Bearer <JWT>)
+       → AuthMiddleware 验证 Token
+       → 解析 Claims (user_id, project_id)
+       → 存入 Context
+       → RequirePermission 检查权限
+       → 业务逻辑
 ```
 
 ### 2.2 API 端点
 
 | 端点 | 方法 | 功能 | 认证 |
 |-----|------|------|------|
-| `/api/v1/auth/token` | POST | 换取 JWT Token | Kratos Session |
+| `/api/v1/auth/register` | POST | 用户注册 | Public |
+| `/api/v1/auth/login` | POST | 用户登录 | Public |
 | `/api/v1/auth/refresh` | POST | 刷新 Access Token | Refresh Token |
 | `/api/v1/auth/me` | GET | 获取当前用户信息 | JWT |
-| `/api/v1/auth/logout` | POST | 登出 | JWT |
+| `/api/v1/auth/logout` | POST | 登出（可选） | JWT |
+| `/api/v1/auth/change-password` | POST | 修改密码 | JWT |
 
-#### 示例：换取 JWT Token
+#### 示例 1：用户注册
 
 **请求**：
 ```http
-POST /api/v1/auth/token
-Cookie: ory_kratos_session=<session>
+POST /api/v1/auth/register
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "SecurePass123!",
+  "name": "John Doe"
+}
 ```
 
 **响应**：
@@ -82,25 +108,63 @@ Cookie: ory_kratos_session=<session>
 {
   "success": true,
   "data": {
-    "access_token": "eyJhbGci...",
-    "refresh_token": "eyJhbGci...",
-    "expires_in": 3600
+    "user": {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "email": "user@example.com",
+      "name": "John Doe",
+      "created_at": "2026-01-08T10:00:00Z"
+    }
+  }
+}
+```
+
+#### 示例 2：用户登录
+
+**请求**：
+```http
+POST /api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "SecurePass123!"
+}
+```
+
+**响应**：
+```json
+{
+  "success": true,
+  "data": {
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "expires_in": 3600,
+    "user": {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "email": "user@example.com",
+      "name": "John Doe"
+    }
   }
 }
 ```
 
 ### 2.3 数据模型
 
-#### 用户扩展表（apprun.users）
+#### 用户表（apprun.users）
 ```sql
 CREATE TABLE users (
     id VARCHAR(36) PRIMARY KEY,
-    identity_id VARCHAR(36) NOT NULL UNIQUE,  -- Kratos Identity ID
-    email VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,  -- bcrypt hash
     name VARCHAR(100),
+    is_active BOOLEAN DEFAULT TRUE,
+    email_verified BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
+    updated_at TIMESTAMP DEFAULT NOW(),
+    last_login_at TIMESTAMP
 );
+
+CREATE INDEX idx_users_email ON users(email);
 ```
 
 #### 项目成员表（apprun.project_members）
@@ -145,26 +209,52 @@ m = r.sub == p.sub && r.obj == p.obj && r.act == p.act
 
 ### 2.5 中间件设计
 
-#### 认证中间件（伪代码）
+#### 认证中间件（实现参考）
 ```go
-func AuthMiddleware() func(http.Handler) http.Handler {
+func AuthMiddleware(jwtSecret []byte) func(http.Handler) http.Handler {
     return func(next http.Handler) http.Handler {
         return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-            // 1. 提取 Token（Cookie 或 Header）
-            token := extractToken(r)
+            // 1. 提取 Token（Authorization Header）
+            authHeader := r.Header.Get("Authorization")
+            if authHeader == "" {
+                response.Error(w, 401, "AUTH_MISSING_TOKEN", "Missing authorization token")
+                return
+            }
             
-            // 2. 验证 Token
-            userID, err := validateToken(token)
-            if err != nil {
+            tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+            
+            // 2. 验证 JWT Token
+            token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+                if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+                    return nil, fmt.Errorf("unexpected signing method")
+                }
+                return jwtSecret, nil
+            })
+            
+            if err != nil || !token.Valid {
                 response.Error(w, 401, "AUTH_INVALID_TOKEN", "Invalid token")
                 return
             }
             
-            // 3. 存入 Context
-            ctx := context.WithValue(r.Context(), "user_id", userID)
+            // 3. 提取 Claims 并存入 Context
+            claims, ok := token.Claims.(*Claims)
+            if !ok {
+                response.Error(w, 401, "AUTH_INVALID_CLAIMS", "Invalid token claims")
+                return
+            }
+            
+            ctx := context.WithValue(r.Context(), "user_id", claims.UserID)
+            ctx = context.WithValue(ctx, "email", claims.Email)
             next.ServeHTTP(w, r.WithContext(ctx))
         })
     }
+}
+
+// JWT Claims 结构
+type Claims struct {
+    UserID string `json:"user_id"`
+    Email  string `json:"email"`
+    jwt.RegisteredClaims
 }
 ```
 
@@ -195,15 +285,22 @@ func RequirePermission(resource, action string) func(http.Handler) http.Handler 
 # config/auth.yaml
 auth:
   jwt:
-    secret: "${JWT_SECRET}"
-    access_token_expire: 3600      # 1 小时
-    refresh_token_expire: 604800   # 7 天
+    secret: "${JWT_SECRET}"              # 环境变量，生产环境必须设置
+    access_token_expire: 3600            # 1 小时
+    refresh_token_expire: 604800         # 7 天
     algorithm: "HS256"
   
-  kratos:
-    public_url: "http://kratos:4433"
-    admin_url: "http://kratos:4434"
-    session_cookie_name: "ory_kratos_session"
+  password:
+    min_length: 8
+    require_uppercase: true
+    require_lowercase: true
+    require_number: true
+    require_special: false
+    bcrypt_cost: 12                      # bcrypt 计算成本 (10-14)
+  
+  rate_limit:
+    login_attempts: 5                    # 5 次失败后锁定
+    lockout_duration: 900                # 锁定 15 分钟
   
   casbin:
     model_path: "./config/casbin_model.conf"
@@ -214,64 +311,80 @@ auth:
 
 ## 3. Stories 拆分
 
-### Story 1: Kratos 集成与 Session 验证
+### Story 1: 用户注册与密码安全
 **优先级**: P0  
-**工作量**: 3 天
-- [ ] 集成 Kratos Public API
-- [ ] 实现 Session Cookie 验证
-- [ ] 实现用户信息同步（Kratos → apprun）
+**工作量**: 1.5 天
+- [ ] 实现用户注册 API (`POST /api/v1/auth/register`)
+- [ ] 邮箱格式验证
+- [ ] 密码强度验证（长度、复杂度）
+- [ ] bcrypt 密码哈希存储
+- [ ] 用户数据模型（Ent Schema）
 - [ ] 编写单元测试
 
-### Story 2: JWT Token 管理
+### Story 2: 用户登录与 JWT 签发
 **优先级**: P0  
-**工作量**: 2 天
-- [ ] 实现 JWT 签发逻辑
-- [ ] 实现 JWT 验证逻辑
-- [ ] 实现 Token 刷新机制
-- [ ] 实现 `/api/v1/auth/token` 端点
+**工作量**: 1.5 天
+- [ ] 实现登录 API (`POST /api/v1/auth/login`)
+- [ ] 密码验证（bcrypt.CompareHashAndPassword）
+- [ ] JWT Token 签发（Access + Refresh）
+- [ ] Token Claims 设计（user_id, email, exp）
+- [ ] 更新最后登录时间
 - [ ] 编写单元测试
 
-### Story 3: 认证中间件
+### Story 3: JWT 认证中间件
 **优先级**: P0  
-**工作量**: 2 天
-- [ ] 实现 AuthMiddleware
-- [ ] 集成到路由系统
-- [ ] 处理多种 Token 来源（Cookie, Header）
+**工作量**: 1 天
+- [ ] 实现 AuthMiddleware（Token 提取和验证）
+- [ ] 集成到 Chi Router
+- [ ] Context 注入（user_id, email）
+- [ ] 错误处理（401 响应）
 - [ ] 编写集成测试
 
-### Story 4: RBAC 权限控制
+### Story 4: Token 刷新机制
 **优先级**: P0  
-**工作量**: 4 天
+**工作量**: 1 天
+- [ ] 实现 Refresh Token 逻辑
+- [ ] 实现 `/api/v1/auth/refresh` 端点
+- [ ] Refresh Token 黑名单（可选，Redis）
+- [ ] 编写单元测试
+
+### Story 5: RBAC 权限控制
+**优先级**: P0  
+**工作量**: 2 天
 - [ ] 集成 Casbin
 - [ ] 实现项目成员管理
 - [ ] 实现 RequirePermission 中间件
 - [ ] 定义权限策略
 - [ ] 编写权限测试用例
 
-### Story 5: 用户信息接口
+### Story 6: 用户管理接口
 **优先级**: P1  
-**工作量**: 1 天
+**工作量**: 0.5 天
 - [ ] 实现 `/api/v1/auth/me` 端点
-- [ ] 实现 `/api/v1/auth/logout` 端点
+- [ ] 实现 `/api/v1/auth/change-password` 端点
+- [ ] 实现 `/api/v1/auth/logout`（可选，客户端删除 Token）
 - [ ] 编写 API 文档
 
 ---
 
 ## 4. 依赖关系
 
-### 技术依赖
-- Ory Kratos (外部服务)
-- Casbin v2 (Go 库)
-- JWT 库 (github.com/golang-jwt/jwt/v5)
+### 技术依赖（Go 包）
+- `golang.org/x/crypto/bcrypt` - 密码哈希
+- `github.com/golang-jwt/jwt/v5` - JWT Token
+- `github.com/casbin/casbin/v2` - RBAC 引擎
+- `github.com/gorilla/sessions` - Session 管理（可选）
+- `golang.org/x/time/rate` - 速率限制（可选）
 
 ### 模块依赖
 - 数据库模块（Ent ORM）
 - 配置模块（Viper）
 - 日志模块（Logrus）
+- Response 标准化模块
 
 ### 外部依赖
-- PostgreSQL 14+
-- Redis 7+ (可选，缓存权限)
+- PostgreSQL 14+ (用户数据存储)
+- Redis 7+ (可选：Token 黑名单、权限缓存)
 
 ---
 
@@ -279,10 +392,12 @@ auth:
 
 | 风险 | 影响 | 缓解措施 |
 |-----|------|---------|
-| Kratos Session 验证性能 | 中 | 使用 Redis 缓存 Session 数据 |
-| JWT Secret 泄露 | 高 | 使用环境变量，定期轮换 |
+| JWT Secret 泄露 | 高 | 使用环境变量，定期轮换，考虑 RSA 签名 |
+| 密码暴力破解 | 高 | 速率限制、账户锁定、bcrypt 高成本 |
+| Token 过期处理 | 中 | 实现完善的 Refresh Token 机制 |
 | Casbin 策略复杂度 | 中 | 从简单策略开始，逐步扩展 |
-| 多租户权限隔离 | 高 | 严格测试权限边界 |
+| 多租户权限隔离 | 高 | 严格测试权限边界，Casbin 策略审计 |
+| 缺少 MFA 支持 | 中 | MVP 阶段可接受，Post-MVP 添加 TOTP |
 
 ---
 
@@ -314,14 +429,54 @@ auth:
 
 ---
 
+## 8. 安全最佳实践
+
+### 8.1 JWT Secret 管理
+- **生产环境**：使用强随机 Secret（至少 32 字节）
+- **轮换策略**：每 90 天轮换一次
+- **存储方式**：环境变量或密钥管理服务（如 AWS Secrets Manager）
+- **多环境隔离**：开发/测试/生产使用不同 Secret
+
+### 8.2 HTTPS 强制
+- 生产环境必须启用 HTTPS
+- 使用 HSTS Header 强制浏览器使用 HTTPS
+- JWT Token 仅通过 HTTPS 传输
+
+### 8.3 CORS 配置
+- 明确允许的 Origin 列表
+- 不允许使用通配符 `*`
+- 正确设置 Credentials 模式
+
+### 8.4 输入验证
+- 所有用户输入必须验证和消毒
+- 使用参数化查询防止 SQL 注入
+- 输出转义防止 XSS
+
+### 8.5 速率限制
+- 登录端点：5 次/15 分钟（每 IP）
+- 注册端点：3 次/小时（每 IP）
+- Token 刷新：10 次/小时（每用户）
+
+### 8.6 审计日志
+- 记录所有认证事件（成功/失败）
+- 记录权限拒绝事件
+- 日志包含：时间戳、用户 ID、IP、操作
+
+---
+
 ## 附录
 
 ### A. 错误码定义
 
 | 错误码 | HTTP 状态码 | 说明 |
 |--------|------------|------|
+| `AUTH_INVALID_CREDENTIALS` | 401 | 邮箱或密码错误 |
 | `AUTH_INVALID_TOKEN` | 401 | Token 无效或已过期 |
-| `AUTH_SESSION_NOT_FOUND` | 401 | Kratos Session 不存在 |
+| `AUTH_MISSING_TOKEN` | 401 | 缺少认证 Token |
+| `AUTH_INVALID_CLAIMS` | 401 | Token Claims 无效 |
+| `AUTH_ACCOUNT_LOCKED` | 403 | 账户已锁定（登录失败次数过多） |
+| `AUTH_EMAIL_EXISTS` | 409 | 邮箱已被注册 |
+| `AUTH_WEAK_PASSWORD` | 400 | 密码强度不足 |
 | `PERM_FORBIDDEN` | 403 | 无权限访问 |
 | `PERM_PROJECT_NOT_MEMBER` | 403 | 不是项目成员 |
 

@@ -41,7 +41,7 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "name", Type: field.TypeString},
 		{Name: "ip", Type: field.TypeString, Unique: true},
-		{Name: "users_servers", Type: field.TypeInt},
+		{Name: "user_servers", Type: field.TypeInt64},
 	}
 	// ServersTable holds the schema information for the "servers" table.
 	ServersTable = &schema.Table{
@@ -59,15 +59,51 @@ var (
 	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "name", Type: field.TypeString},
-		{Name: "email", Type: field.TypeString, Unique: true},
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "uuid", Type: field.TypeUUID, Unique: true},
+		{Name: "username", Type: field.TypeString, Unique: true, Nullable: true, Size: 64},
+		{Name: "email", Type: field.TypeString, Unique: true, Size: 255},
+		{Name: "password_hash", Type: field.TypeString, Size: 255},
+		{Name: "nickname", Type: field.TypeString, Nullable: true, Size: 64},
+		{Name: "avatar", Type: field.TypeString, Nullable: true, Size: 255},
+		{Name: "phone", Type: field.TypeString, Nullable: true, Size: 20},
+		{Name: "gender", Type: field.TypeInt8, Default: 0},
+		{Name: "signature", Type: field.TypeString, Nullable: true, Size: 255},
+		{Name: "status", Type: field.TypeInt8, Default: 1},
+		{Name: "last_login_at", Type: field.TypeTime, Nullable: true},
+		{Name: "last_login_ip", Type: field.TypeString, Nullable: true, Size: 45},
+		{Name: "timezone", Type: field.TypeString, Size: 64, Default: "UTC"},
+		{Name: "language", Type: field.TypeString, Size: 10, Default: "zh-CN"},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
 	}
 	// UsersTable holds the schema information for the "users" table.
 	UsersTable = &schema.Table{
 		Name:       "users",
 		Columns:    UsersColumns,
 		PrimaryKey: []*schema.Column{UsersColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "user_email",
+				Unique:  true,
+				Columns: []*schema.Column{UsersColumns[3]},
+			},
+			{
+				Name:    "user_username",
+				Unique:  true,
+				Columns: []*schema.Column{UsersColumns[2]},
+			},
+			{
+				Name:    "user_status",
+				Unique:  false,
+				Columns: []*schema.Column{UsersColumns[10]},
+			},
+			{
+				Name:    "user_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{UsersColumns[15]},
+			},
+		},
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{

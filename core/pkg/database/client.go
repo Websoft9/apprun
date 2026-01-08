@@ -36,7 +36,7 @@ func (c *entClient) Close() error {
 // Ping checks if the database connection is alive
 func (c *entClient) Ping(ctx context.Context) error {
 	// Ent doesn't expose Ping directly, we can try a simple query
-	_, err := c.client.Users.Query().Count(ctx)
+	_, err := c.client.User.Query().Count(ctx)
 	return err
 }
 

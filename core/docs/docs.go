@@ -23,27 +23,33 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/demo/i18n": {
-            "get": {
-                "description": "Demonstrates internationalization with context-based translation",
+        "/api/auth/register": {
+            "post": {
+                "description": "Create a new user account with email and password",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "demo"
+                    "auth"
                 ],
-                "summary": "i18n Demo",
+                "summary": "Register new user",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Language code (en-US, zh-CN)",
-                        "name": "lang",
-                        "in": "query"
+                        "description": "Registration data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/service.RegisterRequest"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "allOf": [
                                 {
@@ -53,20 +59,35 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "type": "object",
-                                            "additionalProperties": {
-                                                "type": "string"
-                                            }
+                                            "$ref": "#/definitions/service.RegisterResponse"
                                         }
                                     }
                                 }
                             ]
                         }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "409": {
+                        "description": "Email or username already exists",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
                     }
                 }
             }
         },
-        "/config": {
+        "/api/config": {
             "get": {
                 "description": "Query a single configuration item by key, returns value, source and dynamic flag",
                 "consumes": [
@@ -186,7 +207,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/config/allowed": {
+        "/api/config/allowed": {
             "get": {
                 "description": "Returns all configuration keys marked as db:true (can be modified dynamically via API).\nUse this endpoint to discover which configs can be updated through the API.\nConfigs not in this list cannot be modified dynamically.",
                 "consumes": [
@@ -210,7 +231,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/config/list": {
+        "/api/config/list": {
             "get": {
                 "description": "Returns all dynamic configuration items stored in database.\nThis does not include static configurations from files.\nUse this to see which configs have been overridden dynamically.",
                 "consumes": [
@@ -234,6 +255,69 @@ const docTemplate = `{
                         "description": "Internal server error",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/demo/i18n": {
+            "get": {
+                "description": "Demonstrates internationalization with context-based translation",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "demo"
+                ],
+                "summary": "i18n Demo",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Language code (en-US, zh-CN)",
+                        "name": "lang",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "additionalProperties": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/health": {
+            "get": {
+                "description": "Check if the service is running",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "system"
+                ],
+                "summary": "Health Check",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.HealthResponse"
                         }
                     }
                 }
@@ -315,6 +399,19 @@ const docTemplate = `{
                 }
             }
         },
+        "handlers.HealthResponse": {
+            "type": "object",
+            "properties": {
+                "service": {
+                    "type": "string",
+                    "example": "apprun"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "response.ErrorInfo": {
             "type": "object",
             "properties": {
@@ -347,6 +444,78 @@ const docTemplate = `{
                     "type": "boolean"
                 }
             }
+        },
+        "service.RegisterRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "description": "用户邮箱（必填）",
+                    "type": "string",
+                    "example": "user@example.com"
+                },
+                "gender": {
+                    "description": "性别（可选：0=未知,1=男,2=女）",
+                    "type": "integer",
+                    "example": 1
+                },
+                "language": {
+                    "description": "语言（可选）",
+                    "type": "string",
+                    "example": "zh-CN"
+                },
+                "nickname": {
+                    "description": "昵称（可选）",
+                    "type": "string",
+                    "example": "John"
+                },
+                "password": {
+                    "description": "密码（必填，8+字符，含大小写和数字）",
+                    "type": "string",
+                    "example": "SecurePass123"
+                },
+                "phone": {
+                    "description": "手机号（可选）",
+                    "type": "string",
+                    "example": "+86-13800138000"
+                },
+                "timezone": {
+                    "description": "时区（可选）",
+                    "type": "string",
+                    "example": "Asia/Shanghai"
+                },
+                "username": {
+                    "description": "用户名（可选，3-64字符）",
+                    "type": "string",
+                    "example": "john_doe"
+                }
+            }
+        },
+        "service.RegisterResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "nickname": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "integer"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
         }
     }
 }`
@@ -355,7 +524,7 @@ const docTemplate = `{
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
 	Host:             "",
-	BasePath:         "/api",
+	BasePath:         "",
 	Schemes:          []string{"http", "https"},
 	Title:            "AppRun API",
 	Description:      "AppRun Platform REST API Documentation",

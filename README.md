@@ -41,9 +41,13 @@ A lightweight BaaS (Backend as a Service) framework for developers, SDD (spec-dr
 git clone https://github.com/Websoft9/apprun.git
 cd apprun/core
 
+# Generate example configuration (Story 10a)
+make config-example
+# This creates config/config.example with all registered modules
+
 # Configure environment
-cp config/default.yaml config/local.yaml
-# Edit config/local.yaml with your settings
+cp config/config.example config/local.yaml
+# Edit config/local.yaml with your settings (especially JWT secret)
 
 # Run server
 make run

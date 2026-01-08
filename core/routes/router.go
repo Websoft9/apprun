@@ -5,8 +5,12 @@ import (
 	"log"
 	"net/http"
 
+	"apprun/ent"
 	"apprun/handlers"
 	internalMiddleware "apprun/internal/middleware"
+	authHandler "apprun/modules/auth/handler"
+	authRepository "apprun/modules/auth/repository"
+	authService "apprun/modules/auth/service"
 	configModule "apprun/modules/config"
 
 	"github.com/go-chi/chi/v5"
@@ -14,8 +18,9 @@ import (
 )
 
 // SetupRoutes 设置所有路由
-// configService 参数可选，如果提供则注册配置 API 路由
-func SetupRoutes(configService *configModule.Service) *chi.Mux {
+// dbClient: 数据库客户端（必需，用于认证等模块）
+// configService: 配置服务（可选）
+func SetupRoutes(dbClient *ent.Client, configService *configModule.Service) *chi.Mux {
 	r := chi.NewRouter()
 
 	// Use go-chi middlewares
@@ -27,13 +32,8 @@ func SetupRoutes(configService *configModule.Service) *chi.Mux {
 	// Use i18n language detector middleware
 	r.Use(internalMiddleware.LanguageDetector())
 
-	// Health check at root
-	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		if _, err := w.Write([]byte(`{"status":"ok","service":"apprun"}`)); err != nil {
-			log.Printf("Failed to write health check response: %v", err)
-		}
-	})
+	// Health check at root (documented in Swagger)
+	r.Get("/health", handlers.HealthHandler)
 
 	// API routes group
 	r.Route("/api", func(r chi.Router) {
@@ -43,6 +43,17 @@ func SetupRoutes(configService *configModule.Service) *chi.Mux {
 			if _, err := w.Write([]byte("Hello, apprun API")); err != nil {
 				log.Printf("Failed to write API root response: %v", err)
 			}
+		})
+
+		// Authentication routes (public, no version prefix)
+		r.Route("/auth", func(r chi.Router) {
+			// Initialize auth dependencies
+			userRepo := authRepository.NewUserRepository(dbClient)
+			authSvc := authService.NewAuthService(userRepo)
+			authHdl := authHandler.NewAuthHandler(authSvc)
+
+			// Register endpoint (public)
+			r.Post("/register", authHdl.Register)
 		})
 
 		// demo routes

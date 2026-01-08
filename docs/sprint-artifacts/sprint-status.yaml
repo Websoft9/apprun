@@ -1,0 +1,156 @@
+generated: '2026-01-08'
+project: apprun
+last_updated_by: architect
+epics:
+- id: epic-infrastructure
+  name: Infrastructure & Foundation
+  status: in-progress
+  stories:
+  - story-01
+  - story-02
+  - story-03
+  - story-04
+  - story-05a
+  - story-05b
+  - story-05
+  - story-06
+  - story-07
+  - story-12
+  - story-13
+  - story-14
+  - story-15
+  - story-16
+  - story-17
+- id: epic-i18n
+  name: Internationalization & Localization
+  status: planning
+  stories:
+  - story-08
+  - story-08a
+  - story-08b
+  - story-09
+- id: epic-config
+  name: Configuration Management
+  status: in-progress
+  stories:
+  - story-10
+  - story-10a
+- id: epic-docs
+  name: API Documentation
+  status: done
+  stories:
+  - story-11
+- id: epic-auth
+  name: Authentication & Authorization
+  status: in-progress
+  stories:
+  - story-18
+  - story-19
+  - story-20
+- id: epic-storage
+  name: File Storage Service
+  status: planning
+  stories: []
+- id: epic-functions
+  name: Serverless Functions
+  status: planning
+  stories: []
+stories:
+- id: story-01
+  title: Docker Development & Deployment Environment
+  status: done
+  epic: epic-infrastructure
+- id: story-02
+  title: 统一响应工具包
+  status: done
+  epic: epic-infrastructure
+- id: story-03
+  title: 业务错误包装框架
+  status: done
+  epic: epic-infrastructure
+- id: story-04
+  title: Ent Schema 配置管理
+  status: done
+  epic: epic-config
+- id: story-05a
+  title: 数据库增量迁移
+  status: done
+  epic: epic-infrastructure
+- id: story-05b
+  title: 服务端 CLI 框架
+  status: planning
+  epic: epic-infrastructure
+- id: story-05
+  title: CI/CD 流水线与 Linter
+  status: done
+  epic: epic-infrastructure
+- id: story-06
+  title: 测试框架与工具集
+  status: planning
+  epic: epic-infrastructure
+- id: story-07
+  title: 重构现有 Handlers
+  status: planning
+  epic: epic-infrastructure
+- id: story-08
+  title: i18n 国际化基础设施
+  status: planning
+  epic: epic-i18n
+- id: story-08a
+  title: Database Field i18n 数据库字段国际化
+  status: planning
+  epic: epic-i18n
+- id: story-08b
+  title: i18n Integration Plan - i18n 集成计划
+  status: planning
+  epic: epic-i18n
+- id: story-09
+  title: Localization (l10n) - 本地化支持
+  status: planning
+  epic: epic-i18n
+- id: story-10
+  title: Configuration Center Foundation
+  status: done
+  epic: epic-config
+- id: story-11
+  title: Swagger API Documentation
+  status: done
+  epic: epic-docs
+- id: story-12
+  title: 日志防腐层
+  status: done
+  epic: epic-infrastructure
+- id: story-13
+  title: Request Package
+  status: planning
+  epic: epic-infrastructure
+- id: story-14
+  title: HTTP Server Package
+  status: done
+  epic: epic-infrastructure
+- id: story-15
+  title: Environment Variable Utility Package
+  status: done
+  epic: epic-infrastructure
+- id: story-16
+  title: Database Anti-Corruption Layer
+  status: done
+  epic: epic-infrastructure
+- id: story-17
+  title: Go 版本升级到 1.25.5
+  status: done
+  epic: epic-infrastructure
+- id: story-18
+  title: User Registration
+  status: in-progress
+  epic: epic-auth
+- id: story-19
+  title: User Login
+  status: planning
+  epic: epic-auth
+- id: story-20
+  title: JWT Middleware
+  status: planning
+  epic: epic-auth
+
+# Automation notes: BMad agents can read/update this YAML for epic-story relationships and status tracking.

@@ -1,0 +1,39 @@
+package jwt
+
+import "context"
+
+// contextKey is a private type to avoid context key collisions
+type contextKey struct{ name string }
+
+var (
+	// UserIDKey is the context key for user ID
+	UserIDKey = &contextKey{"user_id"}
+	// UsernameKey is the context key for username
+	UsernameKey = &contextKey{"username"}
+	// EmailKey is the context key for email
+	EmailKey = &contextKey{"email"}
+)
+
+// GetUserID retrieves user ID from context
+func GetUserID(ctx context.Context) int64 {
+	if userID, ok := ctx.Value(UserIDKey).(int64); ok {
+		return userID
+	}
+	return 0
+}
+
+// GetUsername retrieves username from context
+func GetUsername(ctx context.Context) string {
+	if username, ok := ctx.Value(UsernameKey).(string); ok {
+		return username
+	}
+	return ""
+}
+
+// GetEmail retrieves email from context
+func GetEmail(ctx context.Context) string {
+	if email, ok := ctx.Value(EmailKey).(string); ok {
+		return email
+	}
+	return ""
+}

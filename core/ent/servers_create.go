@@ -4,7 +4,7 @@ package ent
 
 import (
 	"apprun/ent/servers"
-	"apprun/ent/users"
+	"apprun/ent/user"
 	"context"
 	"errors"
 	"fmt"
@@ -38,14 +38,14 @@ func (_c *ServersCreate) SetID(v int) *ServersCreate {
 	return _c
 }
 
-// SetOwnerID sets the "owner" edge to the Users entity by ID.
-func (_c *ServersCreate) SetOwnerID(id int) *ServersCreate {
+// SetOwnerID sets the "owner" edge to the User entity by ID.
+func (_c *ServersCreate) SetOwnerID(id int64) *ServersCreate {
 	_c.mutation.SetOwnerID(id)
 	return _c
 }
 
-// SetOwner sets the "owner" edge to the Users entity.
-func (_c *ServersCreate) SetOwner(v *Users) *ServersCreate {
+// SetOwner sets the "owner" edge to the User entity.
+func (_c *ServersCreate) SetOwner(v *User) *ServersCreate {
 	return _c.SetOwnerID(v.ID)
 }
 
@@ -145,13 +145,13 @@ func (_c *ServersCreate) createSpec() (*Servers, *sqlgraph.CreateSpec) {
 			Columns: []string{servers.OwnerColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(users.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt64),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.users_servers = &nodes[0]
+		_node.user_servers = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

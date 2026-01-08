@@ -43,7 +43,7 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 // @Success      200  {object}  GetConfigResponse  "Configuration retrieved successfully"
 // @Failure      400  {object}  response.Response  "Missing key parameter"
 // @Failure      404  {object}  response.Response  "Configuration not found"
-// @Router       /config [get]
+// @Router       /api/config [get]
 func (h *Handler) GetConfig(w http.ResponseWriter, r *http.Request) {
 	key := r.URL.Query().Get("key")
 	if key == "" {
@@ -82,7 +82,7 @@ func (h *Handler) GetConfig(w http.ResponseWriter, r *http.Request) {
 // @Param        request  body  UpdateConfigRequest  true  "Configuration update request"  example({"key":"poc.enabled","value":"true"})
 // @Success      200  {object}  UpdateConfigResponse  "Configuration updated successfully"
 // @Failure      400  {object}  response.Response     "Invalid request or config not allowed to store in database"
-// @Router       /config [put]
+// @Router       /api/config [put]
 func (h *Handler) UpdateConfig(w http.ResponseWriter, r *http.Request) {
 	var req UpdateConfigRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -121,7 +121,7 @@ func (h *Handler) UpdateConfig(w http.ResponseWriter, r *http.Request) {
 // @Produce      json
 // @Success      200  {object}  ListConfigsResponse  "Configuration list"
 // @Failure      500  {object}  response.Response    "Internal server error"
-// @Router       /config/list [get]
+// @Router       /api/config/list [get]
 func (h *Handler) ListConfigs(w http.ResponseWriter, r *http.Request) {
 	configs, err := h.service.ListDynamicConfigs(r.Context())
 	if err != nil {
@@ -148,7 +148,7 @@ func (h *Handler) ListConfigs(w http.ResponseWriter, r *http.Request) {
 // @Param        key  query  string  true  "Configuration key"  example(poc.enabled)
 // @Success      200  {object}  map[string]interface{}  "Deletion successful"
 // @Failure      400  {object}  response.Response       "Missing key parameter or deletion failed"
-// @Router       /config [delete]
+// @Router       /api/config [delete]
 func (h *Handler) DeleteConfig(w http.ResponseWriter, r *http.Request) {
 	key := r.URL.Query().Get("key")
 	if key == "" {
@@ -175,7 +175,7 @@ func (h *Handler) DeleteConfig(w http.ResponseWriter, r *http.Request) {
 // @Accept       json
 // @Produce      json
 // @Success      200  {object}  map[string]interface{}  "List of allowed configuration keys"
-// @Router       /config/allowed [get]
+// @Router       /api/config/allowed [get]
 func (h *Handler) GetAllowedKeys(w http.ResponseWriter, r *http.Request) {
 	keys := h.service.GetAllowedDynamicKeys()
 

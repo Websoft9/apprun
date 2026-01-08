@@ -6,6 +6,7 @@ import (
 	"time"
 
 	_ "apprun/docs" // Swagger docs (自动生成)
+	"apprun/internal/jwt"
 	"apprun/modules/config"
 	"apprun/pkg/database"
 	"apprun/pkg/env"
@@ -27,8 +28,6 @@ import (
 
 // @license.name    Apache 2.0
 // @license.url     http://www.apache.org/licenses/LICENSE-2.0.html
-
-// @BasePath        /api
 
 // @schemes         http https
 func main() {
@@ -73,6 +72,12 @@ func run() error {
 		return err
 	}
 	log.Println("✅ i18n module registered with config center")
+
+	// Register JWT configuration with config center
+	if err := registry.Register("jwt", &jwt.Config{}); err != nil {
+		return err
+	}
+	log.Println("✅ JWT module registered with config center")
 
 	// Phase 1.5: Initialize i18n Infrastructure
 	// i18n system is initialized before business modules to support localized messages
@@ -142,7 +147,7 @@ func run() error {
 
 	// Phase 5: Setup HTTP Routes
 	// Register all HTTP handlers and middleware
-	router := routes.SetupRoutes(configService)
+	router := routes.SetupRoutes(dbClient.GetEntClient(), configService)
 	log.Println("✅ HTTP routes configured")
 
 	// Phase 6: Configure HTTP/HTTPS Server

@@ -1,6 +1,20 @@
 # apprun Makefile
 
-.PHONY: help build test test-all test-unit test-integration test-e2e clean docker-build docker-up docker-down validate-stories sync-index dev-up dev-down run-local build-local build-base pull-base test-local prod-up-local prod-down-local swagger i18n i18n-extract i18n-merge lint lint-fix
+.PHONY: help build test test-all test-unit test-integration test-e2e clean docker-build docker-up docker-down validate-stories sync-index sprint-status sprint-status-update sprint-status-summary dev-up dev-down run-local build-local build-base pull-base test-local prod-up-local prod-down-local swagger i18n i18n-extract i18n-merge lint lint-fix check-go-version
+
+# Go 版本检查（防止工具链不匹配）
+check-go-version:
+	@echo "🔍 Checking Go toolchain version..."
+	@required_version=$$(grep "^go " core/go.mod | awk '{print $$2}'); \
+	current_toolchain=$$(go env GOTOOLCHAIN); \
+	if [ "$$current_toolchain" = "auto" ] || [ "$$current_toolchain" = "local" ]; then \
+		echo "⚠️  GOTOOLCHAIN=$$current_toolchain may cause version mismatch"; \
+		echo "💡 Setting GOTOOLCHAIN=go$$required_version..."; \
+		go env -w GOTOOLCHAIN=go$$required_version; \
+		echo "✅ GOTOOLCHAIN fixed to go$$required_version"; \
+	else \
+		echo "✅ GOTOOLCHAIN=$$current_toolchain (fixed version)"; \
+	fi
 
 # 默认目标
 help:
@@ -12,6 +26,7 @@ help:
 	@echo "  i18n           - Extract and merge translation keys"
 	@echo "  i18n-extract   - Extract translation keys from code"
 	@echo "  i18n-merge     - Merge extracted keys to translation files"
+	@echo "  config-example - Generate config.example from module registry (Story 10a)"
 	@echo "  lint           - Run golangci-lint (same as CI)"
 	@echo "  lint-fix       - Run golangci-lint with auto-fix"
 	@echo "  test-all       - Run all tests"
@@ -20,10 +35,14 @@ help:
 	@echo "  test-e2e       - Run end-to-end tests"
 	@echo "  swagger        - Generate Swagger API documentation"
 	@echo ""
-	@echo "Database Migration:"
+	@echo "Database Migration (Using Docker):"
 	@echo "  migrate-diff   - Generate migration from schema changes (requires NAME=xxx)"
 	@echo "  migrate-apply  - Apply pending migrations to dev database"
 	@echo "  migrate-status - Show migration status"
+	@echo "  migrate-baseline - Set baseline version for existing database"
+	@echo "  migrate-validate - Validate migration files"
+	@echo "  migrate-lint   - Lint migrations for common issues"
+	@echo "  migrate-hash   - Generate migration checksums (atlas.sum)"
 	@echo ""
 	@echo "Development Environment (Story 1):"
 	@echo "  dev-up         - Start dev dependencies (postgres + redis)"
@@ -41,14 +60,20 @@ help:
 	@echo "  docker-up      - Start Docker services"
 	@echo "  docker-down    - Stop Docker services"
 	@echo ""
-	@echo "Documentation:"
+	@echo "Documentation & Sprint Management:"
 	@echo "  validate-stories - Validate all Story documents"
-	@echo "  sync-index     - Sync global Stories index"
+	@echo "  sync-index     - Sync global Stories index (legacy table in README)"
+	@echo "  sprint-status  - Show sprint status summary from sprint-status.yaml"
+	@echo "  sprint-status-update - Update sprint-status.yaml statistics"
+	@echo "  sprint-status-summary - Show detailed sprint status report"
+	@echo ""
+	@echo "Utilities:"
+	@echo "  check-go-version - Check and fix Go toolchain version"
 	@echo ""
 	@echo "  clean          - Clean build artifacts"
 
-# 构建
-build: i18n swagger generate
+# 构建（正确顺序：生成代码 -> 提取翻译 -> 生成文档 -> 编译）
+build: generate i18n swagger
 	cd core && go build -o bin/server ./cmd/server
 
 # 代码生成 (Ent ORM)
@@ -80,8 +105,23 @@ i18n-merge:
 	@echo "⚠️  Please review and translate new keys in core/locales/"
 
 # ============================================
-# Database Migration Commands
+# Configuration Management (Story 10a)
 # ============================================
+
+# Generate config.example from registered modules
+config-example:
+	@echo "🔧 Generating config.example from module registry..."
+	@cd core && go run ./scripts/generate-config-example.go
+	@echo "✅ config/config.example generated"
+	@echo "💡 Review and customize for your environment"
+
+# ============================================
+# Database Migration Commands (Using Docker)
+# ============================================
+
+# Atlas Docker image
+ATLAS_IMAGE := arigaio/atlas:latest
+POSTGRES_URL := postgres://apprun:dev_password_123@host.docker.internal:5432/apprun_dev?sslmode=disable
 
 # Generate migration from schema changes
 # Usage: make migrate-diff NAME=add_project_table
@@ -90,7 +130,11 @@ ifndef NAME
 	$(error NAME is required. Usage: make migrate-diff NAME=add_project_table)
 endif
 	@echo "📝 Generating migration: $(NAME)..."
-	@cd core && go run -mod=mod ariga.io/atlas/cmd/atlas migrate diff $(NAME) \
+	@docker run --rm \
+		-v $(PWD)/core:/app \
+		-w /app \
+		$(ATLAS_IMAGE) \
+		migrate diff $(NAME) \
 		--dir "file://migrations" \
 		--to "ent://ent/schema" \
 		--dev-url "docker://postgres/15/dev?search_path=public"
@@ -102,17 +146,76 @@ endif
 # Apply pending migrations to dev database
 migrate-apply:
 	@echo "🚀 Applying migrations to dev database..."
-	@cd core && go run -mod=mod ariga.io/atlas/cmd/atlas migrate apply \
+	@docker run --rm \
+		-v $(PWD)/core:/app \
+		-w /app \
+		--add-host=host.docker.internal:host-gateway \
+		$(ATLAS_IMAGE) \
+		migrate apply \
 		--dir "file://migrations" \
-		--url "postgres://apprun:dev_password_123@localhost:5432/apprun_dev?sslmode=disable"
+		--url "$(POSTGRES_URL)"
 	@echo "✅ Migrations applied!"
 
 # Show migration status
 migrate-status:
 	@echo "📊 Migration status:"
-	@cd core && go run -mod=mod ariga.io/atlas/cmd/atlas migrate status \
+	@docker run --rm \
+		-v $(PWD)/core:/app \
+		-w /app \
+		--add-host=host.docker.internal:host-gateway \
+		$(ATLAS_IMAGE) \
+		migrate status \
 		--dir "file://migrations" \
-		--url "postgres://apprun:dev_password_123@localhost:5432/apprun_dev?sslmode=disable"
+		--url "$(POSTGRES_URL)"
+
+# Validate migrations
+migrate-validate:
+	@echo "✅ Validating migrations..."
+	@docker run --rm \
+		-v $(PWD)/core:/app \
+		-w /app \
+		$(ATLAS_IMAGE) \
+		migrate validate \
+		--dir "file://migrations" \
+		--dev-url "docker://postgres/15/test?search_path=public"
+
+# Lint migrations for common issues
+migrate-lint:
+	@echo "🔍 Linting migrations..."
+	@docker run --rm \
+		-v $(PWD)/core:/app \
+		-w /app \
+		$(ATLAS_IMAGE) \
+		migrate lint \
+		--dir "file://migrations" \
+		--dev-url "docker://postgres/15/test?search_path=public" \
+		--latest 1
+	@echo "✅ Migration lint completed"
+
+# Generate migration checksum (atlas.sum)
+migrate-hash:
+	@echo "🔐 Generating migration checksums..."
+	@docker run --rm \
+		-v $(PWD)/core:/app \
+		-w /app \
+		$(ATLAS_IMAGE) \
+		migrate hash \
+		--dir "file://migrations"
+	@echo "✅ Checksums generated in core/migrations/atlas.sum"
+
+# Set baseline version for existing database
+migrate-baseline:
+	@echo "📍 Setting migration baseline..."
+	@docker run --rm \
+		-v $(PWD)/core:/app \
+		-w /app \
+		--add-host=host.docker.internal:host-gateway \
+		$(ATLAS_IMAGE) \
+		migrate set 002 \
+		--dir "file://migrations" \
+		--url "$(POSTGRES_URL)"
+	@echo "✅ Baseline set to version 002"
+	@echo "💡 Now you can run 'make migrate-apply' to apply new migrations"
 
 # Swagger 文档生成
 swagger:
@@ -294,11 +397,33 @@ validate-stories:
 	@echo "✅ All Story documents validated successfully"
 	@tests/scripts/cleanup.sh
 
-# 同步全局 Stories 索引
+# 同步全局 Stories 索引 (Legacy table in README)
 sync-index:
 	@echo "🔄 Syncing global Stories index..."
 	@./scripts/sync-story-index.sh
 	@echo "✅ Global Stories index synced"
+
+# Sprint Status Management (sprint-status.yaml)
+sprint-status:
+	@echo "📊 Sprint Status Summary (from sprint-status.yaml)"
+	@./scripts/manage-sprint-status.py summary
+
+sprint-status-update:
+	@echo "🔄 Updating statistics in sprint-status.yaml..."
+	@./scripts/manage-sprint-status.py update-stats
+	@echo "✅ Statistics updated"
+
+sprint-status-summary:
+	@echo "📊 Detailed Sprint Status Report"
+	@echo ""
+	@./scripts/manage-sprint-status.py summary
+	@echo ""
+	@echo "📋 Stories by Epic:"
+	@for epic in epic-infrastructure epic-i18n epic-config epic-docs epic-auth epic-storage epic-functions; do \
+		echo ""; \
+		echo "🏗️  $$epic:"; \
+		./scripts/manage-sprint-status.py list-stories --epic $$epic 2>/dev/null || true; \
+	done
 
 # ============================================
 # Story 1: Development Environment Commands

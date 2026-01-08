@@ -64,15 +64,23 @@ version: '5.0-bmad-compliant'
 
 - **需求**：提供完整的用户认证、授权和团队协作能力
 - **核心能力**：
-  - 用户注册、登录、登出
-  - JWT Token 认证
+  - 用户注册、登录、登出（Email + Password）
+  - 密码安全存储（哈希加密）
+  - JWT Token 认证（Access Token + Refresh Token）
+  - 密码强度验证和修改
   - Project-based 团队协作和权限管理
   - RBAC 角色权限管理
 - **验收标准**：
-  - 用户可通过统一接口注册和登录
-  - Token 验证集成到 API 网关
+  - 用户可通过 API 注册和登录（Email + Password）
+  - 密码安全存储（不可逆哈希）
+  - JWT Token 正确签发和验证
+  - Token 验证集成到 API 中间件
   - 用户可加入多个 Project，Project 间权限正确隔离
   - 权限验证正确（未授权访问返回 403）
+  - API 认证响应时间 P95 < 10ms
+- **实现约束**：
+  - MVP 阶段：使用 Go Native Auth (bcrypt + JWT + Casbin)
+  - Production 阶段：可考虑迁移到企业级认证服务（Ory Kratos 等）
 
 ---
 

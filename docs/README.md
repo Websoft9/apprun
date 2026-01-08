@@ -57,6 +57,7 @@ Standards (Technical Guidelines)
 - **[standards/README.md](./standards/README.md)** - Technical standards index
 - **[sprint-artifacts/README.md](./sprint-artifacts/README.md)** - Sprint tracking
 - **[architecture/tech-architecture.md](./architecture/tech-architecture.md)** - System architecture
+- **[database-migrations.md](./database-migrations.md)** - Database migration guide (Atlas)
 
 ---
 

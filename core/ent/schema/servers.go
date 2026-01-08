@@ -22,6 +22,6 @@ func (Servers) Fields() []ent.Field {
 
 func (Servers) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("owner", Users.Type).Ref("servers").Unique().Required(), // 保持.Required()
+		edge.From("owner", User.Type).Ref("servers").Unique().Required(), // 保持.Required()
 	}
 }
