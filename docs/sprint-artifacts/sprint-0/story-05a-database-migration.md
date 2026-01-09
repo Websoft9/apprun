@@ -47,6 +47,54 @@
 
 ## Technical Details
 
+### Why Atlas?
+
+**Technical Decision Rationale**:
+
+| Requirement | Atlas Solution |
+|-------------|----------------|
+| **Declarative + Versioned** | Supports both migration modes |
+| **Multi-database** | PostgreSQL, MySQL, SQLite, MariaDB |
+| **Schema validation** | Auto-detects schema drift |
+| **Rollback safety** | Auto-generates rollback SQL |
+| **Ent integration** | Official Ent ORM support |
+
+**Alternatives considered**:
+- `golang-migrate/migrate`: Lacks Ent integration
+- Manual migrations: Error-prone, no validation
+- **Decision**: Atlas chosen for Ent compatibility and safety features
+
+### Why Docker Implementation?
+
+**Makefile Database Group Decision**:
+
+| Reason | Benefit |
+|--------|---------|
+| **No local install** | Avoid GB-level dependencies |
+| **Version locking** | Uses `arigaio/atlas:latest` image |
+| **Cross-platform** | Linux/macOS/Windows unified |
+| **CI/CD friendly** | Easy pipeline integration |
+
+**Implementation**:
+```makefile
+ATLAS_IMAGE := arigaio/atlas:latest
+POSTGRES_URL := postgres://apprun:dev_password_123@host.docker.internal:5432/apprun_dev
+
+migrate-status:
+	docker run --rm \
+		-v $(PWD)/core:/app \
+		--add-host=host.docker.internal:host-gateway \
+		$(ATLAS_IMAGE) \
+		migrate status \
+		--dir file:///app/migrations \
+		--url "$(POSTGRES_URL)"
+```
+
+**Network strategy**:
+- Use `host.docker.internal` for container-to-host communication
+- Cross-platform compatible (Docker Desktop)
+- Simplifies configuration (no manual IP lookup)
+
 ### Atlas 集成方案
 
 **安装 Atlas:**

@@ -487,7 +487,7 @@ require (
 17. ✅ `core/pkg/errors/codes.go` - 认证模块错误码（AUTH_VAL_*, AUTH_BIZ_*）
 
 ### 文档与指南
-18. ✅ `docs/database-migrations.md` - 数据库迁移完整指南
+18. ✅ `docs/sprint-artifacts/sprint-0/story-05a-database-migration.md` - 数据库迁移决策与实现
 19. ✅ `docs/sprint-artifacts/sprint-1/story-18-uuid-implementation.md` - UUID 实现文档
 20. ✅ `docs/sprint-artifacts/sprint-1/story-18-user-registration.md` - Story 文档（本文）
 

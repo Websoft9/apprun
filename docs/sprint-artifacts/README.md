@@ -23,6 +23,7 @@ BMad Method workflow management:
 # View status
 make sprint-status                              # Summary
 make sprint-status-summary                      # Detailed with epic breakdown
+make story-index                                # Generate story-index.md file
 
 # List stories
 ./scripts/manage-sprint-status.py list-stories --epic epic-auth
@@ -55,8 +56,9 @@ make sprint-status-update
 
 ### PM: Sprint Planning
 1. View status: `make sprint-status-summary`
-2. Filter stories: `./scripts/manage-sprint-status.py list-stories --status planning`
-3. Organize stories into epics in sprint-status.yaml
+2. Generate index: `make story-index` (creates story-index.md)
+3. Filter stories: `./scripts/manage-sprint-status.py list-stories --status planning`
+4. Organize stories into epics in sprint-status.yaml
 
 ---
 
@@ -96,6 +98,22 @@ mgr.update_story_status("story-18", "done")
 mgr.add_story({'id': 'story-21', 'title': 'Title', 'status': 'planning', 'epic': 'epic-auth'})
 mgr.update_statistics()
 ```
+
+---
+
+## Story Index
+
+**File**: [`story-index.md`](./story-index.md) - Auto-generated story status table
+
+**Generate**: `make story-index`
+
+**Format**: Markdown table organized by sprint, showing:
+- Story ID
+- Title
+- Status (✅ done, 🔄 in-progress, 📝 planning)
+- Epic
+
+**Usage**: Quick overview of all stories across sprints for planning and reporting.
 
 ---
 

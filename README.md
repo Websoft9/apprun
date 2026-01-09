@@ -1,6 +1,6 @@
 # apprun
 
-A lightweight BaaS (Backend as a Service) framework for developers, SDD (spec-driven-development), built with Go following the [BMad Method](https://github.com/bmad-code-org/BMAD-METHOD).
+A lightweight BaaS (Backend as a Service) framework built with Go following the [BMad Method](https://github.com/bmad-code-org/BMAD-METHOD).
 
 ---
 
@@ -8,103 +8,71 @@ A lightweight BaaS (Backend as a Service) framework for developers, SDD (spec-dr
 
 **apprun** is a modular, cloud-neutral BaaS platform that provides:
 
-- **Authentication & Authorization**: Built-in user management with Ory Kratos integration
+- **Authentication & Authorization**: User management and RBAC
 - **Data Management**: RESTful APIs with PostgreSQL and Ent ORM
-- **Storage Service**: File storage with pluggable backends (Local/S3)
-- **Workflow Engine**: Flexible business process automation
-- **Real-time Features**: WebSocket support for live updates
+- **Storage Service**: File storage with pluggable backends
+- **Workflow Engine**: Business process automation
+- **Real-time Features**: WebSocket support
 - **Multi-tenant**: Project-based resource isolation
 
 **Key Features**:
-- 🔒 Security-first design with RBAC
-- 🌍 i18n/l10n support (English, Chinese, Japanese)
-- 🔌 Plugin architecture for extensibility
+- 🔒 Security-first design
+- 🌍 Internationalization support
+- 🔌 Plugin architecture
 - ☁️ Cloud-neutral deployment
-- 📦 Production-ready with monitoring & logging
+- 📦 Production-ready
 
 ---
 
 ## 📦 Deployment
 
 ### Prerequisites
-- Go 1.25.5+
-- golangci-lint v2.7.2+
-- PostgreSQL 14+
-- Redis 7+ (optional, for caching)
-- Docker v28+
-- Govulncheck 
+- Docker 20.10+
+- Docker Compose 2.0+
 
 ### Quick Start
 
 ```bash
 # Clone repository
 git clone https://github.com/Websoft9/apprun.git
-cd apprun/core
+cd apprun
 
-# Generate example configuration (Story 10a)
-make config-example
-# This creates config/config.example with all registered modules
+# Start services
+docker-compose up -d
 
-# Configure environment
-cp config/config.example config/local.yaml
-# Edit config/local.yaml with your settings (especially JWT secret)
-
-# Run server
-make run
-
-# Access API documentation
+# Access application
+# API: http://localhost:8080
 # Swagger UI: http://localhost:8080/api/docs/index.html
-# OpenAPI spec: http://localhost:8080/api/docs/doc.json
-```
-
-### API Documentation
-
-**Interactive API documentation is available via Swagger UI**:
-
-- **URL**: `http://localhost:8080/api/docs/index.html`
-- **Features**:
-  - Browse all API endpoints with descriptions
-  - Test APIs directly in the browser ("Try it out")
-  - View request/response examples
-  - See data models and validation rules
-
-**Generating documentation**:
-```bash
-# After modifying API code, regenerate Swagger docs
-make swagger
-```
-
-**Troubleshooting**:
-
-| Problem | Solution |
-|---------|----------|
-| **Blank Swagger UI** | Run `make swagger` to regenerate docs |
-| **Changes not reflected** | 1. Run `make swagger`<br>2. Rebuild with `make build` |
-| **404 on /api/docs** | Ensure service is running: `make run` |
-| **Compile error with docs** | Missing docs package - run `make swagger` first |
-
-**Verify docs generation**:
-```bash
-ls -lh core/docs/docs.go     # Should exist (~300KB)
-ls -lh core/docs/swagger.*   # Should have .json and .yaml
 ```
 
 ### Production Deployment
-- Docker: TBD
-- Cloud Providers: TBD
+
+```bash
+# Use production configuration
+docker-compose -f docker-compose.yml up -d
+
+# Check service health
+curl http://localhost:8080/health
+```
+
+**Configuration**:
+- Environment variables: See `docker-compose.yml`
+- Secrets: Use Docker secrets or external secret manager
+- Database: PostgreSQL 14+ (included in docker-compose)
 
 ---
 
 ## 🤝 Contributing
 
-We follow the **BMad Method** for development:
+We follow the **BMad Method** for AI-assisted development.
 
-1. **Read Documentation**: Check [`docs/`](./docs/) for project standards
-2. **Find Issues**: Look for issues tagged `good-first-issue`
-3. **Follow Standards**: Read [`docs/standards/`](./docs/standards/) before coding
-4. **Create PR**: Follow the [DevOps Process](./docs/standards/devops-process.md)
+**Get started**:
+1. Read [CONTRIBUTING.md](./CONTRIBUTING.md)
+2. Check [Sprint Artifacts](./docs/sprint-artifacts/)
+3. Follow [Standards](./docs/standards/)
+4. Submit Pull Request
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines.
+**For maintainers**: See [OWNER.md](./OWNER.md)
 
 ---
 
@@ -112,7 +80,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines.
 
 - [Product Requirements](./docs/prd.md)
 - [Architecture](./docs/architecture/)
-- [API Standards](./docs/standards/api-design.md)
+- [Technical Standards](./docs/standards/)
 - [Sprint Artifacts](./docs/sprint-artifacts/)
 
 ---

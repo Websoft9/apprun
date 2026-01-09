@@ -8,7 +8,7 @@
 **Status**: ✅ Done  
 **Module**: Infrastructure  
 **Issue**: #TBD  
-**Related**: [编码规范](../../standards/coding-standards.md), [CI/CD Guide](../../ci-cd-guide.md)
+**Related**: [编码规范](../../standards/coding-standards.md), [OWNER.md](../../../OWNER.md)
 
 ---
 
@@ -340,7 +340,7 @@ issues:
 
 ## Related Docs
 
-- [CI/CD 使用指南](../../ci-cd-guide.md)
+- [OWNER.md - CI/CD Operations](../../../OWNER.md)
 - [编码规范](../../standards/coding-standards.md)
 - [DevOps 流程](../../standards/devops-process.md)
 - [golangci-lint 文档](https://golangci-lint.run/)

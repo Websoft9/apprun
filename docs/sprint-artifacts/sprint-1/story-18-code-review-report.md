@@ -805,11 +805,11 @@ func (s *AuthService) Register(...)
 
 #### 6.4 数据库迁移文档
 ```markdown
-docs/database-migrations.md
-- 完整的 Atlas 使用指南
-- Docker-based 迁移命令
-- 故障排除
-- 最佳实践
+docs/sprint-artifacts/sprint-0/story-05a-database-migration.md
+- Atlas 工具选择决策
+- Docker-based 实现原理
+- 迁移工作流
+- 操作指南参见 CONTRIBUTING.md
 ```
 
 ### ⚠️ 改进建议
@@ -1058,6 +1058,6 @@ Total           9     254      187   1172
 ### D. 相关文档
 - [Story 18: 用户注册与密码安全](./story-18-user-registration.md)
 - [Story 18: UUID 实现文档](./story-18-uuid-implementation.md)
-- [Database Migrations Guide](../../database-migrations.md)
+- [Story 05a: Database Migrations](../../sprint-0/story-05a-database-migration.md)
 - [pkg/errors 文档](../../../core/pkg/errors/README.md)
 - [pkg/i18n 文档](../../../core/pkg/i18n/README.md)

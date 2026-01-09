@@ -21,6 +21,7 @@ epics:
   - story-15
   - story-16
   - story-17
+  - story-05c
 - id: epic-i18n
   name: Internationalization & Localization
   status: planning
@@ -152,5 +153,7 @@ stories:
   title: JWT Middleware
   status: planning
   epic: epic-auth
-
-# Automation notes: BMad agents can read/update this YAML for epic-story relationships and status tracking.
+- id: story-05c
+  title: Makefile 标准与命令分组
+  status: done
+  epic: epic-infrastructure
