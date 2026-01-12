@@ -1,140 +1,128 @@
 package jwt
 
 import (
-"context"
-"testing"
-"time"
+	"testing"
+	"time"
 
-"github.com/stretchr/testify/assert"
-"github.com/stretchr/testify/require"
+	"github.com/spf13/viper"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
+// setupTestConfig configures viper with test JWT settings
+func setupTestConfig() {
+	viper.Set("jwt.secret", "test-secret-key-minimum-32-chars-required!")
+	viper.Set("jwt.access_token_expiration", 24*time.Hour)
+	viper.Set("jwt.issuer", "apprun-platform-test")
+	viper.Set("jwt.audience", "apprun-api-test")
+}
+
 func TestGenerateToken(t *testing.T) {
-cfg := &RuntimeConfig{
-Secret: "test-secret-key-with-32-chars!",
-Expiry: 24 * time.Hour,
-Issuer: "apprun-test",
+	setupTestConfig()
+
+	userClaims := map[string]interface{}{
+		"username": "testuser",
+		"email":    "test@example.com",
+	}
+
+	token, expiresAt, err := GenerateToken(123, userClaims)
+	
+	require.NoError(t, err, "GenerateToken should not return error")
+	assert.NotEmpty(t, token, "Generated token should not be empty")
+	assert.True(t, expiresAt.After(time.Now()), "Token expiration should be in the future")
+	assert.True(t, expiresAt.Before(time.Now().Add(25*time.Hour)), "Token should expire within 25 hours")
 }
 
-token, err := GenerateToken(cfg, 123, "testuser", "test@example.com")
-require.NoError(t, err)
-assert.NotEmpty(t, token)
+func TestValidateToken_Success(t *testing.T) {
+	setupTestConfig()
+
+	userClaims := map[string]interface{}{
+		"username": "testuser",
+		"email":    "test@example.com",
+	}
+
+	token, _, err := GenerateToken(123, userClaims)
+	require.NoError(t, err)
+
+	claims, err := ValidateToken(token)
+	
+	require.NoError(t, err, "ValidateToken should not return error for valid token")
+	assert.Equal(t, int64(123), claims.UserID, "UserID should match")
+	assert.Equal(t, "testuser", claims.Username, "Username should match")
+	assert.Equal(t, "test@example.com", claims.Email, "Email should match")
+	assert.Equal(t, "apprun-platform-test", claims.Issuer, "Issuer should match")
+	assert.Contains(t, claims.Audience, "apprun-api-test", "Audience should match")
 }
 
-func TestGenerateTokenWithoutSecret(t *testing.T) {
-cfg := &RuntimeConfig{
-Secret: "",
-Expiry: 24 * time.Hour,
-Issuer: "apprun-test",
+func TestValidateToken_Expired(t *testing.T) {
+	viper.Set("jwt.secret", "test-secret-key-minimum-32-chars-required!")
+	viper.Set("jwt.access_token_expiration", -1*time.Hour) // Expired token
+	viper.Set("jwt.issuer", "apprun-platform-test")
+	viper.Set("jwt.audience", "apprun-api-test")
+
+	userClaims := map[string]interface{}{
+		"username": "testuser",
+		"email":    "test@example.com",
+	}
+
+	token, _, err := GenerateToken(123, userClaims)
+	require.NoError(t, err)
+
+	// Reset to normal expiration for validation
+	viper.Set("jwt.access_token_expiration", 24*time.Hour)
+
+	_, err = ValidateToken(token)
+	
+	assert.ErrorIs(t, err, ErrTokenExpired, "ValidateToken should return ErrTokenExpired for expired token")
 }
 
-_, err := GenerateToken(cfg, 123, "testuser", "test@example.com")
-assert.ErrorIs(t, err, ErrMissingSecret)
+func TestValidateToken_InvalidSignature(t *testing.T) {
+	setupTestConfig()
+
+	userClaims := map[string]interface{}{
+		"username": "testuser",
+		"email":    "test@example.com",
+	}
+
+	token, _, err := GenerateToken(123, userClaims)
+	require.NoError(t, err)
+
+	// Change the secret key
+	viper.Set("jwt.secret", "different-secret-key-32-chars-min!!")
+
+	_, err = ValidateToken(token)
+	
+	assert.ErrorIs(t, err, ErrInvalidToken, "ValidateToken should return ErrInvalidToken for wrong signature")
 }
 
-func TestValidateToken(t *testing.T) {
-cfg := &RuntimeConfig{
-Secret: "test-secret-key-with-32-chars!",
-Expiry: 24 * time.Hour,
-Issuer: "apprun-test",
+func TestGenerateToken_MissingSecret(t *testing.T) {
+	viper.Set("jwt.secret", "")
+	viper.Set("jwt.access_token_expiration", 24*time.Hour)
+	viper.Set("jwt.issuer", "apprun-platform-test")
+	viper.Set("jwt.audience", "apprun-api-test")
+
+	userClaims := map[string]interface{}{
+		"username": "testuser",
+		"email":    "test@example.com",
+	}
+
+	_, _, err := GenerateToken(123, userClaims)
+	
+	assert.ErrorIs(t, err, ErrMissingSecret, "GenerateToken should return ErrMissingSecret when secret is empty")
 }
 
-token, err := GenerateToken(cfg, 123, "testuser", "test@example.com")
-require.NoError(t, err)
+func TestValidateToken_InvalidFormat(t *testing.T) {
+	setupTestConfig()
 
-claims, err := ValidateToken(cfg, token)
-require.NoError(t, err)
-assert.Equal(t, int64(123), claims.UserID)
-assert.Equal(t, "testuser", claims.Username)
-assert.Equal(t, "test@example.com", claims.Email)
-assert.Equal(t, "apprun-test", claims.Issuer)
+	_, err := ValidateToken("not.a.valid.jwt.token")
+	
+	assert.ErrorIs(t, err, ErrInvalidToken, "ValidateToken should return ErrInvalidToken for malformed token")
 }
 
-func TestValidateTokenExpired(t *testing.T) {
-cfg := &RuntimeConfig{
-Secret: "test-secret-key-with-32-chars!",
-Expiry: -1 * time.Hour,
-Issuer: "apprun-test",
-}
+func TestValidateToken_EmptyToken(t *testing.T) {
+	setupTestConfig()
 
-token, err := GenerateToken(cfg, 123, "testuser", "test@example.com")
-require.NoError(t, err)
-
-_, err = ValidateToken(cfg, token)
-assert.ErrorIs(t, err, ErrTokenExpired)
-}
-
-func TestValidateTokenInvalid(t *testing.T) {
-cfg := &RuntimeConfig{
-Secret: "test-secret-key-with-32-chars!",
-Expiry: 24 * time.Hour,
-Issuer: "apprun-test",
-}
-
-_, err := ValidateToken(cfg, "invalid.token.here")
-assert.ErrorIs(t, err, ErrInvalidToken)
-}
-
-func TestValidateTokenWrongSecret(t *testing.T) {
-cfg1 := &RuntimeConfig{
-Secret: "secret-key-1-with-32-characters!",
-Expiry: 24 * time.Hour,
-Issuer: "apprun-test",
-}
-
-cfg2 := &RuntimeConfig{
-Secret: "secret-key-2-with-32-characters!",
-Expiry: 24 * time.Hour,
-Issuer: "apprun-test",
-}
-
-token, err := GenerateToken(cfg1, 123, "testuser", "test@example.com")
-require.NoError(t, err)
-
-_, err = ValidateToken(cfg2, token)
-assert.ErrorIs(t, err, ErrInvalidToken)
-}
-
-func TestContextGetters(t *testing.T) {
-ctx := context.Background()
-ctx = context.WithValue(ctx, UserIDKey, int64(123))
-ctx = context.WithValue(ctx, UsernameKey, "testuser")
-ctx = context.WithValue(ctx, EmailKey, "test@example.com")
-
-assert.Equal(t, int64(123), GetUserID(ctx))
-assert.Equal(t, "testuser", GetUsername(ctx))
-assert.Equal(t, "test@example.com", GetEmail(ctx))
-}
-
-func TestContextGettersEmpty(t *testing.T) {
-ctx := context.Background()
-
-assert.Equal(t, int64(0), GetUserID(ctx))
-assert.Equal(t, "", GetUsername(ctx))
-assert.Equal(t, "", GetEmail(ctx))
-}
-
-func TestConfigToRuntimeConfig(t *testing.T) {
-cfg := &Config{
-Secret: "test-secret-32-characters-long!",
-Expiry: "24h",
-Issuer: "apprun-test",
-}
-
-runtimeCfg, err := cfg.ToRuntimeConfig()
-require.NoError(t, err)
-assert.Equal(t, "test-secret-32-characters-long!", runtimeCfg.Secret)
-assert.Equal(t, 24*time.Hour, runtimeCfg.Expiry)
-assert.Equal(t, "apprun-test", runtimeCfg.Issuer)
-}
-
-func TestConfigToRuntimeConfigInvalidDuration(t *testing.T) {
-cfg := &Config{
-Secret: "test-secret-32-characters-long!",
-Expiry: "invalid",
-Issuer: "apprun-test",
-}
-
-_, err := cfg.ToRuntimeConfig()
-assert.Error(t, err)
+	_, err := ValidateToken("")
+	
+	assert.ErrorIs(t, err, ErrInvalidToken, "ValidateToken should return ErrInvalidToken for empty token")
 }

@@ -84,6 +84,33 @@ definitions:
       success:
         type: boolean
     type: object
+  service.LoginRequest:
+    properties:
+      identifier:
+        description: Username or email
+        example: user@example.com
+        type: string
+      password:
+        description: Password
+        example: SecurePass123
+        type: string
+    required:
+    - identifier
+    - password
+    type: object
+  service.LoginResponse:
+    properties:
+      expires_at:
+        description: Token expiration time (ISO 8601)
+        type: string
+      token:
+        description: JWT access token
+        type: string
+      user:
+        allOf:
+        - $ref: '#/definitions/service.UserProfile'
+        description: User profile data
+    type: object
   service.RegisterRequest:
     properties:
       email:
@@ -125,29 +152,40 @@ definitions:
   service.RegisterResponse:
     properties:
       created_at:
-        description: Account creation timestamp (ISO 8601)
-        example: "2026-01-08T10:00:00Z"
         type: string
       email:
-        description: User email address
-        example: user@example.com
         type: string
       id:
-        description: User UUID (replaces integer ID for security)
-        example: 550e8400-e29b-41d4-a716-446655440000
-        format: uuid
+        description: Public UUID (exposed as "id" for external API)
         type: string
       nickname:
-        description: User display name
-        example: John Doe
         type: string
       status:
-        description: Account status (1=active, 0=disabled)
-        example: 1
         type: integer
       username:
-        description: Unique username (null if not provided)
-        example: john_doe
+        type: string
+    type: object
+  service.UserProfile:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      gender:
+        type: integer
+      id:
+        type: string
+      language:
+        type: string
+      nickname:
+        type: string
+      phone:
+        type: string
+      status:
+        type: integer
+      timezone:
+        type: string
+      username:
         type: string
     type: object
 info:
@@ -162,6 +200,83 @@ info:
   title: AppRun API
   version: "1.0"
 paths:
+  /api/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user and return JWT token
+      parameters:
+      - description: Login credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/service.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/service.LoginResponse'
+              type: object
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Invalid credentials
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: Account disabled
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: User login
+      tags:
+      - auth
+  /api/auth/me:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve profile of the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/service.UserProfile'
+              type: object
+        "401":
+          description: Missing or invalid token
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get current user profile
+      tags:
+      - auth
   /api/auth/register:
     post:
       consumes:

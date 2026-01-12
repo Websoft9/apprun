@@ -4,8 +4,10 @@ package service
 import (
 	"context"
 	"strings"
+	"time"
 
 	"apprun/ent"
+	"apprun/internal/jwt"
 	"apprun/internal/password"
 	"apprun/modules/auth/repository"
 	"apprun/pkg/errors"
@@ -21,6 +23,10 @@ var (
 	ErrEmailExists = errors.New(errors.ErrCodeAuthEmailExists, "Email already registered")
 	// ErrUsernameExists wraps repository error
 	ErrUsernameExists = errors.New(errors.ErrCodeAuthUsernameExists, "Username already taken")
+	// ErrInvalidCredentials is returned for failed login attempts
+	ErrInvalidCredentials = errors.New(errors.ErrCodeAuthInvalidCredentials, "Invalid email or password")
+	// ErrAccountDisabled is returned when user account is disabled
+	ErrAccountDisabled = errors.New(errors.ErrCodeAuthAccountDisabled, "Account has been disabled")
 )
 
 // AuthService handles authentication business logic.
@@ -54,6 +60,33 @@ type RegisterResponse struct {
 	Username  *string `json:"username,omitempty"`
 	Nickname  *string `json:"nickname,omitempty"`
 	Status    int8    `json:"status"`
+	CreatedAt string  `json:"created_at"`
+}
+
+// LoginRequest holds user login credentials.
+type LoginRequest struct {
+	Identifier string `json:"identifier" binding:"required" example:"user@example.com"` // Username or email
+	Password   string `json:"password" binding:"required" example:"SecurePass123"`      // Password
+}
+
+// LoginResponse holds login result with JWT token.
+type LoginResponse struct {
+	Token     string      `json:"token"`      // JWT access token
+	ExpiresAt string      `json:"expires_at"` // Token expiration time (ISO 8601)
+	User      UserProfile `json:"user"`       // User profile data
+}
+
+// UserProfile represents sanitized user data for API responses.
+type UserProfile struct {
+	UUID      string  `json:"id"`
+	Email     string  `json:"email"`
+	Username  *string `json:"username,omitempty"`
+	Nickname  *string `json:"nickname,omitempty"`
+	Phone     *string `json:"phone,omitempty"`
+	Gender    int8    `json:"gender"`
+	Status    int8    `json:"status"`
+	Timezone  string  `json:"timezone"`
+	Language  string  `json:"language"`
 	CreatedAt string  `json:"created_at"`
 }
 
@@ -208,4 +241,137 @@ func isValidEmail(email string) bool {
 	}
 
 	return true
+}
+
+// Login authenticates a user and generates a JWT token.
+//
+// Business Logic:
+//  1. Parse identifier (email or username)
+//  2. Query user by identifier (username OR email)
+//  3. Verify password using bcrypt
+//  4. Check user status (must be active)
+//  5. Generate JWT token
+//  6. Update login history (async)
+//  7. Return token + user profile
+//
+// Returns:
+//   - LoginResponse: JWT token, expiration, and user profile
+//   - error: ErrInvalidCredentials (generic) or ErrAccountDisabled
+func (s *AuthService) Login(ctx context.Context, req *LoginRequest, clientIP string) (*LoginResponse, error) {
+	logger.Info("User login attempt", logger.Field{Key: "identifier", Value: req.Identifier})
+
+	// 1. Query user by identifier (username or email)
+	user, err := s.userRepo.FindByIdentifier(ctx, req.Identifier)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			logger.Warn("User not found", logger.Field{Key: "identifier", Value: req.Identifier})
+			return nil, ErrInvalidCredentials // Generic error - don't reveal existence
+		}
+		logger.Error("Failed to query user",
+			logger.Field{Key: "identifier", Value: req.Identifier},
+			logger.Field{Key: "error", Value: err.Error()})
+		return nil, errors.Wrap(err, errors.ErrCodeInternalError, "Failed to query user")
+	}
+
+	// 2. Verify password
+	if err := password.Verify(req.Password, user.PasswordHash); err != nil {
+		logger.Warn("Invalid password",
+			logger.Field{Key: "user_id", Value: user.ID},
+			logger.Field{Key: "identifier", Value: req.Identifier})
+		return nil, ErrInvalidCredentials // Generic error - don't reveal password wrong
+	}
+
+	// 3. Check user status (1 = active)
+	if user.Status != 1 {
+		logger.Warn("Disabled account login attempt",
+			logger.Field{Key: "user_id", Value: user.ID},
+			logger.Field{Key: "status", Value: user.Status})
+		return nil, ErrAccountDisabled
+	}
+
+	// 4. Generate JWT token
+	token, expiresAt, err := s.generateToken(user)
+	if err != nil {
+		logger.Error("Failed to generate JWT token",
+			logger.Field{Key: "user_id", Value: user.ID},
+			logger.Field{Key: "error", Value: err.Error()})
+		return nil, errors.Wrap(err, errors.ErrCodeInternalError, "Failed to generate token")
+	}
+
+	// 5. Update login history (non-blocking)
+	go s.updateLoginHistory(context.Background(), user.ID, clientIP)
+
+	logger.Info("User logged in successfully",
+		logger.Field{Key: "user_id", Value: user.ID},
+		logger.Field{Key: "email", Value: user.Email})
+
+	// 6. Build response
+	return &LoginResponse{
+		Token:     token,
+		ExpiresAt: expiresAt.Format("2006-01-02T15:04:05Z07:00"),
+		User:      buildUserProfile(user),
+	}, nil
+}
+
+// generateToken creates a JWT token for the user.
+func (s *AuthService) generateToken(user *ent.User) (string, time.Time, error) {
+	userClaims := map[string]interface{}{
+		"user_id":  user.ID,
+		"username": user.Username,
+		"email":    user.Email,
+	}
+	return jwt.GenerateToken(user.ID, userClaims)
+}
+
+// updateLoginHistory updates last_login_at and last_login_ip (async).
+func (s *AuthService) updateLoginHistory(ctx context.Context, userID int64, clientIP string) {
+	if err := s.userRepo.UpdateLoginHistory(ctx, userID, clientIP); err != nil {
+		logger.Error("Failed to update login history",
+			logger.Field{Key: "user_id", Value: userID},
+			logger.Field{Key: "error", Value: err.Error()})
+	}
+}
+
+// buildUserProfile converts ent.User to UserProfile (sanitized).
+func buildUserProfile(user *ent.User) UserProfile {
+	var username, nickname, phone *string
+	if user.Username != "" {
+		username = &user.Username
+	}
+	if user.Nickname != "" {
+		nickname = &user.Nickname
+	}
+	if user.Phone != "" {
+		phone = &user.Phone
+	}
+
+	return UserProfile{
+		UUID:      user.UUID.String(),
+		Email:     user.Email,
+		Username:  username,
+		Nickname:  nickname,
+		Phone:     phone,
+		Gender:    user.Gender,
+		Status:    user.Status,
+		Timezone:  user.Timezone,
+		Language:  user.Language,
+		CreatedAt: user.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+	}
+}
+
+// GetUserProfile retrieves a user's profile by ID.
+func (s *AuthService) GetUserProfile(ctx context.Context, userID int64) (*UserProfile, error) {
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, errors.New(errors.ErrCodeAuthUserNotFound, "User not found")
+		}
+		logger.Error("Failed to get user by ID",
+			logger.Field{Key: "user_id", Value: userID},
+			logger.Field{Key: "error", Value: err.Error()})
+		return nil, errors.Wrap(err, errors.ErrCodeInternalError, "Failed to query user")
+	}
+
+	profile := buildUserProfile(user)
+	return &profile, nil
 }

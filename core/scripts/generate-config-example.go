@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"strings"
 
-	"apprun/internal/jwt"
+	authmod "apprun/modules/auth"
 	"apprun/modules/config"
 	"apprun/pkg/i18n"
 	"apprun/pkg/logger"
@@ -27,8 +27,9 @@ func main() {
 	if err := registry.Register("i18n", &i18n.Config{}); err != nil {
 		fatal("Failed to register i18n: %v", err)
 	}
-	if err := registry.Register("jwt", &jwt.Config{}); err != nil {
-		fatal("Failed to register jwt: %v", err)
+	// Auth module includes JWT config as auth.jwt (no separate jwt registration)
+	if err := registry.Register("auth", &authmod.Config{}); err != nil {
+		fatal("Failed to register auth: %v", err)
 	}
 	if err := registry.Register("server", &server.Config{}); err != nil {
 		fatal("Failed to register server: %v", err)

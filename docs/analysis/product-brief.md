@@ -17,9 +17,9 @@ date: '2025-12-12'
 
 ## Executive Summary
 
-**apprun** 是一个企业级的 Backend as a Service (BaaS) 平台，为公司产品开发提供包含认证、配置中心、权限管理、数据模型、函数计算、国际化(i18n)、存储等通用模块的轻量级统一框架。
+**apprun** is an enterprise-grade Backend as a Service (BaaS) platform that provides a lightweight unified framework for company product development, including common modules such as authentication, configuration center, permission management, data modeling, function computing, internationalization (i18n), and storage.
 
-通过提供这些基础服务，**apprun** 让业务开发人员和架构师能够专注于核心业务逻辑开发，而不必重复实现通用的技术基础设施。目标是减少 90% 的基础开发工作，提高开发效率和产品质量。
+By providing these foundational services, **apprun** enables business developers and architects to focus on core business logic development without having to repeatedly implement common technical infrastructure. The goal is to reduce 90% of foundational development work and improve development efficiency and product quality.
 
 ---
 
@@ -27,124 +27,124 @@ date: '2025-12-12'
 
 ### Problem Statement
 
-企业产品开发中，开发团队需要反复实现相同的通用模块，包括：认证、数据模型、配置中心、国际化等。 这些重复性工作占据了大量开发时间，分散了团队对核心业务价值的关注，同时也带来了质量和一致性风险。
+In enterprise product development, development teams need to repeatedly implement the same common modules, including: authentication, data models, configuration center, internationalization, etc. These repetitive tasks consume significant development time, distract the team from focusing on core business value, and also bring quality and consistency risks.
 
 ### Problem Impact
 
-- **开发效率低下**：每个项目都要重新实现基础模块
-- **质量不一致**：不同项目的基础实现可能存在差异
-- **维护成本高**：多个项目需要同步更新基础组件
-- **创新受限**：团队精力过多消耗在非核心功能上
-- **技术债务积累**：基础模块的快速实现往往导致技术债务
+- **Low Development Efficiency**: Each project needs to re-implement foundational modules
+- **Inconsistent Quality**: Different projects may have varying implementations of basic functionality
+- **High Maintenance Cost**: Multiple projects require synchronized updates of foundational components
+- **Limited Innovation**: Team energy is overly consumed on non-core features
+- **Technical Debt Accumulation**: Rapid implementation of foundational modules often leads to technical debt
 
 ### Why Existing Solutions Fall Short
 
-当前解决方案的局限性：
+Limitations of current solutions:
 
-- **开源框架**：架构复杂、笨重
-- **云服务**：供应商锁定和成本问题
-- **第三方 SaaS**：数据安全和定制化不足
+- **Open Source Frameworks**: Complex and heavy architecture
+- **Cloud Services**: Vendor lock-in and cost issues
+- **Third-party SaaS**: Insufficient data security and customization
 
 ### Key Differentiators
 
-- **企业级定制**：专为企业内部产品开发优化
-- **轻量级架构**：轻量级平台，单个容器也能运行
-- **团队协作**：支持多 Project 协作，灵活的权限管理
-- **资源共享**：Project 间可共享数据和资源，提高协作效率
-- **一站式解决方案**：集成所有通用模块，无需外部依赖
-- **开发效率提升**：目标减少 90% 的基础开发工作
-- **标准化架构**：确保产品间的技术一致性
-- **可扩展设计**：支持集成微服务组件，应对未来业务需求的扩展
-- **可观测性优先**：集中式日志、指标、追踪三位一体监控
+- **Enterprise-level Customization**: Optimized specifically for internal enterprise product development
+- **Lightweight Architecture**: Lightweight platform that can run on a single container
+- **Team Collaboration**: Support for multi-project collaboration with flexible permission management
+- **Resource Sharing**: Projects can share data and resources to improve collaboration efficiency
+- **All-in-One Solution**: Integrates all common modules without external dependencies
+- **Development Efficiency Boost**: Target 90% reduction in foundational development work
+- **Standardized Architecture**: Ensures technical consistency across products
+- **Scalable Design**: Supports integration of microservice components to address future business expansion needs
+- **Observability First**: Centralized logs, metrics, and tracing trinity monitoring
 
 
-## 核心功能 MVP Scope
+## Core Features MVP Scope
 
 ### MVP Core Features (All Modules Required)
 
-基于用户需求和成功指标，apprun MVP必须包含所有核心模块，但按以下优先级分阶段实现：
+Based on user needs and success metrics, apprun MVP must include all core modules, implemented in phases according to the following priorities:
 
-**第一优先级：🔐 认证与权限**
-- 功能：统一的用户管理和访问控制、企业级安全标准支持、RBAC 权限模型、支持 Projects 隔离
-- 价值：为所有其他功能提供安全基础，确保系统访问控制，支持企业级多团队分工场景
+**Priority 1: 🔐 Authentication & Authorization**
+- Features: Unified user management and access control, enterprise-grade security standards support, RBAC permission model, support for project isolation
+- Value: Provides security foundation for all other features, ensures system access control, supports enterprise-level multi-team collaboration scenarios
 
-**第二优先级：📊 数据建模**
-- 功能：DSL 数据建模、自动 API 生成、数据库管理（Schema 迁移、关系定义、备份恢复）
-- 价值：支持快速原型开发，减少数据库相关开发时间，降低数据管理复杂度
+**Priority 2: 📊 Data Modeling**
+- Features: DSL data modeling, automatic API generation, database management (schema migration, relationship definition, backup & recovery)
+- Value: Supports rapid prototype development, reduces database-related development time, lowers data management complexity
 
-**第三优先级：🔧 配置中心**
-- 功能：集中式应用配置管理，支持多环境和动态更新
-- 价值：为所有模块提供配置基础设施，简化运维管理
+**Priority 3: 🔧 Configuration Center**
+- Features: Centralized application configuration management, supports multiple environments and dynamic updates
+- Value: Provides configuration infrastructure for all modules, simplifies operations management
 
-**第四优先级：⚡ 函数服务**
-- 功能：无服务器函数执行环境
-- 价值：支持业务逻辑个性化代码，提升开发迭代速度
+**Priority 4: ⚡ Function Service**
+- Features: Serverless function execution environment
+- Value: Supports custom business logic code, improves development iteration speed
 
-**第五优先级：🔌 插件扩展**
-- 功能：系统级扩展机制，支持自定义插件开发和集成
-- 价值：提供非侵入式的系统扩展能力，支持企业级定制需求
+**Priority 5: 🔌 Plugin Extension**
+- Features: System-level extension mechanism, supports custom plugin development and integration
+- Value: Provides non-invasive system extension capabilities, supports enterprise-level customization needs
 
-**第六优先级：💾 文件存储服务**
-- 功能：文件和对象存储
-- 价值：为业务功能提供统一的存储层，简化文件管理和处理
+**Priority 6: 💾 File Storage Service**
+- Features: File and object storage
+- Value: Provides unified storage layer for business functions, simplifies file management and processing
 
-**第七优先级：🔄 工作流服务**
-- 功能：任务编排引擎，支持复杂业务流程的可靠执行、定时任务（Cron Jobs）、事件触发、手动执行
-- 价值：让复杂的跨组件 Durable Execution 任务减负，提升系统可靠性
+**Priority 7: 🔄 Workflow Service**
+- Features: Task orchestration engine, supports reliable execution of complex business processes, scheduled tasks (Cron Jobs), event triggers, manual execution
+- Value: Offloads complex cross-component durable execution tasks, improves system reliability
 
-> 工作流已经拆分为一个独立的项目：[Waterflow](https://github.com/Websoft9/Waterflow)
+> Workflow has been split into an independent project: [Waterflow](https://github.com/Websoft9/Waterflow)
 
-**第八优先级：📮 事件中心**
-- 功能：微服务消息总线（Backend-to-Backend 通信），发布/订阅模式
-- 价值：为微服务组件解耦，与工作流服务互补（事件分发 vs 任务编排）
+**Priority 8: 📮 Event Center**
+- Features: Microservice message bus (Backend-to-Backend communication), publish/subscribe pattern
+- Value: Decouples microservice components, complements workflow service (event distribution vs task orchestration)
 
-**第九优先级：🌍 国际化(i18n)**
-- 功能：多语言内容管理和本地化支持
-- 价值：让产品快速实现国际化销售，支持全球化产品开发
+**Priority 9: 🌍 Internationalization (i18n)**
+- Features: Multi-language content management and localization support
+- Value: Enables rapid internationalization of products, supports global product development
 
-**第十优先级：📡 实时数据推送**
-- 功能：WebSocket/SSE 实时通信，服务端主动推送到客户端
-- 价值：提升产品性能和用户体验，支持实时数据同步
+**Priority 10: 📡 Real-time Data Push**
+- Features: WebSocket/SSE real-time communication, server-initiated push to clients
+- Value: Improves product performance and user experience, supports real-time data synchronization
 
-**第十一优先级：🚪 API 网关**
-- 功能：统一的微服务入口和路由，集成认证授权，以及 Reverse Proxy 
-- 价值：提供统一的 API 访问与控制，简化微服务管理
+**Priority 11: 🚪 API Gateway**
+- Features: Unified microservice entry and routing, integrated authentication and authorization, and Reverse Proxy
+- Value: Provides unified API access and control, simplifies microservice management
 
-**第十二优先级：📊 日志与监控**
-- 功能：支持 Metrics, Logs and Traces，告警规则配置和通知
-- 价值：提升系统可观测性，快速定位和解决问题
+**Priority 12: 📊 Logging & Monitoring**
+- Features: Supports Metrics, Logs and Traces, alert rule configuration and notifications
+- Value: Improves system observability, quickly locates and resolves issues
 
-**第十三优先级：🎫 License 管理**
-- 功能：灵活的许可证生成和验证机制，基于 License 的功能开关和访问控制
-- 价值：为产品商业化和市场推广提供基础能力
+**Priority 13: 🎫 License Management**
+- Features: Flexible license generation and verification mechanism, license-based feature toggles and access control
+- Value: Provides foundational capabilities for product commercialization and market promotion
 
 ### Out of Scope (Future Releases)
 
-**不在MVP范围内的功能：**
+**Features not in MVP scope:**
 
-- 高级 AI/ML 集成
-- 第三方服务深度集成（非核心业务）
-- 复杂的工作流可视化编排器
-- 实时协作编辑功能
-- 高级分析和商业智能报告
-- 移动端原生应用
-- 离线功能支持
+- Advanced AI/ML integration
+- Deep third-party service integration (non-core business)
+- Complex workflow visual orchestrator
+- Real-time collaborative editing features
+- Advanced analytics and business intelligence reporting
+- Native mobile applications
+- Offline functionality support
 
-> **说明**：这些功能可能在后续版本中实现，具体优先级将根据用户反馈和业务价值评估决定。
+> **Note**: These features may be implemented in future releases, with specific priorities determined based on user feedback and business value assessment.
 
-## 利益相关者圆桌会议洞见
+## Stakeholder Roundtable Insights
 
-**业务开发人员视角：**
-"我最关心的是开发体验。apprun 能让我快速搭建原型，而不必花 weeks 时间配置数据库连接和用户认证吗？实时数据推送功能能让我不用再手写 WebSocket 逻辑吗？"
+**Business Developer Perspective:**
+"What I care most about is the development experience. Can apprun let me quickly build prototypes without spending weeks configuring database connections and user authentication? Can the real-time data push feature save me from hand-coding WebSocket logic?"
 
-**架构师视角：**
-"标准化很重要，但不能牺牲灵活性。我们需要确保 apprun 的架构能支持微服务演进，同时保持企业级的安全标准。API 网关必须支持服务发现、负载均衡和熔断机制。"
+**Architect Perspective:**
+"Standardization is important, but we can't sacrifice flexibility. We need to ensure apprun's architecture can support microservice evolution while maintaining enterprise-grade security standards. The API Gateway must support service discovery, load balancing, and circuit breaker mechanisms."
 
-**产品经理视角：**
-"时间就是金钱。apprun 能帮我们把产品上市时间从 6 个月缩短到 2 个月吗？用户真的会因为更快的迭代而更满意吗？实时功能对用户体验至关重要。"
+**Product Manager Perspective:**
+"Time is money. Can apprun help us reduce time-to-market from 6 months to 2 months? Will users really be more satisfied with faster iterations? Real-time features are critical to user experience."
 
-**IT 运维视角：**
-"可监控性、可扩展性和合规性是关键。apprun 需要提供开箱即用的监控面板和自动化部署能力。我需要看到实时日志、性能指标和告警系统，否则生产环境问题排查会很痛苦。"
+**IT Operations Perspective:**
+"Monitorability, scalability, and compliance are key. apprun needs to provide out-of-the-box monitoring dashboards and automated deployment capabilities. I need to see real-time logs, performance metrics, and alerting systems, otherwise troubleshooting production issues will be painful."
 
 
 

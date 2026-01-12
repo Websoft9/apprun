@@ -153,12 +153,162 @@ apprun/
 └── README.md
 ```
 
-**优势**：
+**优势**:
 - ✅ 模块边界清晰，易于理解和维护
 - ✅ 便于独立测试和部署
 - ✅ 未来可无缝拆分为微服务
 
-### 2.2 模块内部结构
+### 2.3 常量组织规范 (Constants Organization)
+
+**决策日期**: 2026-01-12  
+**决策背景**: BMad Method 强调"业务内聚优于文件类型分离"
+
+#### 2.3.1 基本原则
+
+**所有模块常量统一定义在各自的 `config.go` 文件中**，而不是单独创建 `constants.go`。
+
+**原因**:
+1. **业务内聚**: 常量与配置在语义上相关（验证规则、默认值、业务枚举）
+2. **可发现性**: 新开发者在一个文件找到所有配置相关项
+3. **维护性**: 修改验证规则时只需编辑一个文件
+4. **Config Center 兼容**: 常量和配置自然共存
+
+#### 2.3.2 文件组织结构
+
+```go
+// modules/auth/config.go
+package auth
+
+import "time"
+
+// ============================================================================
+// Module Constants (Validation Rules & Enums)
+// ============================================================================
+
+const (
+    // Password validation rules
+    MinPasswordLength = 8
+    MaxPasswordLength = 128
+    
+    // Username validation rules
+    MinUsernameLength = 3
+    MaxUsernameLength = 64
+    
+    // Account status codes
+    StatusActive   int8 = 1
+    StatusDisabled int8 = 2
+    StatusPending  int8 = 3
+    
+    // Gender codes
+    GenderUnknown int8 = 0
+    GenderMale    int8 = 1
+    GenderFemale  int8 = 2
+    
+    // Default values
+    DefaultBcryptCost          = 10
+    DefaultMaxFailedAttempts   = 5
+    DefaultFailedLoginCacheTTL = 5 * time.Minute
+)
+
+// ============================================================================
+// Runtime Configuration (Config Center Managed)
+// ============================================================================
+
+type Config struct {
+    JWT      jwt.Config     `yaml:"jwt"`
+    Security SecurityConfig `yaml:"security"`
+}
+
+type SecurityConfig struct {
+    BcryptCost        int           `yaml:"bcrypt_cost" default:"10" db:"true" validate:"min=4,max=31"`
+    MaxFailedAttempts int           `yaml:"max_failed_attempts" default:"5" db:"true"`
+    // ...
+}
+
+func DefaultConfig() *Config {
+    return &Config{
+        Security: SecurityConfig{
+            BcryptCost:        DefaultBcryptCost,  // ← References constant
+            MaxFailedAttempts: DefaultMaxFailedAttempts,
+        },
+    }
+}
+```
+
+#### 2.3.3 命名约定
+
+| 常量类型 | 命名模式 | 示例 |
+|---------|---------|------|
+| **最小值** | `Min<Name>` | `MinPasswordLength`, `MinUserAge` |
+| **最大值** | `Max<Name>` | `MaxPasswordLength`, `MaxRetries` |
+| **默认值** | `Default<Name>` | `DefaultTimeout`, `DefaultBcryptCost` |
+| **状态码** | `Status<Name>` | `StatusActive`, `StatusPending` |
+| **错误码** | `Err<Name>` | `ErrInvalidEmail`, `ErrUserNotFound` |
+| **类型码** | `Type<Name>` | `TypeAdmin`, `TypeGuest` |
+
+#### 2.3.4 何时使用独立的 constants.go
+
+**仅在以下情况使用独立文件**:
+1. 模块有 **50+ 个常量**（极少见）
+2. 常量需要 **跨多个子包共享**
+3. 常量需要 **复杂的初始化逻辑**（如计算、组合）
+
+**示例** (大型模块，需要独立文件):
+```go
+// modules/workflow/constants.go (>50 常量)
+package workflow
+
+const (
+    // 状态机状态 (20+ 个状态)
+    StateInit       = "init"
+    StatePending    = "pending"
+    StateRunning    = "running"
+    // ... 50+ more states
+    
+    // 动作类型 (20+ 个动作)
+    ActionCreate    = "create"
+    ActionUpdate    = "update"
+    // ... 50+ more actions
+)
+```
+
+#### 2.3.5 使用示例
+
+```go
+// ✅ 推荐：从 config 包导入常量
+import "apprun/modules/auth"
+
+func ValidatePassword(pwd string) error {
+    if len(pwd) < auth.MinPasswordLength {
+        return errors.New("password too short")
+    }
+    if len(pwd) > auth.MaxPasswordLength {
+        return errors.New("password too long")
+    }
+    return nil
+}
+
+// ✅ 推荐：使用状态常量
+user.Status = auth.StatusActive
+
+// ❌ 避免：硬编码魔术数字
+user.Status = 1  // 应使用 auth.StatusActive
+```
+
+#### 2.3.6 实际项目应用
+
+**已应用此规范的模块**:
+- ✅ `pkg/jwt/config.go` - JWT 常量（MinSecretLength, DefaultExpiry, DefaultWhitelistPaths）
+- ✅ `modules/auth/config.go` - Auth 模块常量（密码规则、状态码、性别码、bcrypt配置）
+
+**未来模块应遵循此模式**:
+- `modules/user/config.go` - 用户模块常量
+- `modules/project/config.go` - 项目模块常量
+- `pkg/logger/config.go` - 日志模块常量
+
+---
+
+## 3. 代码风格
 
 ```
 modules/config/
@@ -558,7 +708,71 @@ type User struct {
 
 ## 6. 测试规范
 
-### 6.1 测试文件命名
+### 6.1 测试文件位置
+
+**原则：所有测试与代码同目录**
+
+这是 Go 官方推荐的最佳实践，遵循 Go 标准库和所有知名开源项目（Kubernetes、Docker、Prometheus）的做法。
+
+```
+modules/auth/
+├── handler/
+│   ├── login.go
+│   └── login_test.go              # 单元测试
+├── service/
+│   ├── auth_service.go
+│   ├── auth_service_test.go       # 单元测试
+│   └── auth_integration_test.go   # 集成测试
+└── repository/
+    ├── user_repo.go
+    └── user_repo_test.go          # 单元测试
+```
+
+**区分单元测试和集成测试**：
+
+- **单元测试**：`xxx_test.go` - 测试单个函数/方法，使用 mock
+- **集成测试**：`xxx_integration_test.go` - 测试完整流程，使用真实数据库
+
+**运行方式**：
+
+```bash
+# 只运行单元测试（快速，CI 默认）
+go test -short ./...
+
+# 只运行集成测试
+go test -run Integration ./...
+
+# 运行所有测试
+go test ./...
+```
+
+**集成测试标准模板**：
+
+```go
+//go:build integration
+// +build integration
+
+package auth_test  // 使用 _test 后缀，只测试公开 API
+
+func TestLoginIntegration(t *testing.T) {
+    if testing.Short() {
+        t.Skip("Skipping integration test in short mode")
+    }
+    // 测试代码
+}
+```
+
+**优势**：
+- ✅ Go 官方推荐，符合社区标准
+- ✅ 可以测试包内私有函数/方法
+- ✅ `go test ./...` 自动发现所有测试
+- ✅ 测试覆盖率统计自动关联
+- ✅ IDE 智能提示和跳转完美支持
+- ✅ 测试和代码版本同步演进
+
+**不推荐**：将测试放在独立的 `tests/` 目录（这会导致无法测试私有函数，违背 Go 惯例）
+
+### 6.2 测试文件命名
 
 ```
 user.go       → user_test.go
@@ -566,7 +780,7 @@ service.go    → service_test.go
 handler.go    → handler_test.go
 ```
 
-### 6.2 单元测试
+### 6.3 单元测试
 
 ```go
 // internal/service/user_test.go
@@ -609,7 +823,7 @@ func TestUserService_GetUser_NotFound(t *testing.T) {
 }
 ```
 
-### 6.3 表格驱动测试
+### 6.4 表格驱动测试
 
 ```go
 func TestValidateEmail(t *testing.T) {

@@ -259,7 +259,7 @@ auth:
 
 ## Related Documents
 
-- [auth-epic.md](../epics/auth-epic.md) - Implementation epic
+- [5-auth-epic.md](../epics/5-auth-epic.md) - Implementation epic
 - [tech-architecture.md](./tech-architecture.md) - Technical architecture
 - [prd.md](../prd.md#21-认证与权限) - Product requirements
 

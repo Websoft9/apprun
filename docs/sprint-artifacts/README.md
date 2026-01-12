@@ -9,11 +9,13 @@
 ## Overview
 
 BMad Method workflow management:
-- **Epics**: Business-level features (what to build)
-- **Stories**: Executable tasks (how to build)
-- **sprint-status.yaml**: Central tracking file
+- **Epics**: Business-level features (what to build) - **See [docs/epics/](../epics/) for Epic definitions**
+- **Stories**: Executable tasks (how to build) - Stored in `sprint-N/` folders
+- **sprint-status.yaml**: Central tracking file for Epic-Story relationships
 
-**Hierarchy**: `Epic → Stories`
+**Hierarchy**: `Epic (docs/epics/*.md) → Stories (sprint-N/*.md)`
+
+> **📌 Epic Source of Truth**: All Epic definitions are in `/docs/epics/` folder, not here.
 
 ---
 

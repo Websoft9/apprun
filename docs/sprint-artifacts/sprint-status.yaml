@@ -1,159 +1,122 @@
-generated: '2026-01-08'
+generated: '2026-01-12'
 project: apprun
-last_updated_by: architect
-epics:
-- id: epic-infrastructure
-  name: Infrastructure & Foundation
-  status: in-progress
-  stories:
-  - story-01
-  - story-02
-  - story-03
-  - story-04
-  - story-05a
-  - story-05b
-  - story-05
-  - story-06
-  - story-07
-  - story-12
-  - story-13
-  - story-14
-  - story-15
-  - story-16
-  - story-17
-  - story-05c
-- id: epic-i18n
-  name: Internationalization & Localization
-  status: planning
-  stories:
-  - story-08
-  - story-08a
-  - story-08b
-  - story-09
-- id: epic-config
-  name: Configuration Management
-  status: in-progress
-  stories:
-  - story-10
-  - story-10a
-- id: epic-docs
-  name: API Documentation
-  status: done
-  stories:
-  - story-11
-- id: epic-auth
-  name: Authentication & Authorization
-  status: in-progress
-  stories:
-  - story-18
-  - story-19
-  - story-20
-- id: epic-storage
-  name: File Storage Service
-  status: planning
-  stories: []
-- id: epic-functions
-  name: Serverless Functions
-  status: planning
-  stories: []
-stories:
-- id: story-01
-  title: Docker Development & Deployment Environment
-  status: done
-  epic: epic-infrastructure
-- id: story-02
-  title: 统一响应工具包
-  status: done
-  epic: epic-infrastructure
-- id: story-03
-  title: 业务错误包装框架
-  status: done
-  epic: epic-infrastructure
-- id: story-04
-  title: Ent Schema 配置管理
-  status: done
-  epic: epic-config
-- id: story-05a
-  title: 数据库增量迁移
-  status: done
-  epic: epic-infrastructure
-- id: story-05b
-  title: 服务端 CLI 框架
-  status: planning
-  epic: epic-infrastructure
-- id: story-05
-  title: CI/CD 流水线与 Linter
-  status: done
-  epic: epic-infrastructure
-- id: story-06
-  title: 测试框架与工具集
-  status: planning
-  epic: epic-infrastructure
-- id: story-07
-  title: 重构现有 Handlers
-  status: planning
-  epic: epic-infrastructure
-- id: story-08
-  title: i18n 国际化基础设施
-  status: planning
-  epic: epic-i18n
-- id: story-08a
-  title: Database Field i18n 数据库字段国际化
-  status: planning
-  epic: epic-i18n
-- id: story-08b
-  title: i18n Integration Plan - i18n 集成计划
-  status: planning
-  epic: epic-i18n
-- id: story-09
-  title: Localization (l10n) - 本地化支持
-  status: planning
-  epic: epic-i18n
-- id: story-10
-  title: Configuration Center Foundation
-  status: done
-  epic: epic-config
-- id: story-11
-  title: Swagger API Documentation
-  status: done
-  epic: epic-docs
-- id: story-12
-  title: 日志防腐层
-  status: done
-  epic: epic-infrastructure
-- id: story-13
-  title: Request Package
-  status: planning
-  epic: epic-infrastructure
-- id: story-14
-  title: HTTP Server Package
-  status: done
-  epic: epic-infrastructure
-- id: story-15
-  title: Environment Variable Utility Package
-  status: done
-  epic: epic-infrastructure
-- id: story-16
-  title: Database Anti-Corruption Layer
-  status: done
-  epic: epic-infrastructure
-- id: story-17
-  title: Go 版本升级到 1.25.5
-  status: done
-  epic: epic-infrastructure
-- id: story-18
-  title: User Registration
-  status: in-progress
-  epic: epic-auth
-- id: story-19
-  title: User Login
-  status: planning
-  epic: epic-auth
-- id: story-20
-  title: JWT Middleware
-  status: planning
-  epic: epic-auth
-- id: story-05c
-  title: Makefile 标准与命令分组
-  status: done
-  epic: epic-infrastructure
+last_updated_by: architect-bmad-compliance
+
+development_status:
+  # Epic 1: Infrastructure & Foundation
+  epic-1:
+    status: in-progress
+    title: Infrastructure & Foundation
+  1-1-docker-environment:
+    status: done
+    title: Docker Development & Deployment Environment
+  1-2-response-package:
+    status: done
+    title: 统一响应工具包
+  1-3-error-handling:
+    status: done
+    title: 业务错误包装框架
+  1-4-ci-cd-linter:
+    status: done
+    title: CI/CD 流水线与 Linter
+  1-5-database-migration:
+    status: done
+    title: 数据库增量迁移
+  1-6-admin-cli:
+    status: backlog
+    title: 服务端 CLI 框架
+  1-7-makefile-standards:
+    status: done
+    title: Makefile 标准与命令分组
+  1-8-testing-framework:
+    status: backlog
+    title: 测试框架与工具集
+  1-9-refactor-handlers:
+    status: backlog
+    title: 重构现有 Handlers
+  1-10-logger-package:
+    status: done
+    title: 日志防腐层
+  1-11-request-package:
+    status: backlog
+    title: Request Package
+  1-12-http-server:
+    status: done
+    title: HTTP Server Package
+  1-13-env-package:
+    status: done
+    title: Environment Variable Utility Package
+  1-14-database-package:
+    status: done
+    title: Database Anti-Corruption Layer
+  1-15-go-version-upgrade:
+    status: done
+    title: Go 版本升级到 1.25.5
+  
+  # Epic 2: Internationalization & Localization
+  epic-2:
+    status: backlog
+    title: Internationalization & Localization
+  2-1-i18n:
+    status: backlog
+    title: i18n 国际化基础设施
+  2-2-db-field-i18n:
+    status: backlog
+    title: Database Field i18n 数据库字段国际化
+  2-3-i18n-integration-plan:
+    status: backlog
+    title: i18n Integration Plan - i18n 集成计划
+  2-4-l10n:
+    status: backlog
+    title: Localization (l10n) - 本地化支持
+  
+  # Epic 3: Configuration Management
+  epic-3:
+    status: in-progress
+    title: Configuration Management
+  3-1-ent-schema:
+    status: done
+    title: Ent Schema 配置管理
+  3-2-config-basic:
+    status: done
+    title: Configuration Center Foundation
+  3-3-module-config-registry:
+    status: backlog
+    title: Module Configuration Registry Enhancement
+  
+  # Epic 4: API Documentation
+  epic-4:
+    status: done
+    title: API Documentation
+  4-1-swagger-docs:
+    status: done
+    title: Swagger API Documentation
+  
+  # Epic 5: Authentication & Authorization
+  epic-5:
+    status: in-progress
+    title: Authentication & Authorization
+  5-1-user-registration:
+    status: done
+    title: User Registration
+  5-2-user-login:
+    status: backlog
+    title: User Login
+  5-3-jwt-middleware:
+    status: backlog
+    title: JWT Middleware
+  
+  # Epic 6: File Storage Service
+  epic-6:
+    status: backlog
+    title: File Storage Service
+  
+  # Epic 7: Serverless Functions
+  epic-7:
+    status: backlog
+    title: Serverless Functions
+
+retrospectives:
+  epic-4-retrospective:
+    status: pending
+    title: API Documentation Epic Retrospective

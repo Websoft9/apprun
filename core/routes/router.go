@@ -9,6 +9,7 @@ import (
 	"apprun/handlers"
 	internalMiddleware "apprun/internal/middleware"
 	authHandler "apprun/modules/auth/handler"
+	authMiddleware "apprun/modules/auth/middleware"
 	authRepository "apprun/modules/auth/repository"
 	authService "apprun/modules/auth/service"
 	configModule "apprun/modules/config"
@@ -52,8 +53,17 @@ func SetupRoutes(dbClient *ent.Client, configService *configModule.Service) *chi
 			authSvc := authService.NewAuthService(userRepo)
 			authHdl := authHandler.NewAuthHandler(authSvc)
 
-			// Register endpoint (public)
+			// Public endpoints (no JWT middleware)
 			r.Post("/register", authHdl.Register)
+			r.Post("/login", authHdl.Login)
+
+			// Protected endpoints (require JWT middleware)
+			r.Group(func(r chi.Router) {
+				jwtMiddleware := authMiddleware.NewJWTMiddleware()
+				r.Use(jwtMiddleware.JWTAuth)
+
+				r.Get("/me", authHdl.Me)
+			})
 		})
 
 		// demo routes

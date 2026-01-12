@@ -25,357 +25,358 @@ version: '5.0-bmad-compliant'
 
 ---
 
-## 1. 文档说明
+## 1. Document Description
 
-### 1.1 文档目的与简化原则
+### 1.1 Document Purpose and Simplification Principles
 
-本 PRD 定义 apprun BaaS 平台的**核心功能需求（FR）**和**非功能需求（NFR）**。
+This PRD defines the **Functional Requirements (FR)** and **Non-Functional Requirements (NFR)** of the apprun BaaS platform.
 
-**BMad 方法论合规性**：
-1. **职责分离**：PRD 定义 "需要什么能力"，不预设 "用什么技术实现"
-2. **技术决策延后**：具体技术选型推迟到技术架构阶段
-3. **聚焦验收标准**：明确可测试的业务价值和验收标准
+**BMad Methodology Compliance**:
+1. **Separation of Concerns**: PRD defines "what capabilities are needed", not prescribing "what technology to implement with"
+2. **Deferred Technical Decisions**: Specific technology selections are postponed to the technical architecture phase
+3. **Focus on Acceptance Criteria**: Clear, testable business value and acceptance criteria
 
-**简化原则**：
-1. **能力导向**：描述需要的能力，而非实现方式
-2. **合并细节需求**：相关的细节功能需求合并为单一 FR
-3. **明确约束**：提供实现约束，指导架构决策
-4. **保留灵活性**：技术选型在架构阶段根据实际情况决策
+**Simplification Principles**:
+1. **Capability-Oriented**: Describe needed capabilities, not implementation approaches
+2. **Consolidate Detail Requirements**: Related detailed functional requirements are merged into a single FR
+3. **Clear Constraints**: Provide implementation constraints to guide architectural decisions
+4. **Maintain Flexibility**: Technology selection is decided during the architecture phase based on actual circumstances
 
-**与 Product Brief 的关系**：
+**Relationship with Product Brief**:
 
-- **Product Brief**：定义商业愿景、市场定位、13 个核心模块
-- **PRD（本文档）**：定义可验收的功能需求，区分自研 vs 集成
+- **Product Brief**: Defines business vision, market positioning, 13 core modules
+- **PRD (This Document)**: Defines verifiable functional requirements, distinguishes self-developed vs integrated
 
-### 1.2 目标用户
+### 1.2 Target Audience
 
-- 架构师：技术选型和集成方案设计
-- 开发团队：自研模块实现
-- 测试团队：集成测试和验收标准
-- 产品经理：进度跟踪和范围管理
-
----
-
-## 2. 核心模块功能需求
-
-### 2.1 认证与权限
-
-#### FR-AUTH-001：认证与权限服务
-
-- **需求**：提供完整的用户认证、授权和团队协作能力
-- **核心能力**：
-  - 用户注册、登录、登出（Email + Password）
-  - 密码安全存储（哈希加密）
-  - JWT Token 认证（Access Token + Refresh Token）
-  - 密码强度验证和修改
-  - Project-based 团队协作和权限管理
-  - RBAC 角色权限管理
-- **验收标准**：
-  - 用户可通过 API 注册和登录（Email + Password）
-  - 密码安全存储（不可逆哈希）
-  - JWT Token 正确签发和验证
-  - Token 验证集成到 API 中间件
-  - 用户可加入多个 Project，Project 间权限正确隔离
-  - 权限验证正确（未授权访问返回 403）
-  - API 认证响应时间 P95 < 10ms
-- **实现约束**：
-  - MVP 阶段：使用 Go Native Auth (bcrypt + JWT + Casbin)
-  - Production 阶段：可考虑迁移到企业级认证服务（Ory Kratos 等）
+- Architects: Technology selection and integration solution design
+- Development Team: Self-developed module implementation
+- Testing Team: Integration testing and acceptance criteria
+- Product Manager: Progress tracking and scope management
 
 ---
 
-### 2.2 数据建模
+## 2. Core Module Functional Requirements
 
-#### FR-DATA-001：数据模型定义与管理
-- **需求**：支持 DSL 或配置化定义数据模型，自动生成 CRUD API
-- **核心能力**：
-  - 字段类型定义（String, Integer, Boolean, JSON, DateTime, UUID 等）
-  - 字段约束（必填、唯一、长度限制、默认值）
-  - 关系定义（一对多、多对多、自关联）
-  - 索引定义（单列、复合索引）
-  - Schema 迁移管理（版本化、回滚）
-- **验收标准**：
-  - 用户可通过配置文件定义数据模型
-  - 模型定义后自动生成数据库表和 RESTful API
-  - API 支持分页、过滤、排序、关联查询
-  - API 响应时间 P95 < 100ms
-  - Schema 变更可生成迁移脚本并支持回滚
+### 2.1 Authentication & Authorization
 
----
+#### FR-AUTH-001: Authentication & Authorization Service
 
-### 2.3 配置中心
-
-#### FR-CONFIG-001：配置管理服务
-- **需求**：集中式配置存储、管理和动态更新
-- **核心能力**：
-  - 文件和 Key-Value 数据库库配置存储
-  - 配置优先级
-  - 动态配置更新（无需重启）
-- **验收标准**：
-  - 配置可通过 API 增删改查
-  - 第三方微服务的配置项变更后实时发布到事件中心
-  - 配置变更历史可查询
+- **Requirement**: Provide complete user authentication, authorization, and team collaboration capabilities
+- **Core Capabilities**:
+  - User registration, login, logout (Email + Password)
+  - Secure password storage (hash encryption)
+  - JWT Token authentication (Access Token + Refresh Token)
+  - Password strength validation and modification
+  - Project-based team collaboration and permission management
+  - RBAC role permission management
+- **Acceptance Criteria**:
+  - Users can register and login via API (Email + Password)
+  - Passwords securely stored (irreversible hashing)
+  - JWT Token correctly issued and verified
+  - Token verification integrated into API middleware
+  - Users can join multiple Projects with proper permission isolation between Projects
+  - Permission verification works correctly (unauthorized access returns 403)
+  - API authentication response time P95 < 10ms
+- **Implementation Constraints**:
+  - MVP Phase: Use Go Native Auth (bcrypt + JWT + Casbin)
+  - Production Phase: Consider migration to enterprise-grade authentication service (Ory Kratos, etc.)
 
 ---
 
-### 2.4 函数服务
+### 2.2 Data Modeling
 
-#### FR-FUNC-001：函数执行服务
-- **需求**：支持用户自定义函数部署和执行
-- **核心能力**：
-  - 支持 golang 语言
-  - HTTP 触发执行
-  - 资源限制（CPU, 内存, 超时）
-  - 函数日志收集
-- **验收标准**：
-  - 用户可上传函数代码并部署
-  - 函数可通过 HTTP 调用
-  - 函数执行相互隔离
-  - 函数日志可查询
-
----
-
-### 2.5 插件扩展
-
-#### FR-PLUG-001：插件扩展机制
-- **需求**：提供系统级插件扩展能力，支持非侵入式系统定制
-- **核心能力**：
-  - 基于 RPC 协议
-  - 插件生命周期管理（加载、执行、卸载）
-  - 插件安全隔离和权限控制
-  - 插件配置和版本管理
-- **验收标准**：
-  - 插件可通过标准接口加载和执行
-  - 插件与宿主系统安全隔离
-  - 插件配置可动态更新
-  - 插件版本兼容性保证
+#### FR-DATA-001: Data Model Definition and Management
+- **Requirement**: Support DSL or configuration-based data model definition, auto-generate CRUD API
+- **Core Capabilities**:
+  - Field type definition (String, Integer, Boolean, JSON, DateTime, UUID, etc.)
+  - Field constraints (required, unique, length limit, default value)
+  - Relationship definition (one-to-many, many-to-many, self-referential)
+  - Index definition (single column, composite index)
+  - Schema migration management (versioning, rollback)
+- **Acceptance Criteria**:
+  - Users can define data models via configuration files
+  - Models automatically generate database tables and RESTful API after definition
+  - API supports pagination, filtering, sorting, and relational queries
+  - API response time P95 < 100ms
+  - Schema changes can generate migration scripts and support rollback
 
 ---
 
-### 2.6 文件存储服务
+### 2.3 Configuration Center
 
-#### FR-STORAGE-001：统一文件存储服务
-- **需求**：提供统一的文件存储和文件夹管理能力，支持对象存储挂载
-- **核心能力**：
-  - 文件上传、下载、删除、移动
-  - 文件夹创建、删除、重命名
-  - 文件列表查询（支持文件夹结构、分页、过滤）
-  - 对象存储挂载（扁平结构映射为文件夹层次）
-  - 生成文件访问 URL
-  - 分片上传（大文件 >10MB）
-- **验收标准**：
-  - 文件可按文件夹组织（/project1/docs/readme.txt）
-  - 文件夹操作与本地文件系统一致
-  - 对象存储透明挂载（用户无需感知底层实现）
-  - 文件权限随文件夹继承
+#### FR-CONFIG-001: Configuration Management Service
+- **Requirement**: Centralized configuration storage, management, and dynamic updates
+- **Core Capabilities**:
+  - File and Key-Value database configuration storage
+  - Configuration priority
+  - Dynamic configuration updates (no restart required)
+- **Acceptance Criteria**:
+  - Configuration can be CRUD via API
+  - Third-party microservice configuration changes are published to event center in real-time
+  - Configuration change history is queryable
 
 ---
 
-### 2.7 工作流服务
+### 2.4 Function Service
 
-#### FR-WORKFLOW-001：工作流引擎
-- **需求**：提供可靠的工作流编排和执行能力
-- **核心能力**：
-  - 工作流定义（YAML/代码）
-  - 多种触发方式（事件、定时、手动）
-  - 内置节点（HTTP, SMTP, 数据库等）
-  - 自定义节点扩展
-- **验收标准**：
-  - 工作流可被定义和触发
-  - 工作流执行状态可查询
-  - 失败自动重试（可配置）
-  - Cron 定时任务按计划执行
-
----
-
-### 2.8 事件中心
-
-#### FR-EVENT-001：事件总线服务
-- **需求**：提供微服务间的事件发布/订阅能力
-- **核心能力**：
-  - 事件发布/订阅（Pub/Sub）
-  - 主题（Topic）管理
-  - 事件持久化和重放
-- **验收标准**：
-  - 事件发布延迟 < 10ms
-  - 事件传递延迟 < 100ms
-  - 历史事件可查询和重放
+#### FR-FUNC-001: Function Execution Service
+- **Requirement**: Support user-defined function deployment and execution
+- **Core Capabilities**:
+  - Support golang language
+  - HTTP trigger execution
+  - Resource limits (CPU, memory, timeout)
+  - Function log collection
+- **Acceptance Criteria**:
+  - Users can upload function code and deploy
+  - Functions can be invoked via HTTP
+  - Function executions are mutually isolated
+  - Function logs are queryable
 
 ---
 
-### 2.9 实时数据推送
+### 2.5 Plugin Extension
 
-#### FR-REALTIME-001：实时推送服务
-- **需求**：提供服务端到客户端的实时数据推送能力
-- **核心能力**：
-  - WebSocket 连接管理
-  - 服务端主动推送
-  - 数据变更推送（Database CDC）
-- **验收标准**：
-  - 客户端可建立 WebSocket 连接
-  - 推送延迟 < 100ms
-  - 数据变更自动推送到订阅客户端
-
----
-
-### 2.10 国际化
-
-#### FR-I18N-001：国际化服务
-- **需求**：多语言内容管理和切换
-- **核心能力**：
-  - Key-Value 翻译存储
-  - 支持多语言（中文、英文、日文等）
-  - 变量插值
-  - 基于 HTTP Header/Cookie 的语言切换
-- **验收标准**：
-  - 翻译内容可增删改查
-  - API 根据语言返回对应翻译
-  - 默认语言配置生效
+#### FR-PLUG-001: Plugin Extension Mechanism
+- **Requirement**: Provide system-level plugin extension capability, support non-invasive system customization
+- **Core Capabilities**:
+  - Based on RPC protocol
+  - Plugin lifecycle management (load, execute, unload)
+  - Plugin security isolation and permission control
+  - Plugin configuration and version management
+- **Acceptance Criteria**:
+  - Plugins can be loaded and executed through standard interfaces
+  - Plugins are securely isolated from host system
+  - Plugin configuration can be dynamically updated
+  - Plugin version compatibility is guaranteed
 
 ---
 
-### 2.11 日志与监控
+### 2.6 File Storage Service
 
-#### FR-LOG-001：日志和监控服务
-- **需求**：提供集中式日志收集和系统监控能力
-- **核心能力**：
-  - 集中式日志收集（统一格式、Trace ID）
-  - 日志查询（时间范围、关键词、Trace ID）
-  - 基础性能指标（CPU, 内存, API 响应时间, QPS）
-  - 告警规则和通知
-- **验收标准**：
-  - 所有模块日志可统一查询
-  - 日志查询响应 < 5秒
-  - 性能指标实时可查
-  - 告警延迟 < 1 分钟
-
-**MVP 不包含**：
-- ❌ 分布式追踪（Distributed Tracing）
-- ❌ 自定义 Dashboard
-- ❌ AI 驱动的异常检测
+#### FR-STORAGE-001: Unified File Storage Service
+- **Requirement**: Provide unified file storage and folder management capability, support object storage mounting
+- **Core Capabilities**:
+  - File upload, download, delete, move
+  - Folder create, delete, rename
+  - File list query (support folder structure, pagination, filtering)
+  - Object storage mounting (flat structure mapped to folder hierarchy)
+  - Generate file access URL
+  - Chunked upload (large files >10MB)
+- **Acceptance Criteria**:
+  - Files can be organized by folder (/project1/docs/readme.txt)
+  - Folder operations consistent with local file system
+  - Object storage transparently mounted (users unaware of underlying implementation)
+  - File permissions inherited from folders
 
 ---
 
-### 2.12 API 网关
+### 2.7 Workflow Service
 
-#### FR-GATEWAY-001：API 网关服务
-- **需求**：提供统一的 API 入口和路由能力以及 Reverse Proxy 
-- **核心能力**：
-  - 路由转发（基于路径）
-  - 认证集成（JWT 验证）
-  - 权限检查（RBAC）
-  - 请求日志（Trace ID）
-  - Reverse Proxy 
-- **验收标准**：
-  - 基于 Reverse Proxy，将请求正确转发到后端服务
-  - 未认证请求返回 401
-  - 无权限请求返回 403
-  - 所有请求有日志记录
-
-**MVP 不包含**：
-- ❌ 限流（Rate Limiting）
-- ❌ 熔断降级（Circuit Breaker）
-- ❌ 服务发现（Service Discovery）
+#### FR-WORKFLOW-001: Workflow Engine
+- **Requirement**: Provide reliable workflow orchestration and execution capability
+- **Core Capabilities**:
+  - Workflow definition (YAML/code)
+  - Multiple trigger methods (event, scheduled, manual)
+  - Built-in nodes (HTTP, SMTP, database, etc.)
+  - Custom node extension
+- **Acceptance Criteria**:
+  - Workflows can be defined and triggered
+  - Workflow execution status is queryable
+  - Automatic retry on failure (configurable)
+  - Cron scheduled tasks execute on schedule
 
 ---
 
-### 2.14 License 管理
+### 2.8 Event Center
 
-#### FR-LICENSE-001：License 管理服务
-- **需求**：提供系统功能开关和 License 验证能力
-- **核心能力**：
-  - License 生成和验证
-  - 功能开关管理
-  - 使用情况监控
-- **验收标准**：
-  - 系统启动时加载 License 配置
-  - 未通过验证的请求返回 403
-  - License 变更可动态更新
-
----
-
-## 3. 非功能需求（NFR）
-
-### NFR-001：性能要求
-- API 响应时间 P95 < 100ms（1000 并发）
-- 系统吞吐量 > 10,000 QPS
-- 实时推送延迟 < 100ms（P95）
-
-### NFR-002：可用性要求
-- 系统可用性 > 99.9%（月度）
-- API 错误率 < 0.1%
-
-### NFR-003：可扩展性要求
-- 支持水平扩展（无状态服务设计）
-- 模块可独立部署和升级
-
-### NFR-004：安全性要求
-- 敏感数据加密（密码 bcrypt, HTTPS/TLS）
-- SQL 注入防护（参数化查询）
-- 所有 API 需认证和授权
-
-### NFR-005：可维护性要求
-- 单元测试覆盖率 > 70%
-- 完善的日志和监控体系
-
-### NFR-006：可部署性要求
-- Docker 容器化部署（docker-compose 一键启动，配置外部化）
-
-### NFR-007：轻量级要求
-- 单机（1C2G）可运行核心功能，核心服务内存占用 < 512MB，CPU < 50%（空闲时）
-
-### NFR-008：开发规范要求
-- **API 设计**：统一响应格式、RESTful 风格、统一错误码体系、API 版本管理
-- **代码质量**：命名规范、分层架构、依赖注入、统一错误处理
-- **测试体系**：单元测试 > 70%、集成测试覆盖核心模块、CI/CD 集成
-- **参考文档**：`docs/standards/`（架构阶段创建）
+#### FR-EVENT-001: Event Bus Service
+- **Requirement**: Provide event publish/subscribe capability between microservices
+- **Core Capabilities**:
+  - Event publish/subscribe (Pub/Sub)
+  - Topic management
+  - Event persistence and replay
+- **Acceptance Criteria**:
+  - Event publish latency < 10ms
+  - Event delivery latency < 100ms
+  - Historical events can be queried and replayed
 
 ---
 
+### 2.9 Real-time Data Push
 
-## 4. MVP 范围说明
-
-### 4.1 MVP 包含的功能
-
-本 PRD 定义的所有 FR 和 NFR 均为 MVP 范围内。
-
-### 4.2 MVP 不包含的功能
-
-- ❌ 数据备份与恢复（属于运维功能，可在后续版本通过云服务商或第三方工具提供）
-- ❌ 可视化工作流编排器（Drag & Drop UI）
-- ❌ 高级图片编辑（滤镜、水印）
-- ❌ 视频/音频处理
-- ❌ API 网关高级功能（限流、熔断、服务发现）
-- ❌ 分布式追踪（Distributed Tracing）
-- ❌ 自定义监控 Dashboard
-- ❌ AI/ML 集成
-- ❌ 移动端原生应用
-- ❌ SaaS 模式下的多租户隔离
-
-### 4.3 优先级说明
-
-参考 [Product Brief - MVP Scope](./analysis/product-brief.md#mvp-scope) 中定义的 13 个核心模块优先级。
+#### FR-REALTIME-001: Real-time Push Service
+- **Requirement**: Provide server-to-client real-time data push capability
+- **Core Capabilities**:
+  - WebSocket connection management
+  - Server-initiated push
+  - Data change push (Database CDC)
+- **Acceptance Criteria**:
+  - Clients can establish WebSocket connections
+  - Push latency < 100ms
+  - Data changes automatically pushed to subscribed clients
 
 ---
 
-## 5. 附录
+### 2.10 Internationalization
 
-### 5.1 术语表
+#### FR-I18N-001: Internationalization Service
+- **Requirement**: Multi-language content management and switching
+- **Core Capabilities**:
+  - Key-Value translation storage
+  - Support multiple languages (Chinese, English, Japanese, etc.)
+  - Variable interpolation
+  - Language switching based on HTTP Header/Cookie
+- **Acceptance Criteria**:
+  - Translation content can be CRUD
+  - API returns corresponding translations based on language
+  - Default language configuration takes effect
 
-| 术语 | 全称 | 说明 |
+---
+
+### 2.11 Logging & Monitoring
+
+#### FR-LOG-001: Logging and Monitoring Service
+- **Requirement**: Provide centralized log collection and system monitoring capability
+- **Core Capabilities**:
+  - Centralized log collection (unified format, Trace ID)
+  - Log query (time range, keyword, Trace ID)
+  - Basic performance metrics (CPU, memory, API response time, QPS)
+  - Alert rules and notifications
+- **Acceptance Criteria**:
+  - All module logs can be queried uniformly
+  - Log query response < 5 seconds
+  - Performance metrics viewable in real-time
+  - Alert latency < 1 minute
+
+**MVP Does Not Include**:
+- ❌ Distributed Tracing
+- ❌ Custom Dashboard
+- ❌ AI-driven anomaly detection
+
+---
+
+### 2.12 API Gateway
+
+#### FR-GATEWAY-001: API Gateway Service
+- **Requirement**: Provide unified API entry and routing capability, and Reverse Proxy
+- **Core Capabilities**:
+  - Route forwarding (path-based)
+  - Authentication integration (JWT verification)
+  - Permission checking (RBAC)
+  - Request logging (Trace ID)
+  - Reverse Proxy
+- **Acceptance Criteria**:
+  - Based on Reverse Proxy, requests correctly forwarded to backend services
+  - Unauthenticated requests return 401
+  - Unauthorized requests return 403
+  - All requests have log records
+
+**MVP Does Not Include**:
+- ❌ Rate Limiting
+- ❌ Circuit Breaker
+- ❌ Service Discovery
+
+---
+
+### 2.14 License Management
+
+#### FR-LICENSE-001: License Management Service
+- **Requirement**: Provide system feature toggle and License verification capability
+- **Core Capabilities**:
+  - License generation and verification
+  - Feature toggle management
+  - Usage monitoring
+- **Acceptance Criteria**:
+  - System loads License configuration on startup
+  - Requests that fail verification return 403
+  - License changes can be dynamically updated
+
+---
+
+## 3. Non-Functional Requirements (NFR)
+
+### NFR-001: Performance Requirements
+- API response time P95 < 100ms (1000 concurrent)
+- System throughput > 10,000 QPS
+- Real-time push latency < 100ms (P95)
+
+### NFR-002: Availability Requirements
+- System availability > 99.9% (monthly)
+- API error rate < 0.1%
+
+### NFR-003: Scalability Requirements
+- Support horizontal scaling (stateless service design)
+- Modules can be independently deployed and upgraded
+
+### NFR-004: Security Requirements
+- Sensitive data encryption (password bcrypt, HTTPS/TLS)
+- SQL injection protection (parameterized queries)
+- All APIs require authentication and authorization
+
+### NFR-005: Maintainability Requirements
+- Unit test coverage > 70%
+- Complete logging and monitoring system
+
+### NFR-006: Deployability Requirements
+- Docker containerized deployment (docker-compose one-click startup, externalized configuration)
+
+### NFR-007: Lightweight Requirements
+- Single machine (1C2G) can run core functions, core service memory usage < 512MB, CPU < 50% (idle)
+
+### NFR-008: Development Standards Requirements
+- **API Design**: Unified response format, RESTful style, unified error code system, API version management
+- **Code Quality**: Naming conventions, layered architecture, dependency injection, unified error handling
+- **Testing System**: Unit tests > 70%, integration tests cover core modules, CI/CD integration
+- **Reference Documentation**: `docs/standards/` (created during architecture phase)
+
+---
+
+
+## 4. MVP Scope Description
+
+### 4.1 Features Included in MVP
+
+All FRs and NFRs defined in this PRD are within MVP scope.
+
+### 4.2 Features Not Included in MVP
+
+- ❌ Data backup and recovery (belongs to operations functionality, can be provided through cloud service providers or third-party tools in later versions)
+- ❌ Visual workflow orchestrator (Drag & Drop UI)
+- ❌ Advanced image editing (filters, watermarks)
+- ❌ Video/audio processing
+- ❌ Advanced API Gateway features (rate limiting, circuit breaker, service discovery)
+- ❌ Distributed Tracing
+- ❌ Custom monitoring Dashboard
+- ❌ AI/ML integration
+- ❌ Native mobile applications
+- ❌ Multi-tenant isolation in SaaS mode
+
+### 4.3 Priority Description
+
+Refer to the priority of 13 core modules defined in [Product Brief - MVP Scope](./analysis/product-brief.md#mvp-scope).
+
+---
+
+## 5. Appendix
+
+### 5.1 Glossary
+
+| Term | Full Name | Description |
 |------|------|------|
-| FR | Functional Requirement | 功能需求 |
-| NFR | Non-Functional Requirement | 非功能需求 |
-| RBAC | Role-Based Access Control | 基于角色的访问控制 |
-| JWT | JSON Web Token | JSON Web 令牌 |
-| CRUD | Create, Read, Update, Delete | 增删改查 |
-| QPS | Queries Per Second | 每秒查询数 |
-| P95 | 95th Percentile | 95 百分位 |
-| CDC | Change Data Capture | 数据变更捕获 |
-| DSL | Domain-Specific Language | 领域特定语言 |
+| FR | Functional Requirement | Functional Requirement |
+| NFR | Non-Functional Requirement | Non-Functional Requirement |
+| RBAC | Role-Based Access Control | Role-Based Access Control |
+| JWT | JSON Web Token | JSON Web Token |
+| CRUD | Create, Read, Update, Delete | Create, Read, Update, Delete |
+| QPS | Queries Per Second | Queries Per Second |
+| P95 | 95th Percentile | 95th Percentile |
+| CDC | Change Data Capture | Change Data Capture |
+| DSL | Domain-Specific Language | Domain-Specific Language |
 
-### 5.2 参考文档
+### 5.2 Reference Documents
 
-- [Product Brief](./analysis/product-brief.md) - 产品愿景和战略
-- [Technical Architecture](./architecture/) - 技术架构设计（待创建）
-- [Waterflow](https://github.com/Websoft9/Waterflow) - 工作流引擎项目
+- [Product Brief](./analysis/product-brief.md) - Product Vision and Strategy
+- [Epics](./epics/) - **Single Source of Truth for Epic Definitions** (Business Feature Breakdown)
+- [Technical Architecture](./architecture/) - Technical Architecture Design
+- [Waterflow](https://github.com/Websoft9/Waterflow) - Workflow Engine Project

@@ -2,6 +2,7 @@ package password
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -54,9 +55,11 @@ func TestHash(t *testing.T) {
 				return
 			}
 
-			// Verify hash format (bcrypt prefix)
-			if !strings.HasPrefix(hash, "$2a$12$") && !strings.HasPrefix(hash, "$2b$12$") {
-				t.Errorf("Hash() invalid bcrypt format: %s", hash)
+			// Verify hash format (bcrypt prefix with current cost)
+			cost := GetCost()
+			expectedPrefix := fmt.Sprintf("$2a$%02d$", cost)
+			if !strings.HasPrefix(hash, expectedPrefix) && !strings.HasPrefix(hash, fmt.Sprintf("$2b$%02d$", cost)) {
+				t.Errorf("Hash() invalid bcrypt format: got %s, want prefix $2a$%02d$ or $2b$%02d$", hash, cost, cost)
 			}
 
 			// Verify hash length (60 bytes)
@@ -317,7 +320,110 @@ func TestBcryptCostFactor(t *testing.T) {
 		t.Fatalf("Failed to extract cost: %v", err)
 	}
 
-	if cost != DefaultCost {
-		t.Errorf("Hash cost = %d, want %d", cost, DefaultCost)
+	expectedCost := GetCost()
+	if cost != expectedCost {
+		t.Errorf("Hash cost = %d, want %d", cost, expectedCost)
+	}
+}
+
+// TestSetCost verifies dynamic cost configuration
+func TestSetCost(t *testing.T) {
+	// Save original cost
+	originalCost := GetCost()
+	defer func() {
+		// Restore original cost after test
+		_ = SetCost(originalCost)
+	}()
+
+	tests := []struct {
+		name     string
+		cost     int
+		wantErr  bool
+		wantCost int
+		testHash bool // Whether to test actual hashing (slow for high costs)
+	}{
+		{
+			name:     "valid cost 8",
+			cost:     8,
+			wantErr:  false,
+			wantCost: 8,
+			testHash: true,
+		},
+		{
+			name:     "valid cost 12",
+			cost:     12,
+			wantErr:  false,
+			wantCost: 12,
+			testHash: true,
+		},
+		{
+			name:     "minimum cost 4",
+			cost:     4,
+			wantErr:  false,
+			wantCost: 4,
+			testHash: true,
+		},
+		{
+			name:     "maximum cost 31",
+			cost:     31,
+			wantErr:  false,
+			wantCost: 31,
+			testHash: false, // Skip hashing test (too slow: ~8-10 minutes)
+		},
+		{
+			name:    "invalid cost too low",
+			cost:    3,
+			wantErr: true,
+		},
+		{
+			name:    "invalid cost too high",
+			cost:    32,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := SetCost(tt.cost)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("SetCost(%d) expected error, got nil", tt.cost)
+				}
+				if !errors.Is(err, ErrInvalidCost) {
+					t.Errorf("SetCost(%d) error = %v, want ErrInvalidCost", tt.cost, err)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("SetCost(%d) unexpected error: %v", tt.cost, err)
+				return
+			}
+
+			actualCost := GetCost()
+			if actualCost != tt.wantCost {
+				t.Errorf("GetCost() = %d, want %d", actualCost, tt.wantCost)
+			}
+
+			// Verify Hash() uses new cost (only for low costs to keep tests fast)
+			if tt.testHash {
+				hash, err := Hash("test123")
+				if err != nil {
+					t.Errorf("Hash() failed with cost %d: %v", tt.cost, err)
+					return
+				}
+
+				hashCost, err := bcrypt.Cost([]byte(hash))
+				if err != nil {
+					t.Errorf("Failed to extract cost from hash: %v", err)
+					return
+				}
+
+				if hashCost != tt.wantCost {
+					t.Errorf("Hash uses cost %d, want %d", hashCost, tt.wantCost)
+				}
+			}
+		})
 	}
 }

@@ -28,16 +28,25 @@ i18n:
   supported_languages: ["en-US", "zh-CN"]
   translations_path: "./pkg/i18n/testdata"  # Path to translation files
 
-# JWT configuration
-jwt:
-  secret: ${JWT_SECRET}  # Must be set via environment variable (≥32 characters)
-  expiry: 24h            # Token expiration time
-  issuer: "apprun"       # Token issuer
-  whitelist_paths:       # Paths that bypass JWT authentication
-    - /api/v1/auth/register
-    - /api/v1/auth/login
-    - /health
-    - /metrics
+# Authentication configuration (managed by modules/auth/config.go)
+# See modules/auth/config.go for full config struct with validation tags
+auth:
+  jwt:
+    secret: ${JWT_SECRET}  # Must be set via environment variable (≥32 characters, 256 bits)
+    access_token_expiration: 24h   # Access token expiration time (db:"true" - updatable)
+    refresh_token_expiration: 168h # Refresh token expiration (7 days, for future use)
+    issuer: "apprun-platform"      # Token issuer (db:"false" - infrastructure)
+    audience: "apprun-api"         # Token audience (db:"false" - infrastructure)
+    whitelist_paths:               # Paths that bypass JWT authentication (db:"true" - updatable)
+      - /api/v1/auth/register
+      - /api/v1/auth/login
+      - /health
+      - /metrics
+  security:
+    bcrypt_cost: 10                       # Password hashing cost: 10=balanced, 8=fast, 12=secure (db:"true")
+    failed_login_cache_enabled: true      # Cache failed attempts to prevent bcrypt abuse (db:"true")
+    failed_login_cache_ttl: 5m            # How long to cache failed attempts (db:"true")
+    max_failed_attempts: 5                # Rate limit threshold per user (db:"true")
 
 # Server configuration (infrastructure, not managed by config center)
 # Override via environment variables following naming convention:

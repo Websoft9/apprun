@@ -4,6 +4,7 @@ package repository
 import (
 	"context"
 	"errors"
+	"time"
 
 	"apprun/ent"
 	"apprun/ent/user"
@@ -127,6 +128,29 @@ func (r *UserRepository) UsernameExists(ctx context.Context, username string) (b
 	return r.client.User.Query().
 		Where(user.UsernameEQ(username)).
 		Exist(ctx)
+}
+
+// FindByIdentifier finds a user by username OR email.
+// This is used for login where the identifier can be either.
+func (r *UserRepository) FindByIdentifier(ctx context.Context, identifier string) (*ent.User, error) {
+	userRecord, err := r.client.User.Query().
+		Where(user.Or(
+			user.UsernameEQ(identifier),
+			user.EmailEQ(identifier),
+		)).
+		Only(ctx)
+	if err != nil {
+		return nil, err // Caller will check ent.IsNotFound
+	}
+	return userRecord, nil
+}
+
+// UpdateLoginHistory updates the user's last login timestamp and IP address.
+func (r *UserRepository) UpdateLoginHistory(ctx context.Context, userID int64, clientIP string) error {
+	return r.client.User.UpdateOneID(userID).
+		SetLastLoginAt(time.Now()).
+		SetLastLoginIP(clientIP).
+		Exec(ctx)
 }
 
 // CreateUserParams holds parameters for user creation.

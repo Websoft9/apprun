@@ -37,5 +37,8 @@
   "search.include": {
     "**/.github/chatmodes/**": true,
     "**/.github/agents/**": true
+  },
+  "files.exclude": {
+    "**/.git": false
   }
 }

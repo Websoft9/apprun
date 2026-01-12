@@ -103,3 +103,6 @@ func TestRegister_InvalidUsername(t *testing.T) {
 
 // Note: Full integration tests with database mocks are in integration_test_story18.sh
 // These unit tests focus on validation logic that doesn't require database
+
+// Note: Login tests require database/repository layer (FindByIdentifier)
+// See tests/integration/ for full login flow testing with real database

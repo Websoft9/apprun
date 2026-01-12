@@ -6,7 +6,8 @@ import (
 	"time"
 
 	_ "apprun/docs" // Swagger docs (自动生成)
-	"apprun/internal/jwt"
+	"apprun/internal/password"
+	authmod "apprun/modules/auth"
 	"apprun/modules/config"
 	"apprun/pkg/database"
 	"apprun/pkg/env"
@@ -73,11 +74,12 @@ func run() error {
 	}
 	log.Println("✅ i18n module registered with config center")
 
-	// Register JWT configuration with config center
-	if err := registry.Register("jwt", &jwt.Config{}); err != nil {
+	// Register Auth module configuration with config center
+	// (Auth module includes JWT config as auth.jwt)
+	if err := registry.Register("auth", &authmod.Config{}); err != nil {
 		return err
 	}
-	log.Println("✅ JWT module registered with config center")
+	log.Println("✅ Auth module registered with config center")
 
 	// Phase 1.5: Initialize i18n Infrastructure
 	// i18n system is initialized before business modules to support localized messages
@@ -117,6 +119,17 @@ func run() error {
 		log.Println("⚠️  Config API routes will not be registered")
 	} else {
 		log.Println("✅ Config service initialized with DB support")
+	}
+
+	// Phase 3.5: Apply Auth Module Configuration
+	// Load auth configuration and apply bcrypt cost setting
+	authConfig := authmod.DefaultConfig()
+	// TODO: Load from config service when dynamic config loading is implemented
+	// For now, use default config or environment variables via Viper
+	if err := password.SetCost(authConfig.Security.BcryptCost); err != nil {
+		log.Printf("⚠️  Warning: Invalid bcrypt cost %d, using default: %v", authConfig.Security.BcryptCost, err)
+	} else {
+		log.Printf("✅ Bcrypt cost set to %d", authConfig.Security.BcryptCost)
 	}
 
 	// Phase 4: Initialize Business Logger (Layer 2 - Runtime Logger)
