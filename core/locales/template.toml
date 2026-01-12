@@ -19,14 +19,26 @@ other = "auth.error.invalid_credentials"
 [auth.error.invalid_email]
 other = "auth.error.invalid_email"
 
+[auth.error.invalid_refresh_token]
+other = "auth.error.invalid_refresh_token"
+
+[auth.error.invalid_request]
+other = "auth.error.invalid_request"
+
 [auth.error.invalid_request_body]
 other = "auth.error.invalid_request_body"
 
 [auth.error.invalid_token]
 other = "auth.error.invalid_token"
 
+[auth.error.invalid_token_type]
+other = "auth.error.invalid_token_type"
+
 [auth.error.login_failed]
 other = "auth.error.login_failed"
+
+[auth.error.missing_refresh_token]
+other = "auth.error.missing_refresh_token"
 
 [auth.error.password_required]
 other = "auth.error.password_required"
@@ -34,8 +46,20 @@ other = "auth.error.password_required"
 [auth.error.profile_fetch_failed]
 other = "auth.error.profile_fetch_failed"
 
+[auth.error.refresh_token_expired]
+other = "auth.error.refresh_token_expired"
+
 [auth.error.registration_failed]
 other = "auth.error.registration_failed"
+
+[auth.error.token_generation_failed]
+other = "auth.error.token_generation_failed"
+
+[auth.error.token_refresh_failed]
+other = "auth.error.token_refresh_failed"
+
+[auth.error.token_revoked]
+other = "auth.error.token_revoked"
 
 [auth.error.user_not_found]
 other = "auth.error.user_not_found"

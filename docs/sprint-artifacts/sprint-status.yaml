@@ -1,6 +1,6 @@
 generated: '2026-01-12'
 project: apprun
-last_updated_by: architect-bmad-compliance
+last_updated_by: sm-bob-sprint-planning
 
 development_status:
   # Epic 1: Infrastructure & Foundation
@@ -52,6 +52,12 @@ development_status:
   1-15-go-version-upgrade:
     status: done
     title: Go 版本升级到 1.25.5
+  1-16-redis-cache-package:
+    status: done
+    title: Redis Cache Package
+    sprint: sprint-2
+    priority: P1
+    estimate: 3 SP
   
   # Epic 2: Internationalization & Localization
   epic-2:
@@ -105,6 +111,9 @@ development_status:
   5-3-jwt-middleware:
     status: backlog
     title: JWT Middleware
+  5-4-token-refresh:
+    status: drafted
+    title: Token Refresh Mechanism
   
   # Epic 6: File Storage Service
   epic-6:
