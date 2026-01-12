@@ -6,9 +6,12 @@ import (
 	"time"
 
 	_ "apprun/docs" // Swagger docs (自动生成)
+	"apprun/internal/jwt"
 	"apprun/internal/password"
 	authmod "apprun/modules/auth"
 	"apprun/modules/config"
+	"apprun/pkg/cache"
+	pkgconfig "apprun/pkg/config"
 	"apprun/pkg/database"
 	"apprun/pkg/env"
 	"apprun/pkg/i18n"
@@ -29,6 +32,11 @@ import (
 
 // @license.name    Apache 2.0
 // @license.url     http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Type "Bearer" followed by a space and JWT token.
 
 // @schemes         http https
 func main() {
@@ -52,6 +60,13 @@ func run() error {
 	if err := env.LoadConfigToEnv(configDir); err != nil {
 		log.Printf("⚠️  Warning: Failed to load config file: %v", err)
 		log.Println("⚠️  Using environment variables and code defaults only")
+	}
+
+	// Phase 0.5: Initialize Global Viper for JWT Configuration
+	// Load default.yaml into global Viper instance for JWT TokenService
+	// This ensures jwt.secret is available when TokenService reads config
+	if err := pkgconfig.InitializeGlobalViper(configDir); err != nil {
+		log.Printf("⚠️  Warning: Failed to initialize global Viper: %v", err)
 	}
 
 	// Create context with timeout for startup phase
@@ -110,6 +125,25 @@ func run() error {
 		}
 	}()
 	log.Println("✅ Database connected")
+
+	// Phase 2.5: Initialize Cache Client for JWT Blacklist (Optional)
+	// Cache is used for token blacklist tracking (Story 5.4)
+	// If cache is unavailable, blacklist will be disabled with graceful degradation
+	var cacheClient cache.Client
+
+	cacheCfg := cache.DefaultConfig()
+	cacheClient, err = cache.NewClient(cacheCfg)
+	if err != nil {
+		log.Printf("⚠️  Warning: Cache unavailable: %v", err)
+		log.Println("⚠️  JWT blacklist will be disabled (fail-open mode)")
+		cacheClient = nil // Set to nil for graceful degradation
+	} else {
+		log.Printf("✅ Cache client connected (%s)", cacheCfg.Address())
+	}
+
+	// Initialize JWT blacklist with cache client (handles nil gracefully)
+	viperProvider := pkgconfig.NewViperProvider(nil)
+	jwt.InitBlacklist(cacheClient, viperProvider)
 
 	// Phase 3: Initialize Config Service (Layer 2 - Configuration Center)
 	// Config service manages runtime configurations stored in database

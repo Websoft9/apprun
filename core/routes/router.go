@@ -57,6 +57,9 @@ func SetupRoutes(dbClient *ent.Client, configService *configModule.Service) *chi
 			r.Post("/register", authHdl.Register)
 			r.Post("/login", authHdl.Login)
 
+			// Token refresh endpoint with rate limiting (10 req/hour per IP)
+			r.With(middleware.Throttle(10)).Post("/refresh", authHdl.Refresh)
+
 			// Protected endpoints (require JWT middleware)
 			r.Group(func(r chi.Router) {
 				jwtMiddleware := authMiddleware.NewJWTMiddleware()

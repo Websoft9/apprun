@@ -82,7 +82,7 @@ func BenchmarkLogin_EmailAuth(b *testing.B) {
 		if err != nil {
 			b.Fatalf("Login failed: %v", err)
 		}
-		if resp.Token == "" {
+		if resp.AccessToken == "" {
 			b.Fatal("Token is empty")
 		}
 	}
@@ -114,7 +114,7 @@ func BenchmarkLogin_UsernameAuth(b *testing.B) {
 		if err != nil {
 			b.Fatalf("Login failed: %v", err)
 		}
-		if resp.Token == "" {
+		if resp.AccessToken == "" {
 			b.Fatal("Token is empty")
 		}
 	}
@@ -335,7 +335,7 @@ func TestConcurrentLogin_1000QPS(t *testing.T) {
 
 				if err != nil {
 					atomic.AddInt64(&metrics.FailedRequests, 1)
-				} else if resp.Token != "" {
+				} else if resp.AccessToken != "" {
 					atomic.AddInt64(&metrics.SuccessRequests, 1)
 				} else {
 					atomic.AddInt64(&metrics.FailedRequests, 1)

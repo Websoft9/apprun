@@ -69,11 +69,12 @@ type LoginRequest struct {
 	Password   string `json:"password" binding:"required" example:"SecurePass123"`      // Password
 }
 
-// LoginResponse holds login result with JWT token.
+// LoginResponse holds login result with JWT tokens.
 type LoginResponse struct {
-	Token     string      `json:"token"`      // JWT access token
-	ExpiresAt string      `json:"expires_at"` // Token expiration time (ISO 8601)
-	User      UserProfile `json:"user"`       // User profile data
+	AccessToken  string      `json:"access_token"`  // JWT access token (short-lived)
+	RefreshToken string      `json:"refresh_token"` // JWT refresh token (long-lived)
+	ExpiresIn    int64       `json:"expires_in"`    // Seconds until access token expires
+	User         UserProfile `json:"user"`          // User profile data
 }
 
 // UserProfile represents sanitized user data for API responses.
@@ -289,13 +290,13 @@ func (s *AuthService) Login(ctx context.Context, req *LoginRequest, clientIP str
 		return nil, ErrAccountDisabled
 	}
 
-	// 4. Generate JWT token
-	token, expiresAt, err := s.generateToken(user)
+	// 4. Generate JWT token pair
+	accessToken, refreshToken, expiresAt, err := s.generateTokenPair(user)
 	if err != nil {
-		logger.Error("Failed to generate JWT token",
+		logger.Error("Failed to generate JWT token pair",
 			logger.Field{Key: "user_id", Value: user.ID},
 			logger.Field{Key: "error", Value: err.Error()})
-		return nil, errors.Wrap(err, errors.ErrCodeInternalError, "Failed to generate token")
+		return nil, errors.Wrap(err, errors.ErrCodeInternalError, "Failed to generate tokens")
 	}
 
 	// 5. Update login history (non-blocking)
@@ -306,21 +307,23 @@ func (s *AuthService) Login(ctx context.Context, req *LoginRequest, clientIP str
 		logger.Field{Key: "email", Value: user.Email})
 
 	// 6. Build response
+	expiresIn := int64(time.Until(expiresAt).Seconds())
 	return &LoginResponse{
-		Token:     token,
-		ExpiresAt: expiresAt.Format("2006-01-02T15:04:05Z07:00"),
-		User:      buildUserProfile(user),
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		ExpiresIn:    expiresIn,
+		User:         buildUserProfile(user),
 	}, nil
 }
 
-// generateToken creates a JWT token for the user.
-func (s *AuthService) generateToken(user *ent.User) (string, time.Time, error) {
+// generateTokenPair creates both access and refresh JWT tokens for the user.
+func (s *AuthService) generateTokenPair(user *ent.User) (string, string, time.Time, error) {
 	userClaims := map[string]interface{}{
 		"user_id":  user.ID,
 		"username": user.Username,
 		"email":    user.Email,
 	}
-	return jwt.GenerateToken(user.ID, userClaims)
+	return jwt.GenerateTokenPair(user.ID, userClaims)
 }
 
 // updateLoginHistory updates last_login_at and last_login_ip (async).

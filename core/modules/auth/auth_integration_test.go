@@ -93,14 +93,14 @@ func TestLoginIntegration_SuccessWithEmail(t *testing.T) {
 
 	// Verify
 	require.NoError(t, err)
-	assert.NotEmpty(t, loginResp.Token)
-	assert.NotEmpty(t, loginResp.ExpiresAt)
+	assert.NotEmpty(t, loginResp.AccessToken)
+	assert.NotEmpty(t, loginResp.ExpiresIn)
 	assert.Equal(t, user.Email, loginResp.User.Email)
 	assert.Equal(t, user.Username, *loginResp.User.Username)
 	assert.Equal(t, int8(1), loginResp.User.Status)
 
 	// Verify token is valid
-	claims, err := jwt.ValidateToken(loginResp.Token)
+	claims, err := jwt.ValidateToken(loginResp.AccessToken)
 	require.NoError(t, err)
 	assert.Equal(t, user.ID, claims.UserID)
 	assert.Equal(t, user.Email, claims.Email)
@@ -136,7 +136,7 @@ func TestLoginIntegration_SuccessWithUsername(t *testing.T) {
 
 	// Verify
 	require.NoError(t, err)
-	assert.NotEmpty(t, loginResp.Token)
+	assert.NotEmpty(t, loginResp.AccessToken)
 	assert.Equal(t, user.Username, *loginResp.User.Username)
 }
 
@@ -484,7 +484,7 @@ func TestIntegration_FullLoginFlow(t *testing.T) {
 	require.NoError(t, err)
 
 	// Step 4: Validate JWT token
-	claims, err := jwt.ValidateToken(loginResp.Token)
+	claims, err := jwt.ValidateToken(loginResp.AccessToken)
 	require.NoError(t, err)
 	assert.Equal(t, user.ID, claims.UserID)
 
