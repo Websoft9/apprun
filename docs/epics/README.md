@@ -32,7 +32,7 @@ docs/epics/
 
 | Epic | Status | Priority | Progress | Description |
 |------|--------|----------|----------|-------------|
-| [Infrastructure & Foundation](./1-infrastructure-epic.md) | 🔄 In Progress | P0 | 82% (14/17) | 平台基础设施与核心工具包 |
+| [Infrastructure & Foundation](./1-infrastructure-epic.md) | 🔄 In Progress | P0 | 77% (14/18) | 平台基础设施与核心工具包 |
 | [Configuration Management](./3-config-epic.md) | 🔄 In Progress | P0 | 50% (1/2) | 配置中心与多环境管理 |
 | [Authentication & Authorization](./5-auth-epic.md) | 🔄 In Progress | P1 | 33% (1/3) | 用户认证、授权与权限管理 |
 | [Internationalization & Localization](./2-i18n-epic.md) | 📝 Planning | P1 | 0% (0/4) | 多语言支持与本地化 |

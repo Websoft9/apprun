@@ -20,7 +20,7 @@
 - ✅ 统一的响应、错误处理、日志框架
 - ✅ 数据库防腐层与增量迁移
 - ✅ CI/CD 流水线与代码质量保障
-- ✅ 核心工具包（Server、Env、Database）
+- ✅ 核心工具包（Server、Env、Database、Redis Cache）
 - 🔄 测试框架与 CLI 工具
 - 🔄 重构现有 Handlers
 
@@ -28,7 +28,7 @@
 
 ## Key Stories
 
-### ✅ Completed (14/15)
+### ✅ Completed (14/16)
 - **Story 1.1**: Docker 开发部署环境
 - **Story 1.2**: 统一响应工具包
 - **Story 1.3**: 业务错误包装框架
@@ -41,11 +41,12 @@
 - **Story 1.14**: Database Anti-Corruption Layer
 - **Story 1.15**: Go 1.25.5 升级
 
-### 📝 Pending (4/15)
+### 📝 Pending (5/16)
 - **Story 1.6**: 服务端 CLI 框架（Cobra）
 - **Story 1.8**: 测试框架与工具集
 - **Story 1.9**: 重构现有 Handlers
 - **Story 1.11**: Request Package
+- **Story 1.16**: Redis Cache Package
 
 ---
 
@@ -99,4 +100,4 @@
 
 Infrastructure Epic 是平台的根基，**优先级最高**。所有上层功能都依赖这里的基础能力。
 
-当前进度：**82% 完成** (14/17 stories done)
+当前进度：**77% 完成** (14/18 stories done)
