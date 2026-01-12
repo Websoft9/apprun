@@ -1,7 +1,13 @@
 // Package jwt provides JWT token generation, validation, and authentication utilities.
 package jwt
 
-import "time"
+import (
+	"time"
+
+	"apprun/pkg/env"
+
+	"github.com/google/uuid"
+)
 
 // ============================================================================
 // Module Constants
@@ -67,10 +73,14 @@ type Config struct {
 }
 
 // DefaultConfig returns the default JWT configuration.
-// This can be used when no configuration file is present.
+// Priority: JWT_SECRET env var > code defaults
+// Note: Secret will be loaded from Viper config or environment variable
 func DefaultConfig() *Config {
+	// Check environment variable first
+	secret := env.Get("JWT_SECRET", "")
+
 	return &Config{
-		Secret:                 "", // Must be set via environment variable
+		Secret:                 secret, // Will be overridden by Viper if present in YAML
 		AccessTokenExpiration:  DefaultExpiry,
 		RefreshTokenExpiration: 7 * DefaultExpiry, // 7 days
 		Issuer:                 DefaultIssuer,
@@ -143,4 +153,13 @@ func (lc *LegacyConfig) ToConfig() (*Config, error) {
 		Audience:               DefaultAudience,
 		WhitelistPaths:         lc.WhitelistPaths,
 	}, nil
+}
+
+// ============================================================================
+// Utility Functions
+// ============================================================================
+
+// GenerateTokenID creates a unique identifier for token tracking (blacklist, audit logs).
+func GenerateTokenID() string {
+	return uuid.New().String()
 }

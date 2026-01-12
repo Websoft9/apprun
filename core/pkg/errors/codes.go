@@ -113,6 +113,10 @@ const (
 	ErrCodeAuthAccountDisabled = "AUTH_AUTH_ACCOUNT_DISABLED_004"
 	ErrCodeAuthAccountLocked   = "AUTH_AUTH_ACCOUNT_LOCKED_005"
 	ErrCodeAuthTooManyAttempts = "AUTH_AUTH_TOO_MANY_ATTEMPTS_006"
+	// #nosec G101 -- this is an error code constant, not a credential
+	ErrCodeAuthTokenRevoked = "AUTH_AUTH_TOKEN_REVOKED_007"
+	// #nosec G101 -- this is an error code constant, not a credential
+	ErrCodeAuthInvalidTokenType = "AUTH_AUTH_INVALID_TOKEN_TYPE_008"
 )
 
 // AUTH - Permission errors

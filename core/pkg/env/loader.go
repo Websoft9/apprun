@@ -37,6 +37,11 @@ func LoadConfigToEnv(configDir string) error {
 
 	// Setup viper to read the config file
 	viper.SetConfigFile(configFile)
+
+	// Enable automatic environment variable expansion in config values
+	// This allows ${ENV_VAR} syntax in YAML files
+	viper.AutomaticEnv()
+
 	if err := viper.ReadInConfig(); err != nil {
 		return fmt.Errorf("failed to read config file %s: %w", configFile, err)
 	}
@@ -51,6 +56,27 @@ func LoadConfigToEnv(configDir string) error {
 	// Converts: database.host → DATABASE_HOST
 	if err := loadSectionToEnv("database", viper.Sub("database")); err != nil {
 		return fmt.Errorf("failed to load database config: %w", err)
+	}
+
+	// Load cache configuration dynamically
+	// Converts: cache.host → CACHE_HOST (or REDIS_HOST if env prefers that naming)
+	if cacheSection := viper.Sub("cache"); cacheSection != nil {
+		if err := loadSectionWithAliases("cache", cacheSection, map[string]string{
+			"host":     "REDIS_HOST",
+			"port":     "REDIS_PORT",
+			"password": "REDIS_PASSWORD",
+			"db":       "REDIS_DB",
+		}); err != nil {
+			return fmt.Errorf("failed to load cache config: %w", err)
+		}
+	}
+
+	// Load auth configuration (including JWT secret from auth.jwt.secret)
+	// Converts: auth.jwt.secret → AUTH_JWT_SECRET
+	if authSection := viper.Sub("auth"); authSection != nil {
+		if err := loadNestedSectionToEnv("auth", authSection); err != nil {
+			return fmt.Errorf("failed to load auth config: %w", err)
+		}
 	}
 
 	return nil
@@ -69,6 +95,62 @@ func loadSectionToEnv(group string, section *viper.Viper) error {
 
 	for key, value := range settings {
 		envKey := groupPrefix + "_" + toEnvKey(key)
+		envValue := formatEnvValue(value)
+		setEnvIfNotExists(envKey, envValue)
+	}
+
+	return nil
+}
+
+// loadNestedSectionToEnv loads nested configuration (e.g., auth.jwt, auth.security)
+// Naming convention: {GROUP_UPPERCASE}_{SUBGROUP_UPPERCASE}_{KEY_UPPERCASE}
+// Example: "auth" section with "jwt.secret" → AUTH_JWT_SECRET
+func loadNestedSectionToEnv(group string, section *viper.Viper) error {
+	if section == nil {
+		return nil // Section doesn't exist, skip
+	}
+
+	groupPrefix := toEnvPrefix(group)
+	settings := section.AllSettings()
+
+	for key, value := range settings {
+		// Handle nested maps (e.g., jwt.secret, security.bcrypt_cost)
+		if nested, ok := value.(map[string]interface{}); ok {
+			for nestedKey, nestedValue := range nested {
+				envKey := groupPrefix + "_" + toEnvKey(key) + "_" + toEnvKey(nestedKey)
+				envValue := formatEnvValue(nestedValue)
+				setEnvIfNotExists(envKey, envValue)
+			}
+		} else {
+			// Direct value (not nested)
+			envKey := groupPrefix + "_" + toEnvKey(key)
+			envValue := formatEnvValue(value)
+			setEnvIfNotExists(envKey, envValue)
+		}
+	}
+
+	return nil
+}
+
+// loadSectionWithAliases loads a config section with custom environment variable names
+// This allows mapping cache.host → REDIS_HOST instead of CACHE_HOST for backward compatibility
+func loadSectionWithAliases(group string, section *viper.Viper, aliases map[string]string) error {
+	if section == nil {
+		return nil
+	}
+
+	settings := section.AllSettings()
+
+	for key, value := range settings {
+		// Check if there's a custom alias for this key
+		var envKey string
+		if aliasKey, hasAlias := aliases[key]; hasAlias {
+			envKey = aliasKey
+		} else {
+			// Use standard naming: CACHE_KEY_NAME
+			envKey = toEnvPrefix(group) + "_" + toEnvKey(key)
+		}
+
 		envValue := formatEnvValue(value)
 		setEnvIfNotExists(envKey, envValue)
 	}

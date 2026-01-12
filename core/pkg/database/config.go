@@ -17,6 +17,7 @@ type Config struct {
 }
 
 // DefaultConfig returns default database configuration from environment variables
+// Priority: Environment variables > default.yaml > code defaults
 // Environment variable naming: DATABASE_DRIVER, DATABASE_HOST, DATABASE_PORT, etc.
 // These env vars are set by env.LoadConfigToEnv() from default.yaml
 func DefaultConfig() *Config {
@@ -25,9 +26,9 @@ func DefaultConfig() *Config {
 		Host:        env.Get("DATABASE_HOST", "localhost"),
 		Port:        env.GetInt("DATABASE_PORT", 5432),
 		User:        env.Get("DATABASE_USER", "postgres"),
-		Password:    env.MustGet("DATABASE_PASSWORD"), // Required
+		Password:    env.Get("DATABASE_PASSWORD", ""), // Can be empty for dev, loaded from YAML
 		DBName:      env.Get("DATABASE_DB_NAME", "apprun"),
-		AutoMigrate: env.GetBool("DATABASE_AUTO_MIGRATE", false), // Dev only
+		AutoMigrate: env.GetBool("DATABASE_AUTO_MIGRATE", false),
 	}
 }
 
