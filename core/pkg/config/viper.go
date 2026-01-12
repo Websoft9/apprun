@@ -1,12 +1,52 @@
 package config
 
 import (
+	"fmt"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/spf13/viper"
 )
 
-// ViperProvider wraps Viper to implement the Provider interface.
+// InitializeGlobalViper loads default.yaml into the global Viper instance.
+// This is required for JWT TokenService to read jwt.secret from configuration.
+// Should be called during application bootstrap (Phase 0).
+func InitializeGlobalViper(configDir string) error {
+	configFile := filepath.Join(configDir, "default.yaml")
+
+	// Set config file path
+	viper.SetConfigFile(configFile)
+
+	// Enable automatic environment variable reading
+	viper.AutomaticEnv()
+	// Replace dots with underscores in environment variable names
+	// Example: jwt.secret -> JWT_SECRET
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+
+	// Read the config file
+	if err := viper.ReadInConfig(); err != nil {
+		return fmt.Errorf("failed to read config file %s: %w", configFile, err)
+	}
+
+	// Manually bind environment variables for nested keys that Viper doesn't auto-detect
+	// This is necessary because Viper's AutomaticEnv() doesn't work for nested keys by default
+	_ = viper.BindEnv("auth.jwt.secret", "JWT_SECRET")
+	_ = viper.BindEnv("auth.jwt.access_token_expiration", "JWT_ACCESS_TOKEN_EXPIRATION")
+	_ = viper.BindEnv("auth.jwt.issuer", "JWT_ISSUER")
+	_ = viper.BindEnv("auth.jwt.audience", "JWT_AUDIENCE")
+
+	// Create aliases for JWT config to support both paths:
+	// - auth.jwt.* (YAML config path)
+	// - jwt.* (legacy TokenService path)
+	viper.RegisterAlias("jwt.secret", "auth.jwt.secret")
+	viper.RegisterAlias("jwt.access_token_expiration", "auth.jwt.access_token_expiration")
+	viper.RegisterAlias("jwt.issuer", "auth.jwt.issuer")
+	viper.RegisterAlias("jwt.audience", "auth.jwt.audience")
+	viper.RegisterAlias("jwt.blacklist_enabled", "auth.jwt.blacklist_enabled")
+
+	return nil
+} // ViperProvider wraps Viper to implement the Provider interface.
 // This adapter allows Viper to be used interchangeably with other config providers.
 type ViperProvider struct {
 	v *viper.Viper

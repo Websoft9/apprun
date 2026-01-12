@@ -26,10 +26,6 @@ database:
   user: "testuser"
   password: "testpassword123"
   dbname: "testdb"
-poc:
-  enabled: true
-  database: "http://localhost:5432/poc"
-  apikey: "test-api-key-12345"
 `
 	// #nosec G306 -- test file, 0644 is acceptable
 	err := os.WriteFile(filepath.Join(tmpDir, "default.yaml"), []byte(validYAML), 0644)
@@ -42,14 +38,6 @@ poc:
 
 	ctx := context.Background()
 	cfg, err := service.LoadConfig(ctx)
-	if err != nil {
-		t.Logf("LoadConfig error: %v", err)
-		if cfg != nil {
-			t.Logf("POC.APIKey: '%s'", cfg.POC.APIKey)
-			t.Logf("POC.Enabled: %v", cfg.POC.Enabled)
-			t.Logf("POC.Database: '%s'", cfg.POC.Database)
-		}
-	}
 	require.NoError(t, err)
 	assert.NotNil(t, cfg)
 	assert.Equal(t, "test-service", cfg.App.Name)
@@ -103,10 +91,6 @@ database:
   user: "testuser"
   password: "testpassword123"
   dbname: "testdb"
-poc:
-  enabled: false
-  database: "http://localhost:5432/poc"
-  apikey: "test-api-key-12345"
 `
 	// #nosec G306 -- test file, 0644 is acceptable
 	err := os.WriteFile(filepath.Join(tmpDir, "default.yaml"), []byte(defaultYAML), 0644)
@@ -149,10 +133,6 @@ database:
   user: "testuser"
   password: "testpassword123"
   dbname: "testdb"
-poc:
-  enabled: false
-  database: "http://localhost:5432/poc"
-  apikey: "test-api-key-12345"
 `
 	// #nosec G306 -- test file, 0644 is acceptable
 	err := os.WriteFile(filepath.Join(tmpDir, "default.yaml"), []byte(defaultYAML), 0644)
@@ -190,10 +170,6 @@ database:
   user: "testuser"
   password: "testpassword123"
   dbname: "testdb"
-poc:
-  enabled: false
-  database: "http://localhost:5432/poc"
-  apikey: "test-api-key-12345"
 `
 	// #nosec G306 -- test file, 0644 is acceptable
 	err := os.WriteFile(filepath.Join(tmpDir, "default.yaml"), []byte(defaultYAML), 0644)
@@ -210,17 +186,17 @@ poc:
 	require.NoError(t, err)
 
 	// 先设置动态配置
-	err = service.UpdateConfig(ctx, "poc.enabled", "true")
+	err = service.UpdateConfig(ctx, "app.name", "updated-name")
 	require.NoError(t, err)
 
 	// 删除动态配置
-	err = service.DeleteDynamicConfig(ctx, "poc.enabled")
+	err = service.DeleteDynamicConfig(ctx, "app.name")
 	require.NoError(t, err)
 
 	// 验证已删除（应回退到默认值）
-	value, source, err := service.GetConfigValue(ctx, "poc.enabled")
+	value, source, err := service.GetConfigValue(ctx, "app.name")
 	require.NoError(t, err)
-	assert.NotEqual(t, "true", value) // 应该不再是数据库中的 "true"
+	assert.NotEqual(t, "updated-name", value) // 应该不再是数据库中的 "updated-name"
 	assert.NotEqual(t, "database", source)
 }
 
@@ -238,9 +214,6 @@ func TestService_GetAllowedDynamicKeys(t *testing.T) {
 
 	// 验证包含已知的 db:true 键
 	assert.Contains(t, keys, "app.name")
-	assert.Contains(t, keys, "poc.enabled")
-	assert.Contains(t, keys, "poc.database")
-	assert.Contains(t, keys, "poc.api_key")
 
 	// 验证不包含 db:false 键
 	assert.NotContains(t, keys, "app.version")

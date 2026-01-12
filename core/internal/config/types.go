@@ -20,9 +20,15 @@ type Config struct {
 		DBName   string `yaml:"dbname" validate:"required" default:"apprun" db:"false"`
 	} `yaml:"database" validate:"required"`
 
-	POC struct {
-		Enabled  bool   `yaml:"enabled" default:"true" db:"true"`
-		Database string `yaml:"database" validate:"required,url" default:"postgres://user:pass@localhost:5432/apprun_poc" db:"true"`
-		APIKey   string `yaml:"api_key" validate:"required,min=10" db:"true"`
-	} `yaml:"poc" validate:"required"`
+	Cache struct {
+		Host       string `yaml:"host" mapstructure:"host" validate:"required" default:"localhost" db:"false"`
+		Port       string `yaml:"port" mapstructure:"port" validate:"required" default:"6379" db:"false"`
+		Password   string `yaml:"password" mapstructure:"password" default:"" db:"false"`
+		DB         int    `yaml:"db" mapstructure:"db" validate:"min=0,max=15" default:"0" db:"false"`
+		PoolSize   int    `yaml:"pool_size" mapstructure:"pool_size" validate:"min=1" default:"10" db:"false"`
+		Timeout    string `yaml:"timeout" mapstructure:"timeout" validate:"required" default:"2s" db:"false"`
+		MaxRetries int    `yaml:"max_retries" mapstructure:"max_retries" validate:"min=0" default:"3" db:"false"`
+		FailOpen   bool   `yaml:"fail_open" mapstructure:"fail_open" default:"true" db:"false"`
+		TLSEnabled bool   `yaml:"tls_enabled" mapstructure:"tls_enabled" default:"false" db:"false"`
+	} `yaml:"cache" validate:"required"`
 }

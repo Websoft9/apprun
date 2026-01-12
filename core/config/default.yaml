@@ -3,19 +3,30 @@ app:
   version: "1.0.0"
   timezone: "Asia/Shanghai"  # or "America/New_York", "Europe/London"
 
+# Database configuration
+# Environment variables override these values: DATABASE_HOST, DATABASE_PORT, DATABASE_PASSWORD, etc.
 database:
   driver: postgres
   host: localhost
   port: 5432
   user: apprun
-  password: "dev_password_123"
+  password: "dev_password_123"      # Development default, use DATABASE_PASSWORD env var for production
   db_name: apprun_dev
-  auto_migrate: false  # Set to true for dev only; production must be false
+  auto_migrate: false
 
-poc:
-  enabled: true
-  database: "postgres://user:pass@localhost:5432/apprun_poc"
-  apikey: "poc-api-key-123456"
+# Redis/Cache configuration  
+# Environment variables override these values: REDIS_HOST, REDIS_PORT, REDIS_PASSWORD, etc.
+cache:
+  host: localhost
+  port: "6379"
+  password: ""                      # Optional, use REDIS_PASSWORD env var if needed
+  db: 0
+  pool_size: 10
+  timeout: 2s
+  max_retries: 3
+  fail_open: true
+  tls_enabled: false
+
 
 logger:
   level: info
@@ -30,16 +41,24 @@ i18n:
 
 # Authentication configuration (managed by modules/auth/config.go)
 # See modules/auth/config.go for full config struct with validation tags
+# NOTE: JWT secret and other infrastructure configs are loaded from environment variables
+# Set JWT_SECRET environment variable (must be ≥32 characters for security)
+# Authentication configuration
+# Environment variables override these values: JWT_SECRET (recommended for production)
 auth:
   jwt:
-    secret: ${JWT_SECRET}  # Must be set via environment variable (≥32 characters, 256 bits)
+    secret: "dev-jwt-secret-must-be-at-least-32-characters-long"  # Development default, use JWT_SECRET env var for production
     access_token_expiration: 24h   # Access token expiration time (db:"true" - updatable)
     refresh_token_expiration: 168h # Refresh token expiration (7 days, for future use)
     issuer: "apprun-platform"      # Token issuer (db:"false" - infrastructure)
     audience: "apprun-api"         # Token audience (db:"false" - infrastructure)
+    blacklist_enabled: true        # Enable token blacklist for refresh tokens (requires Redis)
     whitelist_paths:               # Paths that bypass JWT authentication (db:"true" - updatable)
       - /api/v1/auth/register
       - /api/v1/auth/login
+      - /api/auth/register
+      - /api/auth/login
+      - /api/auth/refresh
       - /health
       - /metrics
   security:
