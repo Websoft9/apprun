@@ -147,6 +147,76 @@
                 }
             }
         },
+        "/api/auth/refresh": {
+            "post": {
+                "description": "Exchange refresh token for new access/refresh token pair",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Refresh access token",
+                "parameters": [
+                    {
+                        "description": "Refresh token",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.RefreshRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handler.RefreshResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Missing or invalid refresh token",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Token expired, invalid type, or blacklisted",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "Account disabled",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/auth/register": {
             "post": {
                 "description": "Create a new user account with email and password",
@@ -523,6 +593,35 @@
                 }
             }
         },
+        "handler.RefreshRequest": {
+            "type": "object",
+            "required": [
+                "refresh_token"
+            ],
+            "properties": {
+                "refresh_token": {
+                    "type": "string",
+                    "example": "eyJhbGc..."
+                }
+            }
+        },
+        "handler.RefreshResponse": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "description": "New JWT access token",
+                    "type": "string"
+                },
+                "expires_in": {
+                    "description": "Seconds until access token expires",
+                    "type": "integer"
+                },
+                "refresh_token": {
+                    "description": "New JWT refresh token",
+                    "type": "string"
+                }
+            }
+        },
         "handlers.HealthResponse": {
             "type": "object",
             "properties": {
@@ -591,12 +690,16 @@
         "service.LoginResponse": {
             "type": "object",
             "properties": {
-                "expires_at": {
-                    "description": "Token expiration time (ISO 8601)",
+                "access_token": {
+                    "description": "JWT access token (short-lived)",
                     "type": "string"
                 },
-                "token": {
-                    "description": "JWT access token",
+                "expires_in": {
+                    "description": "Seconds until access token expires",
+                    "type": "integer"
+                },
+                "refresh_token": {
+                    "description": "JWT refresh token (long-lived)",
                     "type": "string"
                 },
                 "user": {
@@ -716,6 +819,14 @@
                     "type": "string"
                 }
             }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "description": "Type \"Bearer\" followed by a space and JWT token.",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }

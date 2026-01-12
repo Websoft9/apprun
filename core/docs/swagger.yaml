@@ -53,6 +53,26 @@ definitions:
         example: "true"
         type: string
     type: object
+  handler.RefreshRequest:
+    properties:
+      refresh_token:
+        example: eyJhbGc...
+        type: string
+    required:
+    - refresh_token
+    type: object
+  handler.RefreshResponse:
+    properties:
+      access_token:
+        description: New JWT access token
+        type: string
+      expires_in:
+        description: Seconds until access token expires
+        type: integer
+      refresh_token:
+        description: New JWT refresh token
+        type: string
+    type: object
   handlers.HealthResponse:
     properties:
       service:
@@ -100,11 +120,14 @@ definitions:
     type: object
   service.LoginResponse:
     properties:
-      expires_at:
-        description: Token expiration time (ISO 8601)
+      access_token:
+        description: JWT access token (short-lived)
         type: string
-      token:
-        description: JWT access token
+      expires_in:
+        description: Seconds until access token expires
+        type: integer
+      refresh_token:
+        description: JWT refresh token (long-lived)
         type: string
       user:
         allOf:
@@ -275,6 +298,49 @@ paths:
       security:
       - BearerAuth: []
       summary: Get current user profile
+      tags:
+      - auth
+  /api/auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Exchange refresh token for new access/refresh token pair
+      parameters:
+      - description: Refresh token
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.RefreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/handler.RefreshResponse'
+              type: object
+        "400":
+          description: Missing or invalid refresh token
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Token expired, invalid type, or blacklisted
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: Account disabled
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Refresh access token
       tags:
       - auth
   /api/auth/register:
@@ -485,4 +551,10 @@ paths:
 schemes:
 - http
 - https
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

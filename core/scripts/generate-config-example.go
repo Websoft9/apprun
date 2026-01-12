@@ -10,6 +10,8 @@ import (
 
 	authmod "apprun/modules/auth"
 	"apprun/modules/config"
+	"apprun/pkg/cache"
+	"apprun/pkg/database"
 	"apprun/pkg/i18n"
 	"apprun/pkg/logger"
 	"apprun/pkg/server"
@@ -35,7 +37,14 @@ func main() {
 		fatal("Failed to register server: %v", err)
 	}
 
-	// Note: Database module is NOT registered (bootstrap circular dependency)
+	// Infrastructure modules (database and cache are not registered in main.go
+	// but should appear in config.example for documentation purposes)
+	if err := registry.Register("database", &database.Config{}); err != nil {
+		fatal("Failed to register database: %v", err)
+	}
+	if err := registry.Register("cache", &cache.Config{}); err != nil {
+		fatal("Failed to register cache: %v", err)
+	}
 
 	// Generate config.example
 	output, err := generateConfigExample(registry)
