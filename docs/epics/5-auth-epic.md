@@ -41,6 +41,12 @@
 
 ### 2.1 架构设计
 
+#### 核心理念：虚拟资源中心 (Virtual Resource Center)
+AppRun 采用 **逻辑多租户** 架构，而非物理隔离。
+- **Project** 是权限和资源的引力中心。
+- **RBAC with Domains**: 采用 Casbin 的 `(sub, dom, obj, act)` 模型，其中 `dom` 为 `project_id`。
+- **Context Isolation**: 身份认证解决 "你是谁"，项目上下文解决 "你在哪里"，权限引擎解决 "你能做什么"。
+
 #### 技术栈
 - **bcrypt**: 密码哈希 (golang.org/x/crypto/bcrypt)
 - **JWT**: Token 认证 (github.com/golang-jwt/jwt/v5)

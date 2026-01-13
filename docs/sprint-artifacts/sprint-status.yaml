@@ -114,6 +114,9 @@ development_status:
   5-4-token-refresh:
     status: drafted
     title: Token Refresh Mechanism
+  5-5-rbac-permissions:
+    status: ready-for-dev
+    title: RBAC 权限控制
   
   # Epic 6: File Storage Service
   epic-6:

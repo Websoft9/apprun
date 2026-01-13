@@ -13,10 +13,10 @@ project_name: 'apprun'
 user_name: 'Root'
 date: '2025-12-24'
 status: 'active'
-version: '5.0-bmad-compliant'
+version: '6.0-bmad-compliant'
 ---
 
-# Product Requirements Document - apprun (BMad v5.0)
+# Product Requirements Document - apprun (BMad v6.0)
 
 **Author:** Root  
 **Date:** 2025-12-24  
