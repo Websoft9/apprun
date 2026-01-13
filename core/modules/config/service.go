@@ -7,7 +7,6 @@ import (
 	"reflect"
 	"strings"
 
-	"apprun/internal/config"
 	"apprun/pkg/errors"
 
 	"github.com/go-playground/validator/v10"
@@ -18,7 +17,7 @@ type Service struct {
 	loader    *Loader
 	provider  ConfigProvider
 	validator *validator.Validate
-	cfg       *config.Config // 缓存的配置实例
+	cfg       *Config // 缓存的配置实例
 }
 
 // NewService 创建配置服务
@@ -31,7 +30,7 @@ func NewService(loader *Loader, provider ConfigProvider) *Service {
 }
 
 // LoadConfig 加载配置（启动时调用）
-func (s *Service) LoadConfig(ctx context.Context) (*config.Config, error) {
+func (s *Service) LoadConfig(ctx context.Context) (*Config, error) {
 	cfg, err := s.loader.Load(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load config: %w", err)
@@ -47,7 +46,7 @@ func (s *Service) LoadConfig(ctx context.Context) (*config.Config, error) {
 }
 
 // GetConfig 获取当前配置（用于 API）
-func (s *Service) GetConfig() *config.Config {
+func (s *Service) GetConfig() *Config {
 	return s.cfg
 }
 

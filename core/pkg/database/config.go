@@ -7,13 +7,13 @@ import (
 // Config holds database connection configuration
 // This is infrastructure configuration, NOT managed by config center
 type Config struct {
-	Driver      string `yaml:"driver" validate:"oneof=postgres mysql" default:"postgres" db:"false"`
-	Host        string `yaml:"host" validate:"required" default:"localhost" db:"false"`
-	Port        int    `yaml:"port" validate:"required,min=1,max=65535" default:"5432" db:"false"`
-	User        string `yaml:"user" validate:"required" default:"postgres" db:"false"`
-	Password    string `yaml:"password" validate:"required,min=8" db:"false"`
-	DBName      string `yaml:"db_name" validate:"required" default:"apprun" db:"false"`
-	AutoMigrate bool   `yaml:"auto_migrate" default:"false" db:"false"` // Dev only, production should be false
+	Driver      string `mapstructure:"driver" json:"driver" validate:"oneof=postgres mysql" default:"postgres" db:"false"`
+	Host        string `mapstructure:"host" json:"host" validate:"required" default:"localhost" db:"false"`
+	Port        int    `mapstructure:"port" json:"port" validate:"required,min=1,max=65535" default:"5432" db:"false"`
+	User        string `mapstructure:"user" json:"user" validate:"required" default:"postgres" db:"false"`
+	Password    string `mapstructure:"password" json:"password" validate:"required,min=8" db:"false"`
+	DBName      string `mapstructure:"db_name" json:"db_name" validate:"required" default:"apprun" db:"false"`
+	AutoMigrate bool   `mapstructure:"auto_migrate" json:"auto_migrate" default:"false" db:"false"` // Dev only, production should be false
 }
 
 // DefaultConfig returns default database configuration from environment variables

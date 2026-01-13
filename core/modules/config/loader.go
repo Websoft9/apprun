@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"strings"
 
-	"apprun/internal/config"
 	"apprun/pkg/errors"
 
 	"github.com/spf13/viper"
@@ -69,7 +68,7 @@ func NewLoaderWithRegistry(configDir string, provider ConfigProvider, registry *
 
 // extractMetadata 使用反射提取 Config 结构体的标签元数据
 func (l *Loader) extractMetadata() error {
-	cfg := config.Config{}
+	cfg := Config{}
 	t := reflect.TypeOf(cfg)
 
 	return l.walkStruct(t, "")
@@ -156,13 +155,13 @@ func (l *Loader) walkStruct(t reflect.Type, prefix string) error {
 // 优先级：Layer 1 (标签默认值) < Layer 2 (default.yaml) < Layer 3 (专用文件)
 //
 //	< Layer 4 (conf_d) < Layer 5 (数据库) < Layer 6 (环境变量)
-func (l *Loader) Load(ctx context.Context) (*config.Config, error) {
+func (l *Loader) Load(ctx context.Context) (*Config, error) {
 	// Create a fresh viper instance to avoid stale values from previous loads
 	l.viper = viper.New()
 	l.viper.AutomaticEnv()
 	l.viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
-	cfg := &config.Config{}
+	cfg := &Config{}
 
 	// Layer 1: 应用标签默认值
 	if err := l.applyTagDefaults(cfg); err != nil {
@@ -200,7 +199,7 @@ func (l *Loader) Load(ctx context.Context) (*config.Config, error) {
 }
 
 // applyTagDefaults 应用标签默认值（Layer 1）
-func (l *Loader) applyTagDefaults(cfg *config.Config) error {
+func (l *Loader) applyTagDefaults(cfg *Config) error {
 	for key, meta := range l.metadata {
 		if meta.DefaultVal != "" {
 			l.viper.SetDefault(key, meta.DefaultVal)
@@ -275,7 +274,7 @@ func (l *Loader) loadConfD() error {
 }
 
 // applyDatabaseConfig 从数据库覆盖动态配置（Layer 5）
-func (l *Loader) applyDatabaseConfig(ctx context.Context, cfg *config.Config) error {
+func (l *Loader) applyDatabaseConfig(ctx context.Context, cfg *Config) error {
 	if l.provider == nil {
 		return nil // 没有数据库提供者，跳过
 	}

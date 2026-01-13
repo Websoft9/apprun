@@ -31,10 +31,14 @@
 > 覆盖规则：高优先级覆盖低优先级，同级文件按字母序加载（后覆盖前）。database,server 配置仅支持存放到 default.yaml
 
 ### 2. 结构体 Tag 支持
+- [x] 支持 `mapstructure` tag：Viper 配置加载时使用（`mapstructure:"host"`）
+- [x] 支持 `json` tag：JSON 序列化时使用，确保 API 响应字段名与 YAML 配置一致（`json:"host"`）
 - [x] 支持 `default` tag：自动设置默认值（`default:"apprun"`）
 - [x] 支持 `db` tag：控制配置可否存储到数据库（`db:"false"` 禁止存储）
 - [x] 支持 `validate` tag：自动校验配置值（`validate:"required,min=1"`）
 - [x] 使用反射自动处理 tag（启动时一次性遍历）
+
+> **标签说明**：`mapstructure` 用于配置加载（YAML/ENV → Go 结构体），`json` 用于 JSON 序列化（Go 结构体 → JSON API）。两者作用不同，不可互相替代。
 
 ### 3. 环境变量自动映射
 - [x] 无环境变量前缀
@@ -74,20 +78,22 @@
   - 支持 `default` tag：默认值
   - 支持 `db` tag：控制是否可存储到数据库（`db:"false"` 禁止）
   - 支持 `validate` tag：配置验证规则
+  - 模块在各自包中定义配置一次，可独立运行，全局配置通过嵌入引用
+  - 使用 `mapstructure` 标签
 
 **职责**: 全局配置结构体定义（单一来源），通过 tag 声明配置元数据
 
 **示例**:
 ```go
 type Config struct {
-    App      AppConfig      `yaml:"app"`
-    Database DatabaseConfig `yaml:"database" db:"false"` // 不可存DB
+    App      AppConfig      `mapstructure:"app" json:"app"`
+    Database DatabaseConfig `mapstructure:"database" json:"database" db:"false"` // 不可存DB
 }
 
 type AppConfig struct {
-    Name    string `yaml:"name" default:"apprun" db:"false"`
-    Theme   string `yaml:"theme" default:"light" db:"true"` // 可存DB
-    Timeout int    `yaml:"timeout" default:"30" validate:"min=1,max=300"`
+    Name    string `mapstructure:"name" json:"name" default:"apprun" db:"false"`
+    Theme   string `mapstructure:"theme" json:"theme" default:"light" db:"true"` // 可存DB
+    Timeout int    `mapstructure:"timeout" json:"timeout" default:"30" validate:"min=1,max=300"`
 }
 ```
 
@@ -195,10 +201,11 @@ type AppConfig struct {
 
 **默认规则**：
 - 结构体字段名 → 小写（`UserName` → `username`）
-- 嵌套结构体需要 `yaml:"key"` tag 定义根键
+- 嵌套结构体需要 `mapstructure:"key"` tag 定义根键
 
 **推荐实践**：
-- ✅ 使用 `yaml` tag 明确指定 YAML 键名，避免依赖默认转换
+- ✅ 使用 `mapstructure` tag 明确指定 YAML 键名，避免依赖默认转换
+- ✅ 使用 `json` tag 确保 API 响应字段名与 YAML 配置键名一致
 - ✅ YAML 键名使用 snake_case（`user_name`）或无下划线（`username`）
 - ⚠️ 避免下划线在嵌套键中（Viper 解析歧义）
 
@@ -206,13 +213,13 @@ type AppConfig struct {
 ```go
 // internal/config/types.go
 type Config struct {
-    User UserConfig `yaml:"user"` // ✅ 必须：嵌套结构体需要 yaml tag
+    User UserConfig `mapstructure:"user" json:"user"` // ✅ 必须：嵌套结构体需要 tag
 }
 
 type UserConfig struct {
-    UserName     string `yaml:"user_name"`     // ✅ 推荐：明确 tag
-    MaxAttempts  int    `yaml:"max_attempts"`  // ✅ 推荐：snake_case
-    IsActive     bool   `yaml:"is_active"`     // ✅ 推荐：明确 tag
+    UserName     string `mapstructure:"user_name" json:"user_name"`         // ✅ 推荐：明确 tag
+    MaxAttempts  int    `mapstructure:"max_attempts" json:"max_attempts"`   // ✅ 推荐：snake_case
+    IsActive     bool   `mapstructure:"is_active" json:"is_active"`         // ✅ 推荐：明确 tag
     
     // ❌ 不推荐：依赖默认转换
     // UserName string  // 默认转换为 "username"，可能与预期不符
@@ -311,6 +318,19 @@ type Config struct {
 
 ### 架构总览
 
+### 配置层次
+```
+default.yaml (配置文件)
+    ↓
+InitializeGlobalViper() (加载到 Viper)
+    ↓
+LoadGlobalConfig(&cfg) (反序列化到结构体)
+    ↓
+Config.Database, Config.Cache ... (嵌入的模块配置)
+```
+
+### 文件结构
+
 ```
 core/
 ├── internal/config/
@@ -326,6 +346,16 @@ core/
 │
 └── ent/schema/
     └── configitem.go         # Ent Schema (key, value, is_dynamic) - Layer 3
+├── pkg/
+│   ├── config/
+│   │   └── viper.go          # Viper 加载逻辑
+│   ├── database/
+│   │   └── config.go         # database.Config 定义
+│   └── cache/
+│       └── config.go         # cache.Config 定义
+└── config/
+    └── default.yaml          # YAML 配置文件
+```
 ```
 
 **启动流程**:

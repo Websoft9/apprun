@@ -46,7 +46,29 @@ func InitializeGlobalViper(configDir string) error {
 	viper.RegisterAlias("jwt.blacklist_enabled", "auth.jwt.blacklist_enabled")
 
 	return nil
-} // ViperProvider wraps Viper to implement the Provider interface.
+}
+
+// LoadGlobalConfig loads the entire configuration from Viper into the provided Config struct.
+// This allows modules to access their embedded configurations after initialization.
+// The config parameter should be a pointer to the global Config struct.
+//
+// Viper uses mapstructure for unmarshaling by default.
+//
+// Example usage:
+//
+//	var globalCfg config.Config
+//	if err := pkgconfig.LoadGlobalConfig(&globalCfg); err != nil {
+//	    log.Fatal(err)
+//	}
+//	// Now globalCfg.Database, globalCfg.Cache are populated from default.yaml
+func LoadGlobalConfig(cfg interface{}) error {
+	if err := viper.Unmarshal(cfg); err != nil {
+		return fmt.Errorf("failed to unmarshal config: %w", err)
+	}
+	return nil
+}
+
+// ViperProvider wraps Viper to implement the Provider interface.
 // This adapter allows Viper to be used interchangeably with other config providers.
 type ViperProvider struct {
 	v *viper.Viper

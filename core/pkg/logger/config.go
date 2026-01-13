@@ -5,8 +5,8 @@ package logger
 // Config holds logger configuration
 // Follows internal/config/types.go standards for consistency
 type Config struct {
-	Level  Level        `yaml:"level" default:"info" db:"true" validate:"oneof=debug info warn error"`
-	Output OutputConfig `yaml:"output"`
+	Level  Level        `mapstructure:"level" json:"level" default:"info" db:"true" validate:"oneof=debug info warn error"`
+	Output OutputConfig `mapstructure:"output" json:"output"`
 }
 
 // OutputConfig defines output targets
@@ -16,7 +16,7 @@ type OutputConfig struct {
 	// - "stdout": standard output
 	// - "stderr": standard error
 	// - "file:/path/to/file.log": file path
-	Targets []string `yaml:"targets" default:"stdout" db:"true" validate:"min=1,dive,oneof=stdout stderr file"`
+	Targets []string `mapstructure:"targets" json:"targets" default:"stdout" db:"true" validate:"min=1,dive,oneof=stdout stderr file"`
 }
 
 // DefaultConfig returns the default logger configuration

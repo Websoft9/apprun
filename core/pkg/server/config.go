@@ -12,12 +12,12 @@ import (
 // This is infrastructure configuration, NOT managed by config center
 // Values should be provided via environment variables at startup
 type Config struct {
-	HTTPPort            string        `yaml:"http_port" validate:"required,min=1,max=5" default:"8080" db:"false"`
-	HTTPSPort           string        `yaml:"https_port" validate:"required,min=1,max=5" default:"8443" db:"false"`
-	SSLCertFile         string        `yaml:"ssl_cert_file" validate:"omitempty,file" default:"" db:"false"`
-	SSLKeyFile          string        `yaml:"ssl_key_file" validate:"omitempty,file" default:"" db:"false"`
-	ShutdownTimeout     time.Duration `yaml:"shutdown_timeout" validate:"required,min=1s" default:"30s" db:"false"`
-	EnableHTTPWithHTTPS bool          `yaml:"enable_http_with_https" default:"true" db:"false"`
+	HTTPPort            string        `mapstructure:"http_port" json:"http_port" validate:"required,min=1,max=5" default:"8080" db:"false"`
+	HTTPSPort           string        `mapstructure:"https_port" json:"https_port" validate:"required,min=1,max=5" default:"8443" db:"false"`
+	SSLCertFile         string        `mapstructure:"ssl_cert_file" json:"ssl_cert_file" validate:"omitempty,file" default:"" db:"false"`
+	SSLKeyFile          string        `mapstructure:"ssl_key_file" json:"ssl_key_file" validate:"omitempty,file" default:"" db:"false"`
+	ShutdownTimeout     time.Duration `mapstructure:"shutdown_timeout" json:"shutdown_timeout" validate:"required,min=1s" default:"30s" db:"false"`
+	EnableHTTPWithHTTPS bool          `mapstructure:"enable_http_with_https" json:"enable_http_with_https" default:"true" db:"false"`
 }
 
 // DefaultConfig returns default server configuration

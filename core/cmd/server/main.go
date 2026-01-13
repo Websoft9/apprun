@@ -78,23 +78,9 @@ func run() error {
 	// Note: Infrastructure configs (server, database) are NOT registered here
 	// They are managed via environment variables loaded in Phase 0
 	registry := config.NewRegistry()
-	if err := registry.Register("logger", &logger.Config{}); err != nil {
+	if err := config.RegisterDefaultModules(registry); err != nil {
 		return err
 	}
-	log.Println("✅ Logger module registered with config center")
-
-	// Register i18n configuration with config center
-	if err := registry.Register("i18n", &i18n.Config{}); err != nil {
-		return err
-	}
-	log.Println("✅ i18n module registered with config center")
-
-	// Register Auth module configuration with config center
-	// (Auth module includes JWT config as auth.jwt)
-	if err := registry.Register("auth", &authmod.Config{}); err != nil {
-		return err
-	}
-	log.Println("✅ Auth module registered with config center")
 
 	// Phase 1.5: Initialize i18n Infrastructure
 	// i18n system is initialized before business modules to support localized messages

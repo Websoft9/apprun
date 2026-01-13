@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 
-	internalConfig "apprun/internal/config"
 	"apprun/pkg/database"
 	"apprun/pkg/errors"
 )
@@ -39,7 +38,7 @@ func NewBootstrapWithRegistry(configDir string, registry *ConfigRegistry) *Boots
 
 // LoadInitialConfig 加载初始配置（不依赖数据库）
 // 这是启动流程的第一步，用于获取数据库连接信息
-func (b *Bootstrap) LoadInitialConfig(ctx context.Context) (*internalConfig.Config, error) {
+func (b *Bootstrap) LoadInitialConfig(ctx context.Context) (*Config, error) {
 	// 创建没有数据库支持的加载器（但支持模块注册）
 	loader, err := NewLoaderWithRegistry(b.configDir, nil, b.registry)
 	if err != nil {

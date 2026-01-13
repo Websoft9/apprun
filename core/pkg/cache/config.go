@@ -34,15 +34,15 @@ const (
 // Config holds Redis cache configuration.
 // This is infrastructure configuration, NOT managed by config center (bootstrap dependency)
 type Config struct {
-	Host       string        `json:"host" yaml:"host" validate:"required" default:"localhost" db:"false"`    // Redis server host
-	Port       string        `json:"port" yaml:"port" validate:"required" default:"6379" db:"false"`         // Redis server port
-	Password   string        `json:"password" yaml:"password" default:"" db:"false"`                         // Optional password
-	DB         int           `json:"db" yaml:"db" validate:"min=0,max=15" default:"0" db:"false"`            // Database number (0-15)
-	PoolSize   int           `json:"pool_size" yaml:"pool_size" validate:"min=1" default:"10" db:"false"`    // Connection pool size
-	Timeout    time.Duration `json:"timeout" yaml:"timeout" validate:"min=1s" default:"2s" db:"false"`       // Operation timeout
-	MaxRetries int           `json:"max_retries" yaml:"max_retries" validate:"min=0" default:"3" db:"false"` // Max retry attempts
-	FailOpen   bool          `json:"fail_open" yaml:"fail_open" default:"true" db:"false"`                   // True = fail-open, False = fail-fast
-	TLSEnabled bool          `json:"tls_enabled" yaml:"tls_enabled" default:"false" db:"false"`              // Enable TLS connection
+	Host       string        `mapstructure:"host" json:"host" validate:"required" default:"localhost" db:"false"`    // Redis server host
+	Port       string        `mapstructure:"port" json:"port" validate:"required" default:"6379" db:"false"`         // Redis server port
+	Password   string        `mapstructure:"password" json:"password" default:"" db:"false"`                         // Optional password
+	DB         int           `mapstructure:"db" json:"db" validate:"min=0,max=15" default:"0" db:"false"`            // Database number (0-15)
+	PoolSize   int           `mapstructure:"pool_size" json:"pool_size" validate:"min=1" default:"10" db:"false"`    // Connection pool size
+	Timeout    time.Duration `mapstructure:"timeout" json:"timeout" validate:"min=1s" default:"2s" db:"false"`       // Operation timeout
+	MaxRetries int           `mapstructure:"max_retries" json:"max_retries" validate:"min=0" default:"3" db:"false"` // Max retry attempts
+	FailOpen   bool          `mapstructure:"fail_open" json:"fail_open" default:"true" db:"false"`                   // True = fail-open, False = fail-fast
+	TLSEnabled bool          `mapstructure:"tls_enabled" json:"tls_enabled" default:"false" db:"false"`              // Enable TLS connection
 }
 
 // DefaultConfig returns the default configuration loaded from environment variables.

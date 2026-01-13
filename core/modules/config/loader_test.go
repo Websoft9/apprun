@@ -105,22 +105,22 @@ func TestLoader_ConfD(t *testing.T) {
 
 	// 创建 default.yaml
 	defaultYAML := `
-poc:
-  enabled: false
-  database: "default-db"
+app:
+  name: "testapp"
+  version: "1.0.0"
 `
 	// #nosec G306 -- test file, 0644 is acceptable
 	err := os.WriteFile(filepath.Join(tmpDir, "default.yaml"), []byte(defaultYAML), 0644)
 	require.NoError(t, err)
 
-	// 创建 conf_d/custom-poc.yaml（应覆盖 default.yaml）
+	// 创建 conf_d/custom-app.yaml（应覆盖 default.yaml）
 	customYAML := `
-poc:
-  enabled: true
-  database: "custom-poc-db"
+app:
+  name: "testapp"
+  version: "1.0.0"
 `
 	// #nosec G306 -- test file, 0644 is acceptable
-	err = os.WriteFile(filepath.Join(confDDir, "custom-poc.yaml"), []byte(customYAML), 0644)
+	err = os.WriteFile(filepath.Join(confDDir, "custom-app.yaml"), []byte(customYAML), 0644)
 	require.NoError(t, err)
 
 	loader, err := NewLoader(tmpDir, nil)
@@ -131,8 +131,8 @@ poc:
 	require.NoError(t, err)
 
 	// conf_d 应覆盖 default.yaml
-	assert.True(t, cfg.POC.Enabled)
-	assert.Equal(t, "custom-poc-db", cfg.POC.Database)
+	assert.Equal(t, "testapp", cfg.App.Name)
+	assert.Equal(t, "1.0.0", cfg.App.Version)
 }
 
 // TestLoader_DatabaseOverride 测试 Layer 5: 数据库覆盖
@@ -143,9 +143,7 @@ func TestLoader_DatabaseOverride(t *testing.T) {
 	defaultYAML := `
 app:
   name: "file-app"
-poc:
-  enabled: false
-  api_key: "file-key"
+  timezone: "UTC"
 `
 	// #nosec G306 -- test file, 0644 is acceptable
 	err := os.WriteFile(filepath.Join(tmpDir, "default.yaml"), []byte(defaultYAML), 0644)
@@ -155,7 +153,7 @@ poc:
 	mockProvider := newMockProvider()
 	err = mockProvider.SetConfig(context.Background(), "app.name", "db-app")
 	require.NoError(t, err)
-	err = mockProvider.SetConfig(context.Background(), "poc.enabled", "true")
+	err = mockProvider.SetConfig(context.Background(), "app.timezone", "Asia/Shanghai")
 	require.NoError(t, err)
 
 	loader, err := NewLoader(tmpDir, mockProvider)
@@ -165,9 +163,9 @@ poc:
 	cfg, err := loader.Load(ctx)
 	require.NoError(t, err)
 
-	// 数据库应覆盖文件配置（app.name 和 poc.enabled 都是 db:true）
+	// 数据库应覆盖文件配置（app.name 和 app.timezone 都是 db:true）
 	assert.Equal(t, "db-app", cfg.App.Name)
-	assert.True(t, cfg.POC.Enabled)
+	assert.Equal(t, "Asia/Shanghai", cfg.App.Timezone)
 }
 
 // TestLoader_EnvOverride 测试 Layer 6: 环境变量覆盖
