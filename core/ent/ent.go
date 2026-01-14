@@ -3,7 +3,10 @@
 package ent
 
 import (
+	"apprun/ent/casbinrule"
 	"apprun/ent/configitem"
+	"apprun/ent/project"
+	"apprun/ent/projectmember"
 	"apprun/ent/servers"
 	"apprun/ent/user"
 	"context"
@@ -75,9 +78,12 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			configitem.Table: configitem.ValidColumn,
-			servers.Table:    servers.ValidColumn,
-			user.Table:       user.ValidColumn,
+			casbinrule.Table:    casbinrule.ValidColumn,
+			configitem.Table:    configitem.ValidColumn,
+			project.Table:       project.ValidColumn,
+			projectmember.Table: projectmember.ValidColumn,
+			servers.Table:       servers.ValidColumn,
+			user.Table:          user.ValidColumn,
 		})
 	})
 	return columnCheck(t, c)

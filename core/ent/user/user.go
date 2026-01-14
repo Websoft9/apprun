@@ -49,6 +49,10 @@ const (
 	FieldUpdatedAt = "updated_at"
 	// EdgeServers holds the string denoting the servers edge name in mutations.
 	EdgeServers = "servers"
+	// EdgeOwnedProjects holds the string denoting the owned_projects edge name in mutations.
+	EdgeOwnedProjects = "owned_projects"
+	// EdgeProjectMemberships holds the string denoting the project_memberships edge name in mutations.
+	EdgeProjectMemberships = "project_memberships"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// ServersTable is the table that holds the servers relation/edge.
@@ -58,6 +62,20 @@ const (
 	ServersInverseTable = "servers"
 	// ServersColumn is the table column denoting the servers relation/edge.
 	ServersColumn = "user_servers"
+	// OwnedProjectsTable is the table that holds the owned_projects relation/edge.
+	OwnedProjectsTable = "projects"
+	// OwnedProjectsInverseTable is the table name for the Project entity.
+	// It exists in this package in order to avoid circular dependency with the "project" package.
+	OwnedProjectsInverseTable = "projects"
+	// OwnedProjectsColumn is the table column denoting the owned_projects relation/edge.
+	OwnedProjectsColumn = "owner_id"
+	// ProjectMembershipsTable is the table that holds the project_memberships relation/edge.
+	ProjectMembershipsTable = "project_members"
+	// ProjectMembershipsInverseTable is the table name for the ProjectMember entity.
+	// It exists in this package in order to avoid circular dependency with the "projectmember" package.
+	ProjectMembershipsInverseTable = "project_members"
+	// ProjectMembershipsColumn is the table column denoting the project_memberships relation/edge.
+	ProjectMembershipsColumn = "user_id"
 )
 
 // Columns holds all SQL columns for user fields.
@@ -233,10 +251,52 @@ func ByServers(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newServersStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByOwnedProjectsCount orders the results by owned_projects count.
+func ByOwnedProjectsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newOwnedProjectsStep(), opts...)
+	}
+}
+
+// ByOwnedProjects orders the results by owned_projects terms.
+func ByOwnedProjects(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newOwnedProjectsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByProjectMembershipsCount orders the results by project_memberships count.
+func ByProjectMembershipsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newProjectMembershipsStep(), opts...)
+	}
+}
+
+// ByProjectMemberships orders the results by project_memberships terms.
+func ByProjectMemberships(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newProjectMembershipsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newServersStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(ServersInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, ServersTable, ServersColumn),
+	)
+}
+func newOwnedProjectsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(OwnedProjectsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, OwnedProjectsTable, OwnedProjectsColumn),
+	)
+}
+func newProjectMembershipsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ProjectMembershipsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ProjectMembershipsTable, ProjectMembershipsColumn),
 	)
 }

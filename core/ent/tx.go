@@ -12,8 +12,14 @@ import (
 // Tx is a transactional client that is created by calling Client.Tx().
 type Tx struct {
 	config
+	// CasbinRule is the client for interacting with the CasbinRule builders.
+	CasbinRule *CasbinRuleClient
 	// Configitem is the client for interacting with the Configitem builders.
 	Configitem *ConfigitemClient
+	// Project is the client for interacting with the Project builders.
+	Project *ProjectClient
+	// ProjectMember is the client for interacting with the ProjectMember builders.
+	ProjectMember *ProjectMemberClient
 	// Servers is the client for interacting with the Servers builders.
 	Servers *ServersClient
 	// User is the client for interacting with the User builders.
@@ -149,7 +155,10 @@ func (tx *Tx) Client() *Client {
 }
 
 func (tx *Tx) init() {
+	tx.CasbinRule = NewCasbinRuleClient(tx.config)
 	tx.Configitem = NewConfigitemClient(tx.config)
+	tx.Project = NewProjectClient(tx.config)
+	tx.ProjectMember = NewProjectMemberClient(tx.config)
 	tx.Servers = NewServersClient(tx.config)
 	tx.User = NewUserClient(tx.config)
 }
@@ -161,7 +170,7 @@ func (tx *Tx) init() {
 // of them in order to commit or rollback the transaction.
 //
 // If a closed transaction is embedded in one of the generated entities, and the entity
-// applies a query, for example: Configitem.QueryXXX(), the query will be executed
+// applies a query, for example: CasbinRule.QueryXXX(), the query will be executed
 // through the driver which created this transaction.
 //
 // Note that txDriver is not goroutine safe.

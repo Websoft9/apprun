@@ -11,7 +11,10 @@ import (
 
 	"apprun/ent/migrate"
 
+	"apprun/ent/casbinrule"
 	"apprun/ent/configitem"
+	"apprun/ent/project"
+	"apprun/ent/projectmember"
 	"apprun/ent/servers"
 	"apprun/ent/user"
 
@@ -26,8 +29,14 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
+	// CasbinRule is the client for interacting with the CasbinRule builders.
+	CasbinRule *CasbinRuleClient
 	// Configitem is the client for interacting with the Configitem builders.
 	Configitem *ConfigitemClient
+	// Project is the client for interacting with the Project builders.
+	Project *ProjectClient
+	// ProjectMember is the client for interacting with the ProjectMember builders.
+	ProjectMember *ProjectMemberClient
 	// Servers is the client for interacting with the Servers builders.
 	Servers *ServersClient
 	// User is the client for interacting with the User builders.
@@ -43,7 +52,10 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
+	c.CasbinRule = NewCasbinRuleClient(c.config)
 	c.Configitem = NewConfigitemClient(c.config)
+	c.Project = NewProjectClient(c.config)
+	c.ProjectMember = NewProjectMemberClient(c.config)
 	c.Servers = NewServersClient(c.config)
 	c.User = NewUserClient(c.config)
 }
@@ -136,11 +148,14 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:        ctx,
-		config:     cfg,
-		Configitem: NewConfigitemClient(cfg),
-		Servers:    NewServersClient(cfg),
-		User:       NewUserClient(cfg),
+		ctx:           ctx,
+		config:        cfg,
+		CasbinRule:    NewCasbinRuleClient(cfg),
+		Configitem:    NewConfigitemClient(cfg),
+		Project:       NewProjectClient(cfg),
+		ProjectMember: NewProjectMemberClient(cfg),
+		Servers:       NewServersClient(cfg),
+		User:          NewUserClient(cfg),
 	}, nil
 }
 
@@ -158,18 +173,21 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:        ctx,
-		config:     cfg,
-		Configitem: NewConfigitemClient(cfg),
-		Servers:    NewServersClient(cfg),
-		User:       NewUserClient(cfg),
+		ctx:           ctx,
+		config:        cfg,
+		CasbinRule:    NewCasbinRuleClient(cfg),
+		Configitem:    NewConfigitemClient(cfg),
+		Project:       NewProjectClient(cfg),
+		ProjectMember: NewProjectMemberClient(cfg),
+		Servers:       NewServersClient(cfg),
+		User:          NewUserClient(cfg),
 	}, nil
 }
 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		Configitem.
+//		CasbinRule.
 //		Query().
 //		Count(ctx)
 func (c *Client) Debug() *Client {
@@ -191,30 +209,173 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
-	c.Configitem.Use(hooks...)
-	c.Servers.Use(hooks...)
-	c.User.Use(hooks...)
+	for _, n := range []interface{ Use(...Hook) }{
+		c.CasbinRule, c.Configitem, c.Project, c.ProjectMember, c.Servers, c.User,
+	} {
+		n.Use(hooks...)
+	}
 }
 
 // Intercept adds the query interceptors to all the entity clients.
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
-	c.Configitem.Intercept(interceptors...)
-	c.Servers.Intercept(interceptors...)
-	c.User.Intercept(interceptors...)
+	for _, n := range []interface{ Intercept(...Interceptor) }{
+		c.CasbinRule, c.Configitem, c.Project, c.ProjectMember, c.Servers, c.User,
+	} {
+		n.Intercept(interceptors...)
+	}
 }
 
 // Mutate implements the ent.Mutator interface.
 func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
+	case *CasbinRuleMutation:
+		return c.CasbinRule.mutate(ctx, m)
 	case *ConfigitemMutation:
 		return c.Configitem.mutate(ctx, m)
+	case *ProjectMutation:
+		return c.Project.mutate(ctx, m)
+	case *ProjectMemberMutation:
+		return c.ProjectMember.mutate(ctx, m)
 	case *ServersMutation:
 		return c.Servers.mutate(ctx, m)
 	case *UserMutation:
 		return c.User.mutate(ctx, m)
 	default:
 		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
+	}
+}
+
+// CasbinRuleClient is a client for the CasbinRule schema.
+type CasbinRuleClient struct {
+	config
+}
+
+// NewCasbinRuleClient returns a client for the CasbinRule from the given config.
+func NewCasbinRuleClient(c config) *CasbinRuleClient {
+	return &CasbinRuleClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `casbinrule.Hooks(f(g(h())))`.
+func (c *CasbinRuleClient) Use(hooks ...Hook) {
+	c.hooks.CasbinRule = append(c.hooks.CasbinRule, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `casbinrule.Intercept(f(g(h())))`.
+func (c *CasbinRuleClient) Intercept(interceptors ...Interceptor) {
+	c.inters.CasbinRule = append(c.inters.CasbinRule, interceptors...)
+}
+
+// Create returns a builder for creating a CasbinRule entity.
+func (c *CasbinRuleClient) Create() *CasbinRuleCreate {
+	mutation := newCasbinRuleMutation(c.config, OpCreate)
+	return &CasbinRuleCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of CasbinRule entities.
+func (c *CasbinRuleClient) CreateBulk(builders ...*CasbinRuleCreate) *CasbinRuleCreateBulk {
+	return &CasbinRuleCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *CasbinRuleClient) MapCreateBulk(slice any, setFunc func(*CasbinRuleCreate, int)) *CasbinRuleCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &CasbinRuleCreateBulk{err: fmt.Errorf("calling to CasbinRuleClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*CasbinRuleCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &CasbinRuleCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for CasbinRule.
+func (c *CasbinRuleClient) Update() *CasbinRuleUpdate {
+	mutation := newCasbinRuleMutation(c.config, OpUpdate)
+	return &CasbinRuleUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *CasbinRuleClient) UpdateOne(_m *CasbinRule) *CasbinRuleUpdateOne {
+	mutation := newCasbinRuleMutation(c.config, OpUpdateOne, withCasbinRule(_m))
+	return &CasbinRuleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *CasbinRuleClient) UpdateOneID(id int64) *CasbinRuleUpdateOne {
+	mutation := newCasbinRuleMutation(c.config, OpUpdateOne, withCasbinRuleID(id))
+	return &CasbinRuleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for CasbinRule.
+func (c *CasbinRuleClient) Delete() *CasbinRuleDelete {
+	mutation := newCasbinRuleMutation(c.config, OpDelete)
+	return &CasbinRuleDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *CasbinRuleClient) DeleteOne(_m *CasbinRule) *CasbinRuleDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *CasbinRuleClient) DeleteOneID(id int64) *CasbinRuleDeleteOne {
+	builder := c.Delete().Where(casbinrule.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &CasbinRuleDeleteOne{builder}
+}
+
+// Query returns a query builder for CasbinRule.
+func (c *CasbinRuleClient) Query() *CasbinRuleQuery {
+	return &CasbinRuleQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeCasbinRule},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a CasbinRule entity by its id.
+func (c *CasbinRuleClient) Get(ctx context.Context, id int64) (*CasbinRule, error) {
+	return c.Query().Where(casbinrule.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *CasbinRuleClient) GetX(ctx context.Context, id int64) *CasbinRule {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *CasbinRuleClient) Hooks() []Hook {
+	return c.hooks.CasbinRule
+}
+
+// Interceptors returns the client interceptors.
+func (c *CasbinRuleClient) Interceptors() []Interceptor {
+	return c.inters.CasbinRule
+}
+
+func (c *CasbinRuleClient) mutate(ctx context.Context, m *CasbinRuleMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&CasbinRuleCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&CasbinRuleUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&CasbinRuleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&CasbinRuleDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown CasbinRule mutation op: %q", m.Op())
 	}
 }
 
@@ -348,6 +509,336 @@ func (c *ConfigitemClient) mutate(ctx context.Context, m *ConfigitemMutation) (V
 		return (&ConfigitemDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Configitem mutation op: %q", m.Op())
+	}
+}
+
+// ProjectClient is a client for the Project schema.
+type ProjectClient struct {
+	config
+}
+
+// NewProjectClient returns a client for the Project from the given config.
+func NewProjectClient(c config) *ProjectClient {
+	return &ProjectClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `project.Hooks(f(g(h())))`.
+func (c *ProjectClient) Use(hooks ...Hook) {
+	c.hooks.Project = append(c.hooks.Project, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `project.Intercept(f(g(h())))`.
+func (c *ProjectClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Project = append(c.inters.Project, interceptors...)
+}
+
+// Create returns a builder for creating a Project entity.
+func (c *ProjectClient) Create() *ProjectCreate {
+	mutation := newProjectMutation(c.config, OpCreate)
+	return &ProjectCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Project entities.
+func (c *ProjectClient) CreateBulk(builders ...*ProjectCreate) *ProjectCreateBulk {
+	return &ProjectCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ProjectClient) MapCreateBulk(slice any, setFunc func(*ProjectCreate, int)) *ProjectCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ProjectCreateBulk{err: fmt.Errorf("calling to ProjectClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ProjectCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ProjectCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Project.
+func (c *ProjectClient) Update() *ProjectUpdate {
+	mutation := newProjectMutation(c.config, OpUpdate)
+	return &ProjectUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ProjectClient) UpdateOne(_m *Project) *ProjectUpdateOne {
+	mutation := newProjectMutation(c.config, OpUpdateOne, withProject(_m))
+	return &ProjectUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ProjectClient) UpdateOneID(id int64) *ProjectUpdateOne {
+	mutation := newProjectMutation(c.config, OpUpdateOne, withProjectID(id))
+	return &ProjectUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Project.
+func (c *ProjectClient) Delete() *ProjectDelete {
+	mutation := newProjectMutation(c.config, OpDelete)
+	return &ProjectDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ProjectClient) DeleteOne(_m *Project) *ProjectDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *ProjectClient) DeleteOneID(id int64) *ProjectDeleteOne {
+	builder := c.Delete().Where(project.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ProjectDeleteOne{builder}
+}
+
+// Query returns a query builder for Project.
+func (c *ProjectClient) Query() *ProjectQuery {
+	return &ProjectQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeProject},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Project entity by its id.
+func (c *ProjectClient) Get(ctx context.Context, id int64) (*Project, error) {
+	return c.Query().Where(project.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ProjectClient) GetX(ctx context.Context, id int64) *Project {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryOwner queries the owner edge of a Project.
+func (c *ProjectClient) QueryOwner(_m *Project) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(project.Table, project.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, project.OwnerTable, project.OwnerColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryMembers queries the members edge of a Project.
+func (c *ProjectClient) QueryMembers(_m *Project) *ProjectMemberQuery {
+	query := (&ProjectMemberClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(project.Table, project.FieldID, id),
+			sqlgraph.To(projectmember.Table, projectmember.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, project.MembersTable, project.MembersColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *ProjectClient) Hooks() []Hook {
+	return c.hooks.Project
+}
+
+// Interceptors returns the client interceptors.
+func (c *ProjectClient) Interceptors() []Interceptor {
+	return c.inters.Project
+}
+
+func (c *ProjectClient) mutate(ctx context.Context, m *ProjectMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ProjectCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ProjectUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ProjectUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ProjectDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Project mutation op: %q", m.Op())
+	}
+}
+
+// ProjectMemberClient is a client for the ProjectMember schema.
+type ProjectMemberClient struct {
+	config
+}
+
+// NewProjectMemberClient returns a client for the ProjectMember from the given config.
+func NewProjectMemberClient(c config) *ProjectMemberClient {
+	return &ProjectMemberClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `projectmember.Hooks(f(g(h())))`.
+func (c *ProjectMemberClient) Use(hooks ...Hook) {
+	c.hooks.ProjectMember = append(c.hooks.ProjectMember, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `projectmember.Intercept(f(g(h())))`.
+func (c *ProjectMemberClient) Intercept(interceptors ...Interceptor) {
+	c.inters.ProjectMember = append(c.inters.ProjectMember, interceptors...)
+}
+
+// Create returns a builder for creating a ProjectMember entity.
+func (c *ProjectMemberClient) Create() *ProjectMemberCreate {
+	mutation := newProjectMemberMutation(c.config, OpCreate)
+	return &ProjectMemberCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of ProjectMember entities.
+func (c *ProjectMemberClient) CreateBulk(builders ...*ProjectMemberCreate) *ProjectMemberCreateBulk {
+	return &ProjectMemberCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ProjectMemberClient) MapCreateBulk(slice any, setFunc func(*ProjectMemberCreate, int)) *ProjectMemberCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ProjectMemberCreateBulk{err: fmt.Errorf("calling to ProjectMemberClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ProjectMemberCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ProjectMemberCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for ProjectMember.
+func (c *ProjectMemberClient) Update() *ProjectMemberUpdate {
+	mutation := newProjectMemberMutation(c.config, OpUpdate)
+	return &ProjectMemberUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ProjectMemberClient) UpdateOne(_m *ProjectMember) *ProjectMemberUpdateOne {
+	mutation := newProjectMemberMutation(c.config, OpUpdateOne, withProjectMember(_m))
+	return &ProjectMemberUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ProjectMemberClient) UpdateOneID(id int64) *ProjectMemberUpdateOne {
+	mutation := newProjectMemberMutation(c.config, OpUpdateOne, withProjectMemberID(id))
+	return &ProjectMemberUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for ProjectMember.
+func (c *ProjectMemberClient) Delete() *ProjectMemberDelete {
+	mutation := newProjectMemberMutation(c.config, OpDelete)
+	return &ProjectMemberDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ProjectMemberClient) DeleteOne(_m *ProjectMember) *ProjectMemberDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *ProjectMemberClient) DeleteOneID(id int64) *ProjectMemberDeleteOne {
+	builder := c.Delete().Where(projectmember.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ProjectMemberDeleteOne{builder}
+}
+
+// Query returns a query builder for ProjectMember.
+func (c *ProjectMemberClient) Query() *ProjectMemberQuery {
+	return &ProjectMemberQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeProjectMember},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a ProjectMember entity by its id.
+func (c *ProjectMemberClient) Get(ctx context.Context, id int64) (*ProjectMember, error) {
+	return c.Query().Where(projectmember.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ProjectMemberClient) GetX(ctx context.Context, id int64) *ProjectMember {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryProject queries the project edge of a ProjectMember.
+func (c *ProjectMemberClient) QueryProject(_m *ProjectMember) *ProjectQuery {
+	query := (&ProjectClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(projectmember.Table, projectmember.FieldID, id),
+			sqlgraph.To(project.Table, project.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, projectmember.ProjectTable, projectmember.ProjectColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryUser queries the user edge of a ProjectMember.
+func (c *ProjectMemberClient) QueryUser(_m *ProjectMember) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(projectmember.Table, projectmember.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, projectmember.UserTable, projectmember.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *ProjectMemberClient) Hooks() []Hook {
+	return c.hooks.ProjectMember
+}
+
+// Interceptors returns the client interceptors.
+func (c *ProjectMemberClient) Interceptors() []Interceptor {
+	return c.inters.ProjectMember
+}
+
+func (c *ProjectMemberClient) mutate(ctx context.Context, m *ProjectMemberMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ProjectMemberCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ProjectMemberUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ProjectMemberUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ProjectMemberDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown ProjectMember mutation op: %q", m.Op())
 	}
 }
 
@@ -624,6 +1115,38 @@ func (c *UserClient) QueryServers(_m *User) *ServersQuery {
 	return query
 }
 
+// QueryOwnedProjects queries the owned_projects edge of a User.
+func (c *UserClient) QueryOwnedProjects(_m *User) *ProjectQuery {
+	query := (&ProjectClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(project.Table, project.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.OwnedProjectsTable, user.OwnedProjectsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryProjectMemberships queries the project_memberships edge of a User.
+func (c *UserClient) QueryProjectMemberships(_m *User) *ProjectMemberQuery {
+	query := (&ProjectMemberClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(projectmember.Table, projectmember.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.ProjectMembershipsTable, user.ProjectMembershipsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *UserClient) Hooks() []Hook {
 	return c.hooks.User
@@ -652,9 +1175,9 @@ func (c *UserClient) mutate(ctx context.Context, m *UserMutation) (Value, error)
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Configitem, Servers, User []ent.Hook
+		CasbinRule, Configitem, Project, ProjectMember, Servers, User []ent.Hook
 	}
 	inters struct {
-		Configitem, Servers, User []ent.Interceptor
+		CasbinRule, Configitem, Project, ProjectMember, Servers, User []ent.Interceptor
 	}
 )

@@ -3,6 +3,8 @@
 package ent
 
 import (
+	"apprun/ent/project"
+	"apprun/ent/projectmember"
 	"apprun/ent/servers"
 	"apprun/ent/user"
 	"context"
@@ -249,6 +251,36 @@ func (_c *UserCreate) AddServers(v ...*Servers) *UserCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddServerIDs(ids...)
+}
+
+// AddOwnedProjectIDs adds the "owned_projects" edge to the Project entity by IDs.
+func (_c *UserCreate) AddOwnedProjectIDs(ids ...int64) *UserCreate {
+	_c.mutation.AddOwnedProjectIDs(ids...)
+	return _c
+}
+
+// AddOwnedProjects adds the "owned_projects" edges to the Project entity.
+func (_c *UserCreate) AddOwnedProjects(v ...*Project) *UserCreate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddOwnedProjectIDs(ids...)
+}
+
+// AddProjectMembershipIDs adds the "project_memberships" edge to the ProjectMember entity by IDs.
+func (_c *UserCreate) AddProjectMembershipIDs(ids ...int64) *UserCreate {
+	_c.mutation.AddProjectMembershipIDs(ids...)
+	return _c
+}
+
+// AddProjectMemberships adds the "project_memberships" edges to the ProjectMember entity.
+func (_c *UserCreate) AddProjectMemberships(v ...*ProjectMember) *UserCreate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddProjectMembershipIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -505,6 +537,38 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(servers.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.OwnedProjectsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.OwnedProjectsTable,
+			Columns: []string{user.OwnedProjectsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.ProjectMembershipsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ProjectMembershipsTable,
+			Columns: []string{user.ProjectMembershipsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(projectmember.FieldID, field.TypeInt64),
 			},
 		}
 		for _, k := range nodes {

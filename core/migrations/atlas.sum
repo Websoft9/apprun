@@ -1,5 +1,6 @@
-h1:43KVzPHT95egts3njVRFXr4cIIlw2lhW2wqHgh3dvG0=
+h1:MLpdHlgQyB9c1+AcSqSxY1h+g+ldx/FM0ntoBKm/1Qg=
 001_add_configitem_audit_fields.sql h1:iSZhhw4NcPGdChPIw/Mv5mdBIhUu3efsanlU9E+BGWw=
 002_create_users_table.sql h1:2AWuUkUETbBRy3fQ/Smc8TCI51dz2nIy8JfpBnRfzcA=
 003_add_user_uuid.sql h1:iDaIUnjnbdoIVhz4lOlBJtuR+Pu0cA97szMm/hGoFQ8=
 004_add_project_id_to_configitem.sql h1:P05WDK57b6MRcL/4GgbfevsJtBySuty/Lo/nycpSrq0=
+005_create_rbac_tables.sql h1:UcZ0lu5kcSaGU2OlNAAhgoi6JUgceG5F4uniCM1FDmg=

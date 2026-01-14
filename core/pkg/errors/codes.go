@@ -124,6 +124,8 @@ const (
 	ErrCodeAuthNoPermission    = "AUTH_PERM_NO_PERMISSION_001"
 	ErrCodeAuthProjectNoAccess = "AUTH_PERM_PROJECT_NO_ACCESS_002"
 	ErrCodeAuthRoleNotAssigned = "AUTH_PERM_ROLE_NOT_ASSIGNED_003"
+	ErrCodeAuthNotMember       = "AUTH_PERM_NOT_MEMBER_004"
+	ErrCodeAuthPermCheckError  = "AUTH_PERM_CHECK_ERROR_005"
 )
 
 // AUTH - Business logic errors

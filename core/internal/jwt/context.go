@@ -12,6 +12,8 @@ var (
 	UsernameKey = &contextKey{"username"}
 	// EmailKey is the context key for email
 	EmailKey = &contextKey{"email"}
+	// ProjectIDKey is the context key for project ID (for RBAC)
+	ProjectIDKey = &contextKey{"project_id"}
 )
 
 // SetUserID injects user ID into context
@@ -51,4 +53,17 @@ func GetEmail(ctx context.Context) string {
 		return email
 	}
 	return ""
+}
+
+// SetProjectID injects project ID into context
+func SetProjectID(ctx context.Context, projectID int64) context.Context {
+	return context.WithValue(ctx, ProjectIDKey, projectID)
+}
+
+// GetProjectID retrieves project ID from context
+func GetProjectID(ctx context.Context) int64 {
+	if projectID, ok := ctx.Value(ProjectIDKey).(int64); ok {
+		return projectID
+	}
+	return 0
 }

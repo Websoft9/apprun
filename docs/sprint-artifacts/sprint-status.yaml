@@ -142,7 +142,7 @@ development_status:
     title: Token Refresh Mechanism
     sprint: sprint-1
   5-5-rbac-permissions:
-    status: ready-for-dev
+    status: in-progress
     title: RBAC 权限控制
     sprint: sprint-1
   

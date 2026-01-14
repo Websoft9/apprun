@@ -4,6 +4,8 @@ package ent
 
 import (
 	"apprun/ent/predicate"
+	"apprun/ent/project"
+	"apprun/ent/projectmember"
 	"apprun/ent/servers"
 	"apprun/ent/user"
 	"context"
@@ -20,11 +22,13 @@ import (
 // UserQuery is the builder for querying User entities.
 type UserQuery struct {
 	config
-	ctx         *QueryContext
-	order       []user.OrderOption
-	inters      []Interceptor
-	predicates  []predicate.User
-	withServers *ServersQuery
+	ctx                    *QueryContext
+	order                  []user.OrderOption
+	inters                 []Interceptor
+	predicates             []predicate.User
+	withServers            *ServersQuery
+	withOwnedProjects      *ProjectQuery
+	withProjectMemberships *ProjectMemberQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -76,6 +80,50 @@ func (_q *UserQuery) QueryServers() *ServersQuery {
 			sqlgraph.From(user.Table, user.FieldID, selector),
 			sqlgraph.To(servers.Table, servers.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, user.ServersTable, user.ServersColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryOwnedProjects chains the current query on the "owned_projects" edge.
+func (_q *UserQuery) QueryOwnedProjects() *ProjectQuery {
+	query := (&ProjectClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(project.Table, project.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.OwnedProjectsTable, user.OwnedProjectsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryProjectMemberships chains the current query on the "project_memberships" edge.
+func (_q *UserQuery) QueryProjectMemberships() *ProjectMemberQuery {
+	query := (&ProjectMemberClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(projectmember.Table, projectmember.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.ProjectMembershipsTable, user.ProjectMembershipsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -270,12 +318,14 @@ func (_q *UserQuery) Clone() *UserQuery {
 		return nil
 	}
 	return &UserQuery{
-		config:      _q.config,
-		ctx:         _q.ctx.Clone(),
-		order:       append([]user.OrderOption{}, _q.order...),
-		inters:      append([]Interceptor{}, _q.inters...),
-		predicates:  append([]predicate.User{}, _q.predicates...),
-		withServers: _q.withServers.Clone(),
+		config:                 _q.config,
+		ctx:                    _q.ctx.Clone(),
+		order:                  append([]user.OrderOption{}, _q.order...),
+		inters:                 append([]Interceptor{}, _q.inters...),
+		predicates:             append([]predicate.User{}, _q.predicates...),
+		withServers:            _q.withServers.Clone(),
+		withOwnedProjects:      _q.withOwnedProjects.Clone(),
+		withProjectMemberships: _q.withProjectMemberships.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -290,6 +340,28 @@ func (_q *UserQuery) WithServers(opts ...func(*ServersQuery)) *UserQuery {
 		opt(query)
 	}
 	_q.withServers = query
+	return _q
+}
+
+// WithOwnedProjects tells the query-builder to eager-load the nodes that are connected to
+// the "owned_projects" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithOwnedProjects(opts ...func(*ProjectQuery)) *UserQuery {
+	query := (&ProjectClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withOwnedProjects = query
+	return _q
+}
+
+// WithProjectMemberships tells the query-builder to eager-load the nodes that are connected to
+// the "project_memberships" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithProjectMemberships(opts ...func(*ProjectMemberQuery)) *UserQuery {
+	query := (&ProjectMemberClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withProjectMemberships = query
 	return _q
 }
 
@@ -371,8 +443,10 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = _q.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [3]bool{
 			_q.withServers != nil,
+			_q.withOwnedProjects != nil,
+			_q.withProjectMemberships != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -397,6 +471,20 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadServers(ctx, query, nodes,
 			func(n *User) { n.Edges.Servers = []*Servers{} },
 			func(n *User, e *Servers) { n.Edges.Servers = append(n.Edges.Servers, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withOwnedProjects; query != nil {
+		if err := _q.loadOwnedProjects(ctx, query, nodes,
+			func(n *User) { n.Edges.OwnedProjects = []*Project{} },
+			func(n *User, e *Project) { n.Edges.OwnedProjects = append(n.Edges.OwnedProjects, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withProjectMemberships; query != nil {
+		if err := _q.loadProjectMemberships(ctx, query, nodes,
+			func(n *User) { n.Edges.ProjectMemberships = []*ProjectMember{} },
+			func(n *User, e *ProjectMember) { n.Edges.ProjectMemberships = append(n.Edges.ProjectMemberships, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -429,6 +517,66 @@ func (_q *UserQuery) loadServers(ctx context.Context, query *ServersQuery, nodes
 		node, ok := nodeids[*fk]
 		if !ok {
 			return fmt.Errorf(`unexpected referenced foreign-key "user_servers" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadOwnedProjects(ctx context.Context, query *ProjectQuery, nodes []*User, init func(*User), assign func(*User, *Project)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int64]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(project.FieldOwnerID)
+	}
+	query.Where(predicate.Project(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.OwnedProjectsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.OwnerID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "owner_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadProjectMemberships(ctx context.Context, query *ProjectMemberQuery, nodes []*User, init func(*User), assign func(*User, *ProjectMember)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int64]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(projectmember.FieldUserID)
+	}
+	query.Where(predicate.ProjectMember(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.ProjectMembershipsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.UserID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_id" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}

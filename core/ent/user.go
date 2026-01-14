@@ -61,9 +61,13 @@ type User struct {
 type UserEdges struct {
 	// Servers holds the value of the servers edge.
 	Servers []*Servers `json:"servers,omitempty"`
+	// OwnedProjects holds the value of the owned_projects edge.
+	OwnedProjects []*Project `json:"owned_projects,omitempty"`
+	// ProjectMemberships holds the value of the project_memberships edge.
+	ProjectMemberships []*ProjectMember `json:"project_memberships,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [3]bool
 }
 
 // ServersOrErr returns the Servers value or an error if the edge
@@ -73,6 +77,24 @@ func (e UserEdges) ServersOrErr() ([]*Servers, error) {
 		return e.Servers, nil
 	}
 	return nil, &NotLoadedError{edge: "servers"}
+}
+
+// OwnedProjectsOrErr returns the OwnedProjects value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) OwnedProjectsOrErr() ([]*Project, error) {
+	if e.loadedTypes[1] {
+		return e.OwnedProjects, nil
+	}
+	return nil, &NotLoadedError{edge: "owned_projects"}
+}
+
+// ProjectMembershipsOrErr returns the ProjectMemberships value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) ProjectMembershipsOrErr() ([]*ProjectMember, error) {
+	if e.loadedTypes[2] {
+		return e.ProjectMemberships, nil
+	}
+	return nil, &NotLoadedError{edge: "project_memberships"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -222,6 +244,16 @@ func (_m *User) Value(name string) (ent.Value, error) {
 // QueryServers queries the "servers" edge of the User entity.
 func (_m *User) QueryServers() *ServersQuery {
 	return NewUserClient(_m.config).QueryServers(_m)
+}
+
+// QueryOwnedProjects queries the "owned_projects" edge of the User entity.
+func (_m *User) QueryOwnedProjects() *ProjectQuery {
+	return NewUserClient(_m.config).QueryOwnedProjects(_m)
+}
+
+// QueryProjectMemberships queries the "project_memberships" edge of the User entity.
+func (_m *User) QueryProjectMemberships() *ProjectMemberQuery {
+	return NewUserClient(_m.config).QueryProjectMemberships(_m)
 }
 
 // Update returns a builder for updating this User.

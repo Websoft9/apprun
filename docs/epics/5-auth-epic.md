@@ -202,8 +202,10 @@ CREATE TABLE project_members (
 
 #### Casbin 策略配置
 
+Model 文件内嵌在 `core/internal/rbac/model.conf`，使用 `go:embed` 指令，避免对配置中心的依赖。
+
 ```ini
-# config/casbin_model.conf
+# core/internal/rbac/model.conf (内嵌资源)
 [request_definition]
 r = sub, obj, act
 
@@ -310,7 +312,7 @@ auth:
     lockout_duration: 900                # 锁定 15 分钟
   
   casbin:
-    model_path: "./config/casbin_model.conf"
+    # model 已内嵌到 core/internal/rbac/model.conf
     policy_path: "./config/casbin_policy.csv"
 ```
 

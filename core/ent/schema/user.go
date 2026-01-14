@@ -122,5 +122,7 @@ func (User) Indexes() []ent.Index {
 func (User) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("servers", Servers.Type),
+		edge.To("owned_projects", Project.Type),
+		edge.To("project_memberships", ProjectMember.Type),
 	}
 }

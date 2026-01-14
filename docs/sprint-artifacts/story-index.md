@@ -11,7 +11,7 @@
 ### By Status
 
 - ✅ **Done**: 16
-- 🟢 **Ready For Dev**: 1
+- 🔄 **In Progress**: 1
 - ✏️ **Drafted**: 1
 - 📋 **Backlog**: 11
 
@@ -59,7 +59,7 @@
 | 5-2-user-login | User Login | 📋 backlog | Authentication & Authorization |
 | 5-3-jwt-middleware | JWT Middleware | 📋 backlog | Authentication & Authorization |
 | 5-4-token-refresh | Token Refresh Mechanism | ✏️ drafted | Authentication & Authorization |
-| 5-5-rbac-permissions | RBAC 权限控制 | 🟢 ready-for-dev | Authentication & Authorization |
+| 5-5-rbac-permissions | RBAC 权限控制 | 🔄 in-progress | Authentication & Authorization |
 
 ## Sprint 2
 
@@ -69,4 +69,4 @@
 
 ---
 
-*Auto-generated from `sprint-status.yaml` on 2026-01-14 09:12:47*
+*Auto-generated from `sprint-status.yaml` on 2026-01-14 11:45:41*
