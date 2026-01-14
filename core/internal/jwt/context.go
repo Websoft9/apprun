@@ -14,6 +14,21 @@ var (
 	EmailKey = &contextKey{"email"}
 )
 
+// SetUserID injects user ID into context
+func SetUserID(ctx context.Context, userID int64) context.Context {
+	return context.WithValue(ctx, UserIDKey, userID)
+}
+
+// SetUsername injects username into context
+func SetUsername(ctx context.Context, username string) context.Context {
+	return context.WithValue(ctx, UsernameKey, username)
+}
+
+// SetEmail injects email into context
+func SetEmail(ctx context.Context, email string) context.Context {
+	return context.WithValue(ctx, EmailKey, email)
+}
+
 // GetUserID retrieves user ID from context
 func GetUserID(ctx context.Context) int64 {
 	if userID, ok := ctx.Value(UserIDKey).(int64); ok {

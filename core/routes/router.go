@@ -9,7 +9,6 @@ import (
 	"apprun/handlers"
 	internalMiddleware "apprun/internal/middleware"
 	authHandler "apprun/modules/auth/handler"
-	authMiddleware "apprun/modules/auth/middleware"
 	authRepository "apprun/modules/auth/repository"
 	authService "apprun/modules/auth/service"
 	configModule "apprun/modules/config"
@@ -62,7 +61,7 @@ func SetupRoutes(dbClient *ent.Client, configService *configModule.Service) *chi
 
 			// Protected endpoints (require JWT middleware)
 			r.Group(func(r chi.Router) {
-				jwtMiddleware := authMiddleware.NewJWTMiddleware()
+				jwtMiddleware := internalMiddleware.NewJWTMiddleware()
 				r.Use(jwtMiddleware.JWTAuth)
 
 				r.Get("/me", authHdl.Me)

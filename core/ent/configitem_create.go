@@ -46,6 +46,20 @@ func (_c *ConfigitemCreate) SetNillableIsDynamic(v *bool) *ConfigitemCreate {
 	return _c
 }
 
+// SetProjectID sets the "project_id" field.
+func (_c *ConfigitemCreate) SetProjectID(v int64) *ConfigitemCreate {
+	_c.mutation.SetProjectID(v)
+	return _c
+}
+
+// SetNillableProjectID sets the "project_id" field if the given value is not nil.
+func (_c *ConfigitemCreate) SetNillableProjectID(v *int64) *ConfigitemCreate {
+	if v != nil {
+		_c.SetProjectID(*v)
+	}
+	return _c
+}
+
 // SetStatus sets the "status" field.
 func (_c *ConfigitemCreate) SetStatus(v configitem.Status) *ConfigitemCreate {
 	_c.mutation.SetStatus(v)
@@ -208,6 +222,10 @@ func (_c *ConfigitemCreate) createSpec() (*Configitem, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.IsDynamic(); ok {
 		_spec.SetField(configitem.FieldIsDynamic, field.TypeBool, value)
 		_node.IsDynamic = value
+	}
+	if value, ok := _c.mutation.ProjectID(); ok {
+		_spec.SetField(configitem.FieldProjectID, field.TypeInt64, value)
+		_node.ProjectID = value
 	}
 	if value, ok := _c.mutation.Status(); ok {
 		_spec.SetField(configitem.FieldStatus, field.TypeEnum, value)

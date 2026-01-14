@@ -41,6 +41,8 @@ type ConfigitemMutation struct {
 	key           *string
 	value         *string
 	is_dynamic    *bool
+	project_id    *int64
+	addproject_id *int64
 	status        *configitem.Status
 	created_at    *time.Time
 	updated_at    *time.Time
@@ -256,6 +258,76 @@ func (m *ConfigitemMutation) ResetIsDynamic() {
 	m.is_dynamic = nil
 }
 
+// SetProjectID sets the "project_id" field.
+func (m *ConfigitemMutation) SetProjectID(i int64) {
+	m.project_id = &i
+	m.addproject_id = nil
+}
+
+// ProjectID returns the value of the "project_id" field in the mutation.
+func (m *ConfigitemMutation) ProjectID() (r int64, exists bool) {
+	v := m.project_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProjectID returns the old "project_id" field's value of the Configitem entity.
+// If the Configitem object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConfigitemMutation) OldProjectID(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProjectID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProjectID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProjectID: %w", err)
+	}
+	return oldValue.ProjectID, nil
+}
+
+// AddProjectID adds i to the "project_id" field.
+func (m *ConfigitemMutation) AddProjectID(i int64) {
+	if m.addproject_id != nil {
+		*m.addproject_id += i
+	} else {
+		m.addproject_id = &i
+	}
+}
+
+// AddedProjectID returns the value that was added to the "project_id" field in this mutation.
+func (m *ConfigitemMutation) AddedProjectID() (r int64, exists bool) {
+	v := m.addproject_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearProjectID clears the value of the "project_id" field.
+func (m *ConfigitemMutation) ClearProjectID() {
+	m.project_id = nil
+	m.addproject_id = nil
+	m.clearedFields[configitem.FieldProjectID] = struct{}{}
+}
+
+// ProjectIDCleared returns if the "project_id" field was cleared in this mutation.
+func (m *ConfigitemMutation) ProjectIDCleared() bool {
+	_, ok := m.clearedFields[configitem.FieldProjectID]
+	return ok
+}
+
+// ResetProjectID resets all changes to the "project_id" field.
+func (m *ConfigitemMutation) ResetProjectID() {
+	m.project_id = nil
+	m.addproject_id = nil
+	delete(m.clearedFields, configitem.FieldProjectID)
+}
+
 // SetStatus sets the "status" field.
 func (m *ConfigitemMutation) SetStatus(c configitem.Status) {
 	m.status = &c
@@ -398,7 +470,7 @@ func (m *ConfigitemMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ConfigitemMutation) Fields() []string {
-	fields := make([]string, 0, 6)
+	fields := make([]string, 0, 7)
 	if m.key != nil {
 		fields = append(fields, configitem.FieldKey)
 	}
@@ -407,6 +479,9 @@ func (m *ConfigitemMutation) Fields() []string {
 	}
 	if m.is_dynamic != nil {
 		fields = append(fields, configitem.FieldIsDynamic)
+	}
+	if m.project_id != nil {
+		fields = append(fields, configitem.FieldProjectID)
 	}
 	if m.status != nil {
 		fields = append(fields, configitem.FieldStatus)
@@ -431,6 +506,8 @@ func (m *ConfigitemMutation) Field(name string) (ent.Value, bool) {
 		return m.Value()
 	case configitem.FieldIsDynamic:
 		return m.IsDynamic()
+	case configitem.FieldProjectID:
+		return m.ProjectID()
 	case configitem.FieldStatus:
 		return m.Status()
 	case configitem.FieldCreatedAt:
@@ -452,6 +529,8 @@ func (m *ConfigitemMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldValue(ctx)
 	case configitem.FieldIsDynamic:
 		return m.OldIsDynamic(ctx)
+	case configitem.FieldProjectID:
+		return m.OldProjectID(ctx)
 	case configitem.FieldStatus:
 		return m.OldStatus(ctx)
 	case configitem.FieldCreatedAt:
@@ -488,6 +567,13 @@ func (m *ConfigitemMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetIsDynamic(v)
 		return nil
+	case configitem.FieldProjectID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProjectID(v)
+		return nil
 	case configitem.FieldStatus:
 		v, ok := value.(configitem.Status)
 		if !ok {
@@ -516,13 +602,21 @@ func (m *ConfigitemMutation) SetField(name string, value ent.Value) error {
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
 func (m *ConfigitemMutation) AddedFields() []string {
-	return nil
+	var fields []string
+	if m.addproject_id != nil {
+		fields = append(fields, configitem.FieldProjectID)
+	}
+	return fields
 }
 
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
 func (m *ConfigitemMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case configitem.FieldProjectID:
+		return m.AddedProjectID()
+	}
 	return nil, false
 }
 
@@ -531,6 +625,13 @@ func (m *ConfigitemMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *ConfigitemMutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case configitem.FieldProjectID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddProjectID(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Configitem numeric field %s", name)
 }
@@ -538,7 +639,11 @@ func (m *ConfigitemMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *ConfigitemMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(configitem.FieldProjectID) {
+		fields = append(fields, configitem.FieldProjectID)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -551,6 +656,11 @@ func (m *ConfigitemMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *ConfigitemMutation) ClearField(name string) error {
+	switch name {
+	case configitem.FieldProjectID:
+		m.ClearProjectID()
+		return nil
+	}
 	return fmt.Errorf("unknown Configitem nullable field %s", name)
 }
 
@@ -566,6 +676,9 @@ func (m *ConfigitemMutation) ResetField(name string) error {
 		return nil
 	case configitem.FieldIsDynamic:
 		m.ResetIsDynamic()
+		return nil
+	case configitem.FieldProjectID:
+		m.ResetProjectID()
 		return nil
 	case configitem.FieldStatus:
 		m.ResetStatus()

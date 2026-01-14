@@ -14,6 +14,7 @@ var (
 		{Name: "key", Type: field.TypeString, Unique: true},
 		{Name: "value", Type: field.TypeString},
 		{Name: "is_dynamic", Type: field.TypeBool, Default: false},
+		{Name: "project_id", Type: field.TypeInt64, Nullable: true},
 		{Name: "status", Type: field.TypeEnum, Enums: []string{"active", "inactive"}, Default: "active"},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
@@ -32,7 +33,17 @@ var (
 			{
 				Name:    "configitem_status",
 				Unique:  false,
+				Columns: []*schema.Column{ConfigitemsColumns[5]},
+			},
+			{
+				Name:    "configitem_project_id",
+				Unique:  false,
 				Columns: []*schema.Column{ConfigitemsColumns[4]},
+			},
+			{
+				Name:    "configitem_project_id_key",
+				Unique:  false,
+				Columns: []*schema.Column{ConfigitemsColumns[4], ConfigitemsColumns[1]},
 			},
 		},
 	}

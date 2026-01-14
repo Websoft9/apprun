@@ -20,6 +20,8 @@ const (
 	FieldValue = "value"
 	// FieldIsDynamic holds the string denoting the is_dynamic field in the database.
 	FieldIsDynamic = "is_dynamic"
+	// FieldProjectID holds the string denoting the project_id field in the database.
+	FieldProjectID = "project_id"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
@@ -36,6 +38,7 @@ var Columns = []string{
 	FieldKey,
 	FieldValue,
 	FieldIsDynamic,
+	FieldProjectID,
 	FieldStatus,
 	FieldCreatedAt,
 	FieldUpdatedAt,
@@ -111,6 +114,11 @@ func ByValue(opts ...sql.OrderTermOption) OrderOption {
 // ByIsDynamic orders the results by the is_dynamic field.
 func ByIsDynamic(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldIsDynamic, opts...).ToFunc()
+}
+
+// ByProjectID orders the results by the project_id field.
+func ByProjectID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldProjectID, opts...).ToFunc()
 }
 
 // ByStatus orders the results by the status field.

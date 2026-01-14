@@ -572,7 +572,7 @@ func RequirePermission(resource, action string) func(http.Handler) http.Handler 
             
             // Determine Domain:
             // - If project_id is in context, use it.
-            // - If not, assume Platform Domain (for /api/v1/platform/...) use "platform"
+            // - If not, assume Platform Domain (for /api/platform/...) use "platform"
             projectID := GetProjectID(r.Context())
             domain := strconv.FormatInt(projectID, 10)
             if projectID == 0 { 
@@ -591,8 +591,8 @@ func RequirePermission(resource, action string) func(http.Handler) http.Handler 
 对于不归属于特定 Project 的平台级资源（如 `system_setting`, `license`），采用 **Platform Scope** 策略：
 
 1.  **API 路由分离**:
-    - **Project API**: `/api/v1/projects/{project_id}/...` (必须携带 `project_id`)
-    - **Platform API**: `/api/v1/platform/...` (无 `project_id`，上下文默认为 `platform`)
+    - **Project API**: `/api/projects/{project_id}/...` (必须携带 `project_id`)
+    - **Platform API**: `/api/platform/...` (无 `project_id`，上下文默认为 `platform`)
 
 2.  **鉴权逻辑**:
     - Casbin Request: `(user_id, "platform", resource, action)`
@@ -631,7 +631,7 @@ func RequirePermission(resource, action string) func(http.Handler) http.Handler 
 
 #### 1.1 添加项目成员
 ```http
-POST /api/v1/projects/{project_id}/members
+POST /api/projects/{project_id}/members
 Authorization: Bearer <JWT>
 
 Request Body:
@@ -655,7 +655,7 @@ Response (201):
 
 #### 1.2 查询项目成员列表
 ```http
-GET /api/v1/projects/{project_id}/members
+GET /api/projects/{project_id}/members
 Authorization: Bearer <JWT>
 
 Response (200):
@@ -687,7 +687,7 @@ Response (200):
 
 #### 1.3 更新成员角色
 ```http
-PUT /api/v1/projects/{project_id}/members/{member_id}
+PUT /api/projects/{project_id}/members/{member_id}
 Authorization: Bearer <JWT>
 
 Request Body:
@@ -708,7 +708,7 @@ Response (200):
 
 #### 1.4 移除项目成员
 ```http
-DELETE /api/v1/projects/{project_id}/members/{member_id}
+DELETE /api/projects/{project_id}/members/{member_id}
 Authorization: Bearer <JWT>
 
 Response (200):
@@ -722,7 +722,7 @@ Response (200):
 
 #### 2.1 查询用户在项目中的权限
 ```http
-GET /api/v1/projects/{project_id}/permissions/me
+GET /api/projects/{project_id}/permissions/me
 Authorization: Bearer <JWT>
 
 Response (200):
@@ -743,7 +743,7 @@ Response (200):
 
 #### 2.2 检查单个权限（用于前端按钮显示控制）
 ```http
-GET /api/v1/projects/{project_id}/permissions/check?resource=data&action=delete
+GET /api/projects/{project_id}/permissions/check?resource=data&action=delete
 Authorization: Bearer <JWT>
 
 Response (200):
@@ -771,7 +771,7 @@ import (
 )
 
 func RegisterRoutes(r chi.Router) {
-    r.Route("/api/v1/projects/{project_id}/configs", func(r chi.Router) {
+    r.Route("/api/projects/{project_id}/configs", func(r chi.Router) {
         // 1. JWT 认证（提取 user_id）
         r.Use(middleware.AuthMiddleware)
         
@@ -794,7 +794,7 @@ func RegisterRoutes(r chi.Router) {
 package auth
 
 func RegisterRoutes(r chi.Router) {
-    r.Route("/api/v1/projects/{project_id}/members", func(r chi.Router) {
+    r.Route("/api/projects/{project_id}/members", func(r chi.Router) {
         r.Use(middleware.AuthMiddleware)
         r.Use(middleware.ProjectContextMiddleware)
         

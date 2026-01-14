@@ -27,11 +27,11 @@ func init() {
 	// configitem.DefaultIsDynamic holds the default value on creation for the is_dynamic field.
 	configitem.DefaultIsDynamic = configitemDescIsDynamic.Default.(bool)
 	// configitemDescCreatedAt is the schema descriptor for created_at field.
-	configitemDescCreatedAt := configitemFields[4].Descriptor()
+	configitemDescCreatedAt := configitemFields[5].Descriptor()
 	// configitem.DefaultCreatedAt holds the default value on creation for the created_at field.
 	configitem.DefaultCreatedAt = configitemDescCreatedAt.Default.(func() time.Time)
 	// configitemDescUpdatedAt is the schema descriptor for updated_at field.
-	configitemDescUpdatedAt := configitemFields[5].Descriptor()
+	configitemDescUpdatedAt := configitemFields[6].Descriptor()
 	// configitem.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	configitem.DefaultUpdatedAt = configitemDescUpdatedAt.Default.(func() time.Time)
 	// configitem.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.

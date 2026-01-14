@@ -3,25 +3,12 @@
 package middleware
 
 import (
-	"context"
 	"net/http"
 	"strings"
 
 	"apprun/internal/jwt"
 	"apprun/pkg/errors"
 	"apprun/pkg/response"
-)
-
-// contextKey is a custom type for context keys to avoid collisions
-type contextKey string
-
-const (
-	// ContextKeyUserID is the context key for user ID
-	ContextKeyUserID contextKey = "user_id"
-	// ContextKeyUsername is the context key for username
-	ContextKeyUsername contextKey = "username"
-	// ContextKeyEmail is the context key for email
-	ContextKeyEmail contextKey = "email"
 )
 
 // JWTMiddleware provides JWT authentication middleware
@@ -58,11 +45,11 @@ func (m *JWTMiddleware) JWTAuth(next http.Handler) http.Handler {
 			return
 		}
 
-		// Inject context with user information
+		// Inject context with user information using jwt package keys for compatibility
 		ctx := r.Context()
-		ctx = context.WithValue(ctx, ContextKeyUserID, claims.UserID)
-		ctx = context.WithValue(ctx, ContextKeyUsername, claims.Username)
-		ctx = context.WithValue(ctx, ContextKeyEmail, claims.Email)
+		ctx = jwt.SetUserID(ctx, claims.UserID)
+		ctx = jwt.SetUsername(ctx, claims.Username)
+		ctx = jwt.SetEmail(ctx, claims.Email)
 
 		// Call next handler with updated context
 		next.ServeHTTP(w, r.WithContext(ctx))

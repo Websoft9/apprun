@@ -27,6 +27,11 @@ func (Configitem) Fields() []ent.Field {
 			Default(false).
 			Comment("是否为动态配置（db:true）"),
 
+		// 项目隔离
+		field.Int64("project_id").
+			Optional().
+			Comment("所属项目ID，用于多租户隔离（0或null表示全局配置）"),
+
 		// 状态管理
 		field.Enum("status").
 			Values("active", "inactive").
@@ -52,6 +57,10 @@ func (Configitem) Indexes() []ent.Index {
 		index.Fields("key").Unique(),
 		// status 索引（支持按状态筛选）
 		index.Fields("status"),
+		// project_id 索引（支持项目级查询）
+		index.Fields("project_id"),
+		// 复合索引：项目内配置项查询
+		index.Fields("project_id", "key"),
 	}
 }
 
