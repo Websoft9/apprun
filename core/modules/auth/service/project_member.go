@@ -2,12 +2,12 @@ package service
 
 import (
 	"context"
-	"fmt"
 
 	"apprun/ent"
 	"apprun/internal/rbac"
 	"apprun/modules/auth/repository"
 	"apprun/pkg/errors"
+	"apprun/pkg/logger"
 )
 
 // ProjectMemberService handles project member business logic
@@ -50,12 +50,16 @@ func (s *ProjectMemberService) AddMember(ctx context.Context, projectID, userID 
 		return nil, errors.Wrap(err, errors.ErrCodeInternalError, "Failed to add member")
 	}
 
-	// Add role to Casbin
+	// Add role to Casbin (domain-based RBAC)
 	enforcer := rbac.GetEnforcer()
-	if _, err := enforcer.AddRoleForUser(rbac.FormatUserKey(userID), rbac.FormatRole(projectID, role)); err != nil {
+	domain := rbac.FormatDomain(projectID)
+	_, err = enforcer.AddGroupingPolicy(rbac.FormatUserKey(userID), role, domain)
+	if err != nil {
 		// Rollback: remove member from database
 		if rollbackErr := s.memberRepo.RemoveMember(ctx, member.ID); rollbackErr != nil {
-			fmt.Printf("Warning: rollback failed when removing member: %v\n", rollbackErr)
+			logger.Warn("Rollback failed when removing member",
+				logger.Field{Key: "error", Value: rollbackErr},
+				logger.Field{Key: "member_id", Value: member.ID})
 		}
 		return nil, errors.Wrap(err, errors.ErrCodeAuthPermCheckError, "Failed to add role to RBAC")
 	}
@@ -64,10 +68,15 @@ func (s *ProjectMemberService) AddMember(ctx context.Context, projectID, userID 
 	if err := enforcer.SavePolicy(); err != nil {
 		// Rollback
 		if rollbackErr := s.memberRepo.RemoveMember(ctx, member.ID); rollbackErr != nil {
-			fmt.Printf("Warning: rollback failed when removing member: %v\n", rollbackErr)
+			logger.Warn("Rollback failed when removing member",
+				logger.Field{Key: "error", Value: rollbackErr},
+				logger.Field{Key: "member_id", Value: member.ID})
 		}
-		if _, rollbackErr := enforcer.DeleteRoleForUser(rbac.FormatUserKey(userID), rbac.FormatRole(projectID, role)); rollbackErr != nil {
-			fmt.Printf("Warning: rollback failed when deleting role: %v\n", rollbackErr)
+		if _, rollbackErr := enforcer.RemoveGroupingPolicy(rbac.FormatUserKey(userID), role, domain); rollbackErr != nil {
+			logger.Warn("Rollback failed when removing role",
+				logger.Field{Key: "error", Value: rollbackErr},
+				logger.Field{Key: "user_id", Value: userID},
+				logger.Field{Key: "role", Value: role})
 		}
 		return nil, errors.Wrap(err, errors.ErrCodeAuthPermCheckError, "Failed to save RBAC policies")
 	}
@@ -98,23 +107,34 @@ func (s *ProjectMemberService) UpdateMemberRole(ctx context.Context, memberID in
 
 	// Update role in Casbin
 	enforcer := rbac.GetEnforcer()
+	domain := rbac.FormatDomain(member.ProjectID)
+
 	// Remove old role
-	if _, err := enforcer.DeleteRoleForUser(rbac.FormatUserKey(member.UserID), rbac.FormatRole(member.ProjectID, oldRole)); err != nil {
+	_, err = enforcer.RemoveGroupingPolicy(rbac.FormatUserKey(member.UserID), oldRole, domain)
+	if err != nil {
 		// Rollback
 		if _, rollbackErr := s.memberRepo.UpdateRole(ctx, memberID, oldRole); rollbackErr != nil {
-			fmt.Printf("Warning: rollback failed when updating role: %v\n", rollbackErr)
+			logger.Warn("Rollback failed when updating role",
+				logger.Field{Key: "error", Value: rollbackErr},
+				logger.Field{Key: "member_id", Value: memberID})
 		}
 		return nil, errors.Wrap(err, errors.ErrCodeAuthPermCheckError, "Failed to remove old role from RBAC")
 	}
 
 	// Add new role
-	if _, err := enforcer.AddRoleForUser(rbac.FormatUserKey(member.UserID), rbac.FormatRole(member.ProjectID, newRole)); err != nil {
+	_, err = enforcer.AddGroupingPolicy(rbac.FormatUserKey(member.UserID), newRole, domain)
+	if err != nil {
 		// Rollback
 		if _, rollbackErr := s.memberRepo.UpdateRole(ctx, memberID, oldRole); rollbackErr != nil {
-			fmt.Printf("Warning: rollback failed when updating role: %v\n", rollbackErr)
+			logger.Warn("Rollback failed when updating role",
+				logger.Field{Key: "error", Value: rollbackErr},
+				logger.Field{Key: "member_id", Value: memberID})
 		}
-		if _, rollbackErr := enforcer.AddRoleForUser(rbac.FormatUserKey(member.UserID), rbac.FormatRole(member.ProjectID, oldRole)); rollbackErr != nil {
-			fmt.Printf("Warning: rollback failed when adding old role: %v\n", rollbackErr)
+		if _, rollbackErr := enforcer.AddGroupingPolicy(rbac.FormatUserKey(member.UserID), oldRole, domain); rollbackErr != nil {
+			logger.Warn("Rollback failed when adding old role",
+				logger.Field{Key: "error", Value: rollbackErr},
+				logger.Field{Key: "user_id", Value: member.UserID},
+				logger.Field{Key: "role", Value: oldRole})
 		}
 		return nil, errors.Wrap(err, errors.ErrCodeAuthPermCheckError, "Failed to add new role to RBAC")
 	}
@@ -143,14 +163,20 @@ func (s *ProjectMemberService) RemoveMember(ctx context.Context, memberID int64)
 
 	// Remove role from Casbin
 	enforcer := rbac.GetEnforcer()
-	if _, err := enforcer.DeleteRoleForUser(rbac.FormatUserKey(member.UserID), rbac.FormatRole(member.ProjectID, member.Role)); err != nil {
+	domain := rbac.FormatDomain(member.ProjectID)
+	_, err = enforcer.RemoveGroupingPolicy(rbac.FormatUserKey(member.UserID), member.Role, domain)
+	if err != nil {
 		// Log error but don't fail - member already removed from DB
-		fmt.Printf("Warning: failed to remove role from RBAC: %v\n", err)
+		logger.Warn("Failed to remove role from RBAC",
+			logger.Field{Key: "error", Value: err},
+			logger.Field{Key: "user_id", Value: member.UserID},
+			logger.Field{Key: "role", Value: member.Role})
 	}
 
 	// Save policies and clear cache
 	if err := enforcer.SavePolicy(); err != nil {
-		fmt.Printf("Warning: failed to save RBAC policies after member removal: %v\n", err)
+		logger.Warn("Failed to save RBAC policies after member removal",
+			logger.Field{Key: "error", Value: err})
 	}
 	rbac.ClearUserCache(member.UserID, member.ProjectID)
 
@@ -170,6 +196,17 @@ func (s *ProjectMemberService) GetMemberRole(ctx context.Context, projectID, use
 // IsMember checks if a user is a member of a project
 func (s *ProjectMemberService) IsMember(ctx context.Context, projectID, userID int64) (bool, error) {
 	return s.memberRepo.IsMember(ctx, projectID, userID)
+}
+
+// GetMemberByID retrieves a member by ID
+func (s *ProjectMemberService) GetMemberByID(ctx interface{}, memberID int64) (*ent.ProjectMember, error) {
+	// Cast ctx to context.Context
+	ctxTyped, ok := ctx.(context.Context)
+	if !ok {
+		// If not, try to create a background context
+		ctxTyped = context.Background()
+	}
+	return s.memberRepo.GetMemberByID(ctxTyped, memberID)
 }
 
 // isValidProjectRole validates if a role is valid for projects

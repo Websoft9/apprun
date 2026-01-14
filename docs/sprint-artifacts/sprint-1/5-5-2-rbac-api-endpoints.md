@@ -59,7 +59,7 @@
 - [ ] Handler 代码简洁（委托给 Service 层）
 - [ ] 错误码统一（复用 pkg/errors）
 - [ ] 测试覆盖率 > 80%
-- [ ] API 版本化（/api/v1）
+- [ ] API 路径遵循现有规范（/api/*）
 
 ---
 
@@ -91,7 +91,7 @@ core/modules/auth/
 
 #### 1.1 添加项目成员
 
-**Endpoint**: `POST /api/v1/projects/{project_id}/members`
+**Endpoint**: `POST /api/projects/{project_id}/members`
 
 **权限要求**: `member:create` (Admin/Owner only)
 
@@ -106,8 +106,8 @@ core/modules/auth/
 **响应** (201 Created):
 ```json
 {
-  "code": 0,
-  "message": "Member added successfully",
+  "success": true,
+  "code": 201,
   "data": {
     "id": 456,
     "project_id": 789,
@@ -115,7 +115,8 @@ core/modules/auth/
     "role": "member",
     "joined_at": "2026-01-14T10:00:00Z",
     "updated_at": "2026-01-14T10:00:00Z"
-  }
+  },
+  "request_id": "req-abc123"
 }
 ```
 
@@ -141,14 +142,14 @@ core/modules/auth/
 // @Failure      404          {object}  response.Response
 // @Failure      409          {object}  response.Response
 // @Security     BearerAuth
-// @Router       /api/v1/projects/{project_id}/members [post]
+// @Router       /api/projects/{project_id}/members [post]
 ```
 
 ---
 
 #### 1.2 列出项目成员
 
-**Endpoint**: `GET /api/v1/projects/{project_id}/members`
+**Endpoint**: `GET /api/projects/{project_id}/members`
 
 **权限要求**: `member:read` (所有成员可访问)
 
@@ -160,8 +161,8 @@ core/modules/auth/
 **响应** (200 OK):
 ```json
 {
-  "code": 0,
-  "message": "Success",
+  "success": true,
+  "code": 200,
   "data": {
     "items": [
       {
@@ -178,10 +179,14 @@ core/modules/auth/
         }
       }
     ],
-    "total": 5,
-    "page": 1,
-    "page_size": 20
-  }
+    "pagination": {
+      "total": 5,
+      "page": 1,
+      "page_size": 20,
+      "total_pages": 1
+    }
+  },
+  "request_id": "req-def456"
 }
 ```
 
@@ -199,14 +204,14 @@ core/modules/auth/
 // @Success      200          {object}  response.Response{data=MemberListResponse}
 // @Failure      403          {object}  response.Response
 // @Security     BearerAuth
-// @Router       /api/v1/projects/{project_id}/members [get]
+// @Router       /api/projects/{project_id}/members [get]
 ```
 
 ---
 
 #### 1.3 更新成员角色
 
-**Endpoint**: `PUT /api/v1/projects/{project_id}/members/{member_id}`
+**Endpoint**: `PUT /api/projects/{project_id}/members/{member_id}`
 
 **权限要求**: `member:update` (Admin/Owner only)
 
@@ -220,8 +225,8 @@ core/modules/auth/
 **响应** (200 OK):
 ```json
 {
-  "code": 0,
-  "message": "Member role updated successfully",
+  "success": true,
+  "code": 200,
   "data": {
     "id": 456,
     "project_id": 789,
@@ -229,7 +234,8 @@ core/modules/auth/
     "role": "admin",
     "joined_at": "2026-01-01T00:00:00Z",
     "updated_at": "2026-01-14T10:00:00Z"
-  }
+  },
+  "request_id": "req-ghi789"
 }
 ```
 
@@ -247,16 +253,22 @@ core/modules/auth/
 
 #### 1.4 移除项目成员
 
-**Endpoint**: `DELETE /api/v1/projects/{project_id}/members/{member_id}`
+**Endpoint**: `DELETE /api/projects/{project_id}/members/{member_id}`
 
 **权限要求**: `member:delete` (Admin/Owner only)
 
-**响应** (200 OK):
+**响应** (204 No Content):
+```
+(Empty body)
+```
+
+**或者** (200 OK):
 ```json
 {
-  "code": 0,
-  "message": "Member removed successfully",
-  "data": null
+  "success": true,
+  "code": 200,
+  "data": null,
+  "request_id": "req-jkl012"
 }
 ```
 
@@ -275,15 +287,15 @@ core/modules/auth/
 
 #### 2.1 查询当前用户权限
 
-**Endpoint**: `GET /api/v1/projects/{project_id}/permissions/me`
+**Endpoint**: `GET /api/projects/{project_id}/permissions/me`
 
 **权限要求**: 项目成员
 
 **响应** (200 OK):
 ```json
 {
-  "code": 0,
-  "message": "Success",
+  "success": true,
+  "code": 200,
   "data": {
     "user_id": 123,
     "project_id": 789,
@@ -302,7 +314,8 @@ core/modules/auth/
         "actions": ["create", "read", "update", "delete"]
       }
     ]
-  }
+  },
+  "request_id": "req-mno345"
 }
 ```
 
@@ -317,14 +330,14 @@ core/modules/auth/
 // @Success      200          {object}  response.Response{data=UserPermissionsResponse}
 // @Failure      403          {object}  response.Response
 // @Security     BearerAuth
-// @Router       /api/v1/projects/{project_id}/permissions/me [get]
+// @Router       /api/projects/{project_id}/permissions/me [get]
 ```
 
 ---
 
 #### 2.2 检查特定权限
 
-**Endpoint**: `POST /api/v1/projects/{project_id}/permissions/check`
+**Endpoint**: `POST /api/projects/{project_id}/permissions/check`
 
 **权限要求**: 项目成员
 
@@ -339,13 +352,14 @@ core/modules/auth/
 **响应** (200 OK):
 ```json
 {
-  "code": 0,
-  "message": "Success",
+  "success": true,
+  "code": 200,
   "data": {
     "allowed": true,
     "resource": "config",
     "action": "delete"
-  }
+  },
+  "request_id": "req-pqr678"
 }
 ```
 
@@ -364,7 +378,7 @@ core/modules/auth/
 // @Success      200          {object}  response.Response{data=PermissionCheckResponse}
 // @Failure      403          {object}  response.Response
 // @Security     BearerAuth
-// @Router       /api/v1/projects/{project_id}/permissions/check [post]
+// @Router       /api/projects/{project_id}/permissions/check [post]
 ```
 
 ---
@@ -373,19 +387,20 @@ core/modules/auth/
 
 #### 3.1 重载 RBAC 策略
 
-**Endpoint**: `POST /api/v1/admin/rbac/reload`
+**Endpoint**: `POST /api/admin/rbac/reload`
 
 **权限要求**: `platform_admin` (平台管理员)
 
 **响应** (200 OK):
 ```json
 {
-  "code": 0,
-  "message": "RBAC policies reloaded successfully",
+  "success": true,
+  "code": 200,
   "data": {
     "reloaded_at": "2026-01-14T10:00:00Z",
     "policy_count": 42
-  }
+  },
+  "request_id": "req-stu901"
 }
 ```
 
@@ -428,54 +443,56 @@ func NewProjectMemberHandler(memberService *service.ProjectMemberService) *Proje
     }
 }
 
-// AddMember - POST /api/v1/projects/{project_id}/members
+// AddMember - POST /api/projects/{project_id}/members
 func (h *ProjectMemberHandler) AddMember(w http.ResponseWriter, r *http.Request) {
     ctx := r.Context()
     
     // 1. 从路径提取 project_id
     projectID, err := strconv.ParseInt(chi.URLParam(r, "project_id"), 10, 64)
     if err != nil {
-        response.Error(w, errors.NewAppError(errors.ErrCodeBadRequest, "Invalid project_id"))
+        appErr := errors.New(errors.ErrCodeInvalidParam, "Invalid project_id")
+        response.AppError(w, appErr)
         return
     }
     
     // 2. 解析请求体
     var req AddMemberRequest
     if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-        response.Error(w, errors.NewAppError(errors.ErrCodeBadRequest, "Invalid request body"))
+        appErr := errors.New(errors.ErrCodeInvalidParam, "Invalid request body")
+        response.AppError(w, appErr)
         return
     }
     
     // 3. 验证请求
     if err := req.Validate(); err != nil {
-        response.Error(w, err)
+        response.AppError(w, err)
         return
     }
     
     // 4. 调用 Service 层
     member, err := h.memberService.AddMember(ctx, projectID, req.UserID, req.Role)
     if err != nil {
-        logger.Error("Failed to add member", 
-            "error", err,
-            "project_id", projectID,
-            "user_id", req.UserID,
-            "role", req.Role,
+        logger.Error("Failed to add member",
+            logger.Field{Key: "error", Value: err},
+            logger.Field{Key: "project_id", Value: projectID},
+            logger.Field{Key: "user_id", Value: req.UserID},
+            logger.Field{Key: "role", Value: req.Role},
         )
-        response.Error(w, err)
+        response.AppError(w, err)
         return
     }
     
     // 5. 审计日志
     operatorID := jwt.GetUserID(ctx)
     logger.Info("Member added",
-        "operator_id", operatorID,
-        "project_id", projectID,
-        "new_member_user_id", req.UserID,
-        "role", req.Role,
+        logger.Field{Key: "operator_id", Value: operatorID},
+        logger.Field{Key: "project_id", Value: projectID},
+        logger.Field{Key: "new_member_user_id", Value: req.UserID},
+        logger.Field{Key: "role", Value: req.Role},
     )
     
     // 6. 返回成功响应
-    response.Success(w, member, http.StatusCreated)
+    response.Created(w, member, "")
 }
 
 // 其他方法类似...
@@ -490,14 +507,14 @@ type AddMemberRequest struct {
 
 func (r *AddMemberRequest) Validate() error {
     if r.UserID <= 0 {
-        return errors.NewAppError(errors.ErrCodeBadRequest, "user_id must be positive")
+        return errors.New(errors.ErrCodeInvalidParam, "user_id must be positive")
     }
     
     validRoles := map[string]bool{
         "owner": true, "admin": true, "member": true, "viewer": true,
     }
     if !validRoles[r.Role] {
-        return errors.NewAppError(errors.ErrCodeBadRequest, "Invalid role")
+        return errors.New(errors.ErrCodeAuthInvalidRole, "Invalid role")
     }
     
     return nil
@@ -524,7 +541,7 @@ func NewPermissionHandler(permService *service.PermissionService) *PermissionHan
     }
 }
 
-// GetMyPermissions - GET /api/v1/projects/{project_id}/permissions/me
+// GetMyPermissions - GET /api/projects/{project_id}/permissions/me
 func (h *PermissionHandler) GetMyPermissions(w http.ResponseWriter, r *http.Request) {
     ctx := r.Context()
     
@@ -532,21 +549,22 @@ func (h *PermissionHandler) GetMyPermissions(w http.ResponseWriter, r *http.Requ
     userID := jwt.GetUserID(ctx)
     projectID, err := strconv.ParseInt(chi.URLParam(r, "project_id"), 10, 64)
     if err != nil {
-        response.Error(w, errors.NewAppError(errors.ErrCodeBadRequest, "Invalid project_id"))
+        appErr := errors.New(errors.ErrCodeInvalidParam, "Invalid project_id")
+        response.AppError(w, appErr)
         return
     }
     
     // 2. 获取用户角色
     roles, err := h.permService.GetUserRoles(userID, projectID)
     if err != nil {
-        response.Error(w, err)
+        response.AppError(w, err)
         return
     }
     
     // 3. 获取用户权限
     permissions, err := h.permService.GetUserPermissions(ctx, userID, projectID)
     if err != nil {
-        response.Error(w, err)
+        response.AppError(w, err)
         return
     }
     
@@ -558,7 +576,7 @@ func (h *PermissionHandler) GetMyPermissions(w http.ResponseWriter, r *http.Requ
         Permissions: permissions,
     }
     
-    response.Success(w, resp, http.StatusOK)
+    response.Success(w, resp)
 }
 
 // CheckPermission - POST /api/v1/projects/{project_id}/permissions/check
@@ -571,46 +589,51 @@ func (h *PermissionHandler) CheckPermission(w http.ResponseWriter, r *http.Reque
 
 ### Task 3: 注册路由
 
-**文件**: `core/modules/auth/routes.go`
+**文件**: `core/routes/router.go` (或在独立的 routes 文件中)
 
 ```go
-package auth
-
 import (
+    "apprun/ent"
+    internalMiddleware "apprun/internal/middleware"
+    authHandler "apprun/modules/auth/handler"
     "github.com/go-chi/chi/v5"
-    "apprun/internal/middleware"
-    "apprun/modules/auth/handler"
 )
 
-func RegisterRoutes(r chi.Router, memberHandler *handler.ProjectMemberHandler, permHandler *handler.PermissionHandler) {
+func RegisterRBACRoutes(r chi.Router, dbClient *ent.Client, memberHandler *authHandler.ProjectMemberHandler, permHandler *authHandler.PermissionHandler) {
+    // 初始化中间件
+    jwtMiddleware := internalMiddleware.NewJWTMiddleware()
+    projectCtxMiddleware := internalMiddleware.ProjectContextMiddleware(dbClient)
+    
     // 项目成员管理路由
-    r.Route("/api/v1/projects/{project_id}/members", func(r chi.Router) {
+    r.Route("/api/projects/{project_id}/members", func(r chi.Router) {
         // 中间件链
-        r.Use(middleware.AuthMiddleware)           // JWT 认证
-        r.Use(middleware.ProjectContextMiddleware) // 项目上下文
+        r.Use(jwtMiddleware.JWTAuth)      // JWT 认证
+        r.Use(projectCtxMiddleware)       // 项目上下文
         
         // 列出成员（所有成员可访问）
-        r.With(middleware.RequirePermission("member", "read")).Get("/", memberHandler.ListMembers)
+        r.With(internalMiddleware.RequirePermission("member", "read")).Get("/", memberHandler.ListMembers)
         
         // 管理成员（需要 admin 权限）
-        r.With(middleware.RequirePermission("member", "create")).Post("/", memberHandler.AddMember)
-        r.With(middleware.RequirePermission("member", "update")).Put("/{member_id}", memberHandler.UpdateRole)
-        r.With(middleware.RequirePermission("member", "delete")).Delete("/{member_id}", memberHandler.RemoveMember)
+        r.With(internalMiddleware.RequirePermission("member", "create")).Post("/", memberHandler.AddMember)
+        r.With(internalMiddleware.RequirePermission("member", "update")).Put("/{member_id}", memberHandler.UpdateRole)
+        r.With(internalMiddleware.RequirePermission("member", "delete")).Delete("/{member_id}", memberHandler.RemoveMember)
     })
     
     // 权限查询路由
-    r.Route("/api/v1/projects/{project_id}/permissions", func(r chi.Router) {
-        r.Use(middleware.AuthMiddleware)
-        r.Use(middleware.ProjectContextMiddleware)
+    r.Route("/api/projects/{project_id}/permissions", func(r chi.Router) {
+        r.Use(jwtMiddleware.JWTAuth)
+        r.Use(projectCtxMiddleware)
         
         r.Get("/me", permHandler.GetMyPermissions)
         r.Post("/check", permHandler.CheckPermission)
     })
     
     // RBAC 管理路由（平台管理员）
-    r.Route("/api/v1/admin/rbac", func(r chi.Router) {
-        r.Use(middleware.AuthMiddleware)
-        r.Use(middleware.RequirePlatformAdmin) // 平台管理员中间件
+    // 注意：需要实现平台管理员权限检查中间件
+    r.Route("/api/admin/rbac", func(r chi.Router) {
+        r.Use(jwtMiddleware.JWTAuth)
+        // 检查平台管理员权限（projectID=0表示平台级别）
+        r.Use(internalMiddleware.RequirePermission("rbac", "manage"))
         
         r.Post("/reload", rbacHandler.ReloadPolicies)
     })
@@ -649,7 +672,7 @@ func TestAddMember_Success(t *testing.T) {
     // 构造请求
     reqBody := `{"user_id": %d, "role": "member"}`
     req := httptest.NewRequest("POST", 
-        fmt.Sprintf("/api/v1/projects/%d/members", project.ID), 
+        fmt.Sprintf("/api/projects/%d/members", project.ID), 
         strings.NewReader(fmt.Sprintf(reqBody, newMember.ID)))
     req.Header.Set("Authorization", "Bearer "+generateTestToken(owner.ID))
     
@@ -728,23 +751,27 @@ func TestCheckPermission_Denied(t *testing.T) {
 
 ## Error Codes
 
-复用 Story 1.3 和 5.5 的错误码：
+复用 Story 1.3 和 5.5 的错误码，并新增以下错误码（已在 `pkg/errors/codes.go` 中定义）：
 
 ```go
 // pkg/errors/codes.go (已存在)
 const (
-    ErrCodeBadRequest        = 400001  // 通用
-    ErrCodeAuthRequired      = 401001  // Story 5.3
-    ErrCodeAuthNotMember     = 403002  // Story 5.5
-    ErrCodePermForbidden     = 403003  // Story 5.5
-    ErrCodeNotFound          = 404001  // 通用
-    ErrCodeConflict          = 409001  // 通用
+    // Core 错误码
+    ErrCodeInvalidParam  = "CORE_VAL_INVALID_PARAM_001"  // 通用参数验证错误
+    ErrCodeNotFound      = "CORE_RES_NOT_FOUND_001"      // 资源不存在
+    ErrCodeConflict      = "CORE_BIZ_CONFLICT_001"       // 业务冲突
     
-    // ✨ 新增
-    ErrCodeInvalidRole       = 400002  // 无效角色名称
-    ErrCodeCannotModifyOwner = 403004  // 不能修改/移除 owner
-    ErrCodeUserNotFound      = 404002  // 用户不存在
-    ErrCodeMemberExists      = 409002  // 成员已存在
+    // Auth 模块已有错误码
+    ErrCodeAuthNotMember       = "AUTH_PERM_NOT_MEMBER_004"       // 非项目成员
+    ErrCodeAuthNoPermission    = "AUTH_PERM_NO_PERMISSION_001"    // 无权限
+    ErrCodeAuthUserNotFound    = "AUTH_RES_USER_NOT_FOUND_001"    // 用户不存在
+    ErrCodeAuthProjectNotFound = "AUTH_RES_PROJECT_NOT_FOUND_003" // 项目不存在
+    
+    // ✨ Story 5.5.2 新增错误码
+    ErrCodeAuthInvalidRole       = "AUTH_VAL_INVALID_ROLE_006"         // 无效角色名称
+    ErrCodeAuthMemberNotFound    = "AUTH_RES_MEMBER_NOT_FOUND_004"     // 项目成员不存在
+    ErrCodeAuthMemberExists      = "AUTH_BIZ_MEMBER_EXISTS_005"        // 成员已存在
+    ErrCodeAuthCannotModifyOwner = "AUTH_BIZ_CANNOT_MODIFY_OWNER_006" // 不能修改/移除 owner
 )
 ```
 
@@ -811,7 +838,7 @@ members, err := repo.ListMembers(ctx, projectID)
 ### 3. 批量权限检查
 ```go
 // 前端可以批量检查多个权限
-POST /api/v1/projects/{project_id}/permissions/batch-check
+POST /api/projects/{project_id}/permissions/batch-check
 {
   "checks": [
     {"resource": "config", "action": "create"},
@@ -830,15 +857,16 @@ POST /api/v1/projects/{project_id}/permissions/batch-check
 func (h *ProjectMemberHandler) RemoveMember(w http.ResponseWriter, r *http.Request) {
     member, err := h.memberService.GetMemberByID(ctx, memberID)
     if err != nil {
-        response.Error(w, err)
+        response.AppError(w, err)
         return
     }
     
     if member.Role == "owner" {
-        response.Error(w, errors.NewAppError(
-            errors.ErrCodeCannotModifyOwner, 
+        appErr := errors.New(
+            errors.ErrCodeAuthCannotModifyOwner, 
             "Cannot remove project owner",
-        ))
+        )
+        response.AppError(w, appErr)
         return
     }
     

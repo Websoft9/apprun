@@ -6,6 +6,7 @@ import (
 
 	"apprun/ent"
 	"apprun/ent/project"
+	"apprun/ent/schema"
 )
 
 // ProjectRepository handles project data access
@@ -25,7 +26,7 @@ func (r *ProjectRepository) Create(ctx context.Context, name, description string
 		SetName(name).
 		SetDescription(description).
 		SetOwnerID(ownerID).
-		SetStatus(1). // 1 = enabled
+		SetStatus(schema.ProjectStatusActive). // Use constant
 		Save(ctx)
 }
 

@@ -1,6 +1,36 @@
-generated: '2026-01-12'
+# generated: 2026-01-14
+# project: apprun
+# project_key: apprun
+# tracking_system: file-system
+# story_location: /data/cdl/apprun/docs/sprint-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog -> in-progress: Automatically when first story is created
+#   - in-progress -> done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+
+generated: '2026-01-14'
 project: apprun
-last_updated_by: sm-bob-sprint-planning
+project_key: apprun
+tracking_system: file-system
+story_location: /data/cdl/apprun/docs/sprint-artifacts
 
 development_status:
   # Epic 1: Infrastructure & Foundation
@@ -28,7 +58,7 @@ development_status:
     title: 数据库增量迁移
     sprint: sprint-0
   1-6-admin-cli:
-    status: backlog
+    status: ready-for-dev
     title: 服务端 CLI 框架
     sprint: sprint-0
   1-7-makefile-standards:
@@ -36,11 +66,11 @@ development_status:
     title: Makefile 标准与命令分组
     sprint: sprint-0
   1-8-testing-framework:
-    status: backlog
+    status: ready-for-dev
     title: 测试框架与工具集
     sprint: sprint-0
   1-9-refactor-handlers:
-    status: backlog
+    status: ready-for-dev
     title: 重构现有 Handlers
     sprint: sprint-0
   1-10-logger-package:
@@ -48,7 +78,7 @@ development_status:
     title: 日志防腐层
     sprint: sprint-1
   1-11-request-package:
-    status: backlog
+    status: ready-for-dev
     title: Request Package
     sprint: sprint-1
   1-12-http-server:
@@ -71,30 +101,34 @@ development_status:
     status: done
     title: Redis Cache Package
     sprint: sprint-2
-    priority: P1
-    estimate: 3 SP
-  
+  epic-1-retrospective:
+    status: optional
+    title: Infrastructure Epic Retrospective
+
   # Epic 2: Internationalization & Localization
   epic-2:
-    status: backlog
+    status: in-progress
     title: Internationalization & Localization
   2-1-i18n:
-    status: backlog
+    status: ready-for-dev
     title: i18n 国际化基础设施
     sprint: sprint-0
   2-2-db-field-i18n:
-    status: backlog
+    status: ready-for-dev
     title: Database Field i18n 数据库字段国际化
     sprint: sprint-0
   2-3-i18n-integration-plan:
-    status: backlog
+    status: ready-for-dev
     title: i18n Integration Plan - i18n 集成计划
     sprint: sprint-0
   2-4-l10n:
-    status: backlog
+    status: ready-for-dev
     title: Localization (l10n) - 本地化支持
     sprint: sprint-0
-  
+  epic-2-retrospective:
+    status: optional
+    title: i18n Epic Retrospective
+
   # Epic 3: Configuration Management
   epic-3:
     status: in-progress
@@ -108,10 +142,22 @@ development_status:
     title: Configuration Center Foundation
     sprint: sprint-1
   3-3-module-config-registry:
-    status: backlog
+    status: ready-for-dev
     title: Module Configuration Registry Enhancement
     sprint: sprint-1
-  
+  3-4-config-hot-reload:
+    status: backlog
+    title: 配置热更新与通知机制
+  3-5-config-rollback:
+    status: backlog
+    title: 配置版本回滚
+  3-6-config-audit:
+    status: backlog
+    title: 配置审计日志
+  epic-3-retrospective:
+    status: optional
+    title: Config Epic Retrospective
+
   # Epic 4: API Documentation
   epic-4:
     status: done
@@ -120,7 +166,10 @@ development_status:
     status: done
     title: Swagger API Documentation
     sprint: sprint-1
-  
+  epic-4-retrospective:
+    status: pending
+    title: API Documentation Epic Retrospective
+
   # Epic 5: Authentication & Authorization
   epic-5:
     status: in-progress
@@ -130,11 +179,11 @@ development_status:
     title: User Registration
     sprint: sprint-1
   5-2-user-login:
-    status: backlog
+    status: ready-for-dev
     title: User Login
     sprint: sprint-1
   5-3-jwt-middleware:
-    status: backlog
+    status: ready-for-dev
     title: JWT Middleware
     sprint: sprint-1
   5-4-token-refresh:
@@ -145,18 +194,64 @@ development_status:
     status: in-progress
     title: RBAC 权限控制
     sprint: sprint-1
-  
+  5-5-1-rbac-advanced:
+    status: ready-for-dev
+    title: RBAC 高级特性
+  5-5-2-rbac-api-endpoints:
+    status: ready-for-dev
+    title: RBAC API Endpoints
+  epic-5-retrospective:
+    status: optional
+    title: Auth Epic Retrospective
+
   # Epic 6: File Storage Service
   epic-6:
     status: backlog
     title: File Storage Service
-  
-  # Epic 7: Serverless Functions
+  6-1-storage-backend-abstraction:
+    status: backlog
+    title: 存储后端抽象层
+  6-2-file-upload:
+    status: backlog
+    title: 文件上传功能
+  6-3-file-download:
+    status: backlog
+    title: 文件下载功能
+  6-4-file-list-delete:
+    status: backlog
+    title: 文件列表与删除
+  6-5-folder-management:
+    status: backlog
+    title: 文件夹管理
+  6-6-storage-quota:
+    status: backlog
+    title: 存储配额管理
+  epic-6-retrospective:
+    status: optional
+    title: Storage Epic Retrospective
+
+  # Epic 7: Functions Service
   epic-7:
     status: backlog
     title: Serverless Functions
-
-retrospectives:
-  epic-4-retrospective:
-    status: pending
-    title: API Documentation Epic Retrospective
+  7-1-function-management-basic:
+    status: backlog
+    title: 函数管理基础
+  7-2-compilation-engine:
+    status: backlog
+    title: 函数编译引擎
+  7-3-execution-engine:
+    status: backlog
+    title: 函数执行引擎
+  7-4-http-trigger:
+    status: backlog
+    title: HTTP 触发功能
+  7-5-execution-logs:
+    status: backlog
+    title: 执行日志管理
+  7-6-event-trigger:
+    status: backlog
+    title: 事件触发功能
+  epic-7-retrospective:
+    status: optional
+    title: Functions Epic Retrospective

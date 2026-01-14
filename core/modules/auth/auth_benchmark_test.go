@@ -65,7 +65,7 @@ func BenchmarkLogin_EmailAuth(b *testing.B) {
 	setupBenchmarkUser(b, client, "bench@example.com", "benchuser", "Password123!")
 
 	repo := repository.NewUserRepository(client)
-	authService := service.NewAuthService(repo)
+	authService := service.NewAuthService(repo, nil)
 
 	ctx := context.Background()
 
@@ -97,7 +97,7 @@ func BenchmarkLogin_UsernameAuth(b *testing.B) {
 	setupBenchmarkUser(b, client, "bench2@example.com", "benchuser2", "Password123!")
 
 	repo := repository.NewUserRepository(client)
-	authService := service.NewAuthService(repo)
+	authService := service.NewAuthService(repo, nil)
 
 	ctx := context.Background()
 
@@ -280,7 +280,7 @@ func TestConcurrentLogin_1000QPS(t *testing.T) {
 	}
 
 	repo := repository.NewUserRepository(client)
-	authService := service.NewAuthService(repo)
+	authService := service.NewAuthService(repo, nil)
 
 	ctx := context.Background()
 

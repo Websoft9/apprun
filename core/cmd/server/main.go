@@ -6,9 +6,13 @@ import (
 	"time"
 
 	_ "apprun/docs" // Swagger docs (自动生成)
+	"apprun/ent"
 	"apprun/internal/jwt"
 	"apprun/internal/password"
+	"apprun/internal/rbac"
 	authmod "apprun/modules/auth"
+	authRepository "apprun/modules/auth/repository"
+	authService "apprun/modules/auth/service"
 	"apprun/modules/config"
 	"apprun/pkg/cache"
 	pkgconfig "apprun/pkg/config"
@@ -112,6 +116,16 @@ func run() error {
 	}()
 	log.Println("✅ Database connected")
 
+	// Phase 2.3: Initialize Platform Project (Story 5.5 - RBAC)
+	// Create unique platform project for platform-level resources
+	// This must happen early since it's required for system initialization
+	if err := initializePlatformProject(ctx, dbClient.GetEntClient()); err != nil {
+		log.Printf("⚠️  Warning: Failed to initialize platform project: %v", err)
+		log.Println("⚠️  Platform-level resources may not work correctly")
+	} else {
+		log.Println("✅ Platform project initialized")
+	}
+
 	// Phase 2.5: Initialize Cache Client for JWT Blacklist (Optional)
 	// Cache is used for token blacklist tracking (Story 5.4)
 	// If cache is unavailable, blacklist will be disabled with graceful degradation
@@ -130,6 +144,21 @@ func run() error {
 	// Initialize JWT blacklist with cache client (handles nil gracefully)
 	viperProvider := pkgconfig.NewViperProvider(nil)
 	jwt.InitBlacklist(cacheClient, viperProvider)
+
+	// Phase 2.7: Initialize RBAC Enforcer (Story 5.5.2)
+	// RBAC enforcer must be initialized before routes to enable permission checks
+	rbacCfg := rbac.Config{
+		PolicyPath:  env.Get("RBAC_POLICY_PATH", ""), // Empty = use embedded default policy
+		UseDatabase: false,                           // MVP: false (file-based), Production: true
+	}
+	if err := rbac.InitEnforcer(rbacCfg); err != nil {
+		log.Printf("⚠️  Warning: Failed to initialize RBAC enforcer: %v", err)
+		log.Println("⚠️  Permission checks will fail - RBAC is required for protected routes")
+		// In production, this should be a fatal error
+		// For development, we allow graceful degradation
+	} else {
+		log.Println("✅ RBAC enforcer initialized")
+	}
 
 	// Phase 3: Initialize Config Service (Layer 2 - Configuration Center)
 	// Config service manages runtime configurations stored in database
@@ -205,4 +234,20 @@ func run() error {
 	// Phase 7: Start HTTP/HTTPS Server (enters runtime phase)
 	// From this point, handlers will use logger.L() for business logging
 	return server.Start(router, serverCfg)
+}
+
+// initializePlatformProject creates or gets the unique platform project
+func initializePlatformProject(ctx context.Context, client *ent.Client) error {
+	// Get or create system user (ID: 1, hardcoded for platform operations)
+	// In production, this should be properly managed in bootstrap
+	const systemUserID int64 = 1
+
+	// Initialize repositories and services
+	projectRepo := authRepository.NewProjectRepository(client)
+	memberRepo := authRepository.NewProjectMemberRepository(client)
+	projectService := authService.NewProjectService(projectRepo, memberRepo)
+
+	// Get or create platform project
+	_, err := projectService.GetOrCreatePlatformProject(ctx, systemUserID)
+	return err
 }

@@ -94,6 +94,8 @@ const (
 	ErrCodeAuthInvalidToken = "AUTH_VAL_INVALID_TOKEN_003"
 	ErrCodeAuthInvalidCode  = "AUTH_VAL_INVALID_CODE_004"
 	ErrCodeAuthMissingParam = "AUTH_VAL_MISSING_PARAM_005"
+	// #nosec G101 -- this is an error code constant, not a credential
+	ErrCodeAuthMissingToken = "AUTH_VAL_MISSING_TOKEN_006" // JWT token not found in request
 )
 
 // AUTH - Resource errors
@@ -105,6 +107,7 @@ const (
 
 // AUTH - Authentication errors
 const (
+	ErrCodeAuthRequired = "AUTH_AUTH_REQUIRED_000" // User authentication required
 	// #nosec G101 -- this is an error code constant, not a credential
 	ErrCodeAuthInvalidCredentials = "AUTH_AUTH_INVALID_CREDENTIALS_001"
 	// #nosec G101 -- this is an error code constant, not a credential
@@ -135,7 +138,11 @@ const (
 	// #nosec G101 -- this is an error code constant, not a credential
 	ErrCodeAuthTokenUsed = "AUTH_BIZ_TOKEN_USED_003"
 	// #nosec G101 -- this is an error code constant, not a credential
-	ErrCodeAuthInvalidOldPass = "AUTH_BIZ_INVALID_OLD_PASS_004"
+	ErrCodeAuthInvalidOldPass    = "AUTH_BIZ_INVALID_OLD_PASS_004"
+	ErrCodeAuthMemberExists      = "AUTH_BIZ_MEMBER_EXISTS_005"       // Member already exists in project
+	ErrCodeAuthCannotModifyOwner = "AUTH_BIZ_CANNOT_MODIFY_OWNER_006" // Cannot modify/remove project owner
+	ErrCodeAuthInvalidRole       = "AUTH_VAL_INVALID_ROLE_006"        // Invalid role name
+	ErrCodeAuthMemberNotFound    = "AUTH_RES_MEMBER_NOT_FOUND_004"    // Project member not found
 )
 
 // =============================================================================

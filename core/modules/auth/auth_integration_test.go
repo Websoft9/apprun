@@ -80,7 +80,7 @@ func TestLoginIntegration_SuccessWithEmail(t *testing.T) {
 
 	// Initialize service layer
 	userRepo := repository.NewUserRepository(client)
-	authSvc := service.NewAuthService(userRepo)
+	authSvc := service.NewAuthService(userRepo, nil)
 
 	// Execute login
 	ctx := context.Background()
@@ -123,7 +123,7 @@ func TestLoginIntegration_SuccessWithUsername(t *testing.T) {
 	user := setupTestUser(t, client, "john@example.com", testUsername, testPassword)
 
 	userRepo := repository.NewUserRepository(client)
-	authSvc := service.NewAuthService(userRepo)
+	authSvc := service.NewAuthService(userRepo, nil)
 
 	// Execute login with username
 	ctx := context.Background()
@@ -155,7 +155,7 @@ func TestLoginIntegration_InvalidPassword(t *testing.T) {
 	setupTestUser(t, client, "test@example.com", "testuser", "CorrectPass123")
 
 	userRepo := repository.NewUserRepository(client)
-	authSvc := service.NewAuthService(userRepo)
+	authSvc := service.NewAuthService(userRepo, nil)
 
 	// Execute login with wrong password
 	ctx := context.Background()
@@ -185,7 +185,7 @@ func TestLoginIntegration_UserNotFound(t *testing.T) {
 	setupTestConfig(t)
 
 	userRepo := repository.NewUserRepository(client)
-	authSvc := service.NewAuthService(userRepo)
+	authSvc := service.NewAuthService(userRepo, nil)
 
 	// Execute login with non-existent user
 	ctx := context.Background()
@@ -229,7 +229,7 @@ func TestLoginIntegration_DisabledAccount(t *testing.T) {
 	require.NoError(t, err)
 
 	userRepo := repository.NewUserRepository(client)
-	authSvc := service.NewAuthService(userRepo)
+	authSvc := service.NewAuthService(userRepo, nil)
 
 	// Execute login
 	ctx := context.Background()
@@ -267,7 +267,7 @@ func TestLoginIntegration_LoginHistoryTracking(t *testing.T) {
 	assert.Equal(t, "", user.LastLoginIP)
 
 	userRepo := repository.NewUserRepository(client)
-	authSvc := service.NewAuthService(userRepo)
+	authSvc := service.NewAuthService(userRepo, nil)
 
 	// Execute login
 	ctx := context.Background()
@@ -308,7 +308,7 @@ func TestGetUserProfileIntegration(t *testing.T) {
 	user := setupTestUser(t, client, "profile@example.com", "profileuser", "SecurePass123")
 
 	userRepo := repository.NewUserRepository(client)
-	authSvc := service.NewAuthService(userRepo)
+	authSvc := service.NewAuthService(userRepo, nil)
 
 	// Execute GetUserProfile
 	ctx := context.Background()
@@ -341,7 +341,7 @@ func TestGetUserProfileIntegration_UserNotFound(t *testing.T) {
 	setupTestConfig(t)
 
 	userRepo := repository.NewUserRepository(client)
-	authSvc := service.NewAuthService(userRepo)
+	authSvc := service.NewAuthService(userRepo, nil)
 
 	// Execute GetUserProfile with non-existent ID
 	ctx := context.Background()
@@ -468,7 +468,7 @@ func TestIntegration_FullLoginFlow(t *testing.T) {
 
 	// Step 2: Initialize full stack
 	userRepo := repository.NewUserRepository(client)
-	authSvc := service.NewAuthService(userRepo)
+	authSvc := service.NewAuthService(userRepo, nil)
 	authHandler := handler.NewAuthHandler(authSvc)
 
 	assert.NotNil(t, authHandler) // Verify handler created

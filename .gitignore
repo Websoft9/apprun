@@ -38,3 +38,7 @@ ssl/
 # Editor/IDE
 # .idea/
 # .vscode/
+
+# Locale backup files
+*.backup.*
+core/locales/*.backup.*

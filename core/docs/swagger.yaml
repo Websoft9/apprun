@@ -53,6 +53,244 @@ definitions:
         example: "true"
         type: string
     type: object
+  ent.Project:
+    properties:
+      created_at:
+        description: CreatedAt holds the value of the "created_at" field.
+        type: string
+      description:
+        description: Description holds the value of the "description" field.
+        type: string
+      edges:
+        allOf:
+        - $ref: '#/definitions/ent.ProjectEdges'
+        description: |-
+          Edges holds the relations/edges for other nodes in the graph.
+          The values are being populated by the ProjectQuery when eager-loading is set.
+      id:
+        description: |-
+          ID of the ent.
+          Internal database primary key for foreign key relationships
+        type: integer
+      name:
+        description: Name holds the value of the "name" field.
+        type: string
+      owner_id:
+        description: Project owner user_id, foreign key to users.id
+        type: integer
+      status:
+        description: 'Status: 0-disabled, 1-enabled, 2-archived'
+        type: integer
+      updated_at:
+        description: UpdatedAt holds the value of the "updated_at" field.
+        type: string
+      uuid:
+        description: External UUID for API usage in REST paths
+        type: string
+    type: object
+  ent.ProjectEdges:
+    properties:
+      members:
+        description: Members holds the value of the members edge.
+        items:
+          $ref: '#/definitions/ent.ProjectMember'
+        type: array
+      owner:
+        allOf:
+        - $ref: '#/definitions/ent.User'
+        description: Owner holds the value of the owner edge.
+    type: object
+  ent.ProjectMember:
+    properties:
+      edges:
+        allOf:
+        - $ref: '#/definitions/ent.ProjectMemberEdges'
+        description: |-
+          Edges holds the relations/edges for other nodes in the graph.
+          The values are being populated by the ProjectMemberQuery when eager-loading is set.
+      id:
+        description: ID of the ent.
+        type: integer
+      joined_at:
+        description: JoinedAt holds the value of the "joined_at" field.
+        type: string
+      project_id:
+        description: Foreign key to projects.id
+        type: integer
+      role:
+        description: 'Role: owner, admin, member, viewer'
+        type: string
+      updated_at:
+        description: UpdatedAt holds the value of the "updated_at" field.
+        type: string
+      user_id:
+        description: Foreign key to users.id
+        type: integer
+    type: object
+  ent.ProjectMemberEdges:
+    properties:
+      project:
+        allOf:
+        - $ref: '#/definitions/ent.Project'
+        description: Project holds the value of the project edge.
+      user:
+        allOf:
+        - $ref: '#/definitions/ent.User'
+        description: User holds the value of the user edge.
+    type: object
+  ent.Servers:
+    properties:
+      edges:
+        allOf:
+        - $ref: '#/definitions/ent.ServersEdges'
+        description: |-
+          Edges holds the relations/edges for other nodes in the graph.
+          The values are being populated by the ServersQuery when eager-loading is set.
+      id:
+        description: ID of the ent.
+        type: integer
+      ip:
+        description: IP holds the value of the "ip" field.
+        type: string
+      name:
+        description: Name holds the value of the "name" field.
+        type: string
+    type: object
+  ent.ServersEdges:
+    properties:
+      owner:
+        allOf:
+        - $ref: '#/definitions/ent.User'
+        description: Owner holds the value of the owner edge.
+    type: object
+  ent.User:
+    properties:
+      avatar:
+        description: Avatar URL
+        type: string
+      created_at:
+        description: Account creation timestamp
+        type: string
+      edges:
+        allOf:
+        - $ref: '#/definitions/ent.UserEdges'
+        description: |-
+          Edges holds the relations/edges for other nodes in the graph.
+          The values are being populated by the UserQuery when eager-loading is set.
+      email:
+        description: Email address for login (required, unique)
+        type: string
+      gender:
+        description: 'Gender: 0-Unknown, 1-Male, 2-Female'
+        type: integer
+      id:
+        description: |-
+          ID of the ent.
+          Internal database primary key (not exposed in API)
+        type: integer
+      language:
+        description: Preferred language (e.g., zh-CN, en-US)
+        type: string
+      last_login_at:
+        description: Last login timestamp
+        type: string
+      last_login_ip:
+        description: Last login IP address (supports IPv6)
+        type: string
+      nickname:
+        description: Display name / nickname
+        type: string
+      phone:
+        description: Phone number
+        type: string
+      signature:
+        description: User signature / bio
+        type: string
+      status:
+        description: 'Account status: 0-Disabled, 1-Active'
+        type: integer
+      timezone:
+        description: User timezone (e.g., Asia/Shanghai)
+        type: string
+      updated_at:
+        description: Last update timestamp
+        type: string
+      username:
+        description: Username for login (optional, alphanumeric + underscore)
+        type: string
+      uuid:
+        description: Public UUID for external API reference (immutable, globally unique)
+        type: string
+    type: object
+  ent.UserEdges:
+    properties:
+      owned_projects:
+        description: OwnedProjects holds the value of the owned_projects edge.
+        items:
+          $ref: '#/definitions/ent.Project'
+        type: array
+      project_memberships:
+        description: ProjectMemberships holds the value of the project_memberships
+          edge.
+        items:
+          $ref: '#/definitions/ent.ProjectMember'
+        type: array
+      servers:
+        description: Servers holds the value of the servers edge.
+        items:
+          $ref: '#/definitions/ent.Servers'
+        type: array
+    type: object
+  handler.AddMemberRequest:
+    properties:
+      role:
+        type: string
+      user_id:
+        type: integer
+    required:
+    - role
+    - user_id
+    type: object
+  handler.CheckPermissionRequest:
+    properties:
+      action:
+        type: string
+      resource:
+        type: string
+    required:
+    - action
+    - resource
+    type: object
+  handler.CheckPermissionResponse:
+    properties:
+      allowed:
+        type: boolean
+    type: object
+  handler.MemberListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/ent.ProjectMember'
+        type: array
+      pagination:
+        $ref: '#/definitions/response.PaginationInfo'
+    type: object
+  handler.PermissionItem:
+    properties:
+      actions:
+        items:
+          type: string
+        type: array
+      resource:
+        type: string
+    type: object
+  handler.PermissionsResponse:
+    properties:
+      permissions:
+        items:
+          $ref: '#/definitions/handler.PermissionItem'
+        type: array
+    type: object
   handler.RefreshRequest:
     properties:
       refresh_token:
@@ -73,6 +311,13 @@ definitions:
         description: New JWT refresh token
         type: string
     type: object
+  handler.UpdateRoleRequest:
+    properties:
+      role:
+        type: string
+    required:
+    - role
+    type: object
   handlers.HealthResponse:
     properties:
       service:
@@ -90,6 +335,17 @@ definitions:
       message:
         type: string
     type: object
+  response.PaginationInfo:
+    properties:
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
   response.Response:
     properties:
       code:
@@ -103,6 +359,18 @@ definitions:
         type: string
       success:
         type: boolean
+    type: object
+  service.CreateProjectRequest:
+    properties:
+      description:
+        maxLength: 500
+        type: string
+      name:
+        maxLength: 100
+        minLength: 3
+        type: string
+    required:
+    - name
     type: object
   service.LoginRequest:
     properties:
@@ -133,6 +401,23 @@ definitions:
         allOf:
         - $ref: '#/definitions/service.UserProfile'
         description: User profile data
+    type: object
+  service.ProjectResponse:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      owner_id:
+        type: integer
+      status:
+        type: integer
+      updated_at:
+        type: string
     type: object
   service.RegisterRequest:
     properties:
@@ -535,6 +820,442 @@ paths:
       summary: i18n Demo
       tags:
       - demo
+  /api/projects:
+    get:
+      description: Lists all projects where the authenticated user is a member
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of projects
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/service.ProjectResponse'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: List user's projects
+      tags:
+      - Projects
+    post:
+      consumes:
+      - application/json
+      description: Creates a new project with the authenticated user as owner
+      parameters:
+      - description: Project creation data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/service.CreateProjectRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Project created successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/service.ProjectResponse'
+              type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Create a new project
+      tags:
+      - Projects
+  /api/projects/{id}:
+    delete:
+      description: Archives a project (soft delete)
+      parameters:
+      - description: Project UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Project deleted successfully
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: Project not found
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Delete project
+      tags:
+      - Projects
+    get:
+      description: Gets detailed information about a specific project
+      parameters:
+      - description: Project UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Project details
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/service.ProjectResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: Project not found
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get project details
+      tags:
+      - Projects
+    put:
+      consumes:
+      - application/json
+      description: Updates project information (name, description)
+      parameters:
+      - description: Project UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Project update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/service.CreateProjectRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Project updated successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/service.ProjectResponse'
+              type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: Project not found
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Update project
+      tags:
+      - Projects
+  /api/projects/{project_id}/members:
+    get:
+      description: Get a list of all members in a project
+      parameters:
+      - description: Project ID
+        in: path
+        name: project_id
+        required: true
+        type: integer
+      - description: Filter by role
+        in: query
+        name: role
+        type: string
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/handler.MemberListResponse'
+              type: object
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: List project members
+      tags:
+      - rbac
+    post:
+      consumes:
+      - application/json
+      description: Add a user to a project with a specific role (requires admin permission)
+      parameters:
+      - description: Project ID
+        in: path
+        name: project_id
+        required: true
+        type: integer
+      - description: Member info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.AddMemberRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/ent.ProjectMember'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Response'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Add a member to a project
+      tags:
+      - rbac
+  /api/projects/{project_id}/members/{member_id}:
+    delete:
+      description: Remove a user from a project (requires admin permission)
+      parameters:
+      - description: Project ID
+        in: path
+        name: project_id
+        required: true
+        type: integer
+      - description: Member ID
+        in: path
+        name: member_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Remove project member
+      tags:
+      - rbac
+    put:
+      consumes:
+      - application/json
+      description: Update a project member's role (requires admin permission)
+      parameters:
+      - description: Project ID
+        in: path
+        name: project_id
+        required: true
+        type: integer
+      - description: Member ID
+        in: path
+        name: member_id
+        required: true
+        type: integer
+      - description: New role
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.UpdateRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/ent.ProjectMember'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Update member role
+      tags:
+      - rbac
+  /api/projects/{project_id}/permissions/check:
+    post:
+      consumes:
+      - application/json
+      description: Check if the current user has a specific permission in a project
+      parameters:
+      - description: Project ID
+        in: path
+        name: project_id
+        required: true
+        type: integer
+      - description: Permission to check
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.CheckPermissionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/handler.CheckPermissionResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Check permission
+      tags:
+      - rbac
+  /api/projects/{project_id}/permissions/my:
+    get:
+      description: Get the current user's permissions in a project
+      parameters:
+      - description: Project ID
+        in: path
+        name: project_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/handler.PermissionsResponse'
+              type: object
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get my permissions
+      tags:
+      - rbac
   /health:
     get:
       description: Check if the service is running

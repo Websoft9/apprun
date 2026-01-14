@@ -4,7 +4,6 @@ import (
 	_ "embed"
 	"fmt"
 	"os"
-	"strconv"
 	"sync"
 
 	"github.com/casbin/casbin/v2"
@@ -105,14 +104,11 @@ func CheckPermission(userID, projectID int64, resource, action string) (bool, er
 		return false, fmt.Errorf("enforcer not initialized")
 	}
 
-	// Format subject: user:{userID}
-	subject := fmt.Sprintf("user:%d", userID)
+	// Format subject: u:{userID}
+	subject := FormatUserKey(userID)
 
-	// Determine domain
-	domain := PlatformDomain
-	if projectID > 0 {
-		domain = strconv.FormatInt(projectID, 10)
-	}
+	// Format domain
+	domain := FormatDomain(projectID)
 
 	// Enforce permission check
 	allowed, err := enforcer.Enforce(subject, domain, resource, action)
@@ -129,8 +125,8 @@ func AddUserRole(userID, projectID int64, role string) error {
 		return fmt.Errorf("enforcer not initialized")
 	}
 
-	subject := fmt.Sprintf("user:%d", userID)
-	domain := strconv.FormatInt(projectID, 10)
+	subject := FormatUserKey(userID)
+	domain := FormatDomain(projectID)
 
 	_, err := enforcer.AddGroupingPolicy(subject, role, domain)
 	if err != nil {
@@ -146,8 +142,8 @@ func RemoveUserRole(userID, projectID int64, role string) error {
 		return fmt.Errorf("enforcer not initialized")
 	}
 
-	subject := fmt.Sprintf("user:%d", userID)
-	domain := strconv.FormatInt(projectID, 10)
+	subject := FormatUserKey(userID)
+	domain := FormatDomain(projectID)
 
 	_, err := enforcer.RemoveGroupingPolicy(subject, role, domain)
 	if err != nil {
@@ -163,8 +159,8 @@ func GetUserRoles(userID, projectID int64) ([]string, error) {
 		return nil, fmt.Errorf("enforcer not initialized")
 	}
 
-	subject := fmt.Sprintf("user:%d", userID)
-	domain := strconv.FormatInt(projectID, 10)
+	subject := FormatUserKey(userID)
+	domain := FormatDomain(projectID)
 
 	roles := enforcer.GetRolesForUserInDomain(subject, domain)
 

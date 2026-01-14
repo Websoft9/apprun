@@ -1,4 +1,3 @@
-// Package service provides business logic for authentication operations.
 package service
 
 import (
@@ -7,6 +6,7 @@ import (
 	"time"
 
 	"apprun/ent"
+	"apprun/ent/schema"
 	"apprun/internal/jwt"
 	"apprun/internal/password"
 	"apprun/modules/auth/repository"
@@ -31,13 +31,15 @@ var (
 
 // AuthService handles authentication business logic.
 type AuthService struct {
-	userRepo *repository.UserRepository
+	userRepo       *repository.UserRepository
+	projectService *ProjectService
 }
 
 // NewAuthService creates a new authentication service.
-func NewAuthService(userRepo *repository.UserRepository) *AuthService {
+func NewAuthService(userRepo *repository.UserRepository, projectService *ProjectService) *AuthService {
 	return &AuthService{
-		userRepo: userRepo,
+		userRepo:       userRepo,
+		projectService: projectService,
 	}
 }
 
@@ -192,7 +194,24 @@ func (s *AuthService) Register(ctx context.Context, req *RegisterRequest) (*Regi
 		logger.Field{Key: "email", Value: user.Email},
 		logger.Field{Key: "username", Value: user.Username})
 
-	// 7. Build response (exclude sensitive fields)
+	// 7. Create personal project for the user (non-blocking)
+	if s.projectService != nil {
+		username := user.Email
+		if user.Username != "" {
+			username = user.Username
+		}
+		_, err := s.projectService.CreatePersonalProject(ctx, user.ID, username)
+		if err != nil {
+			// Log error but don't fail registration
+			logger.Warn("Failed to create personal project for user",
+				logger.Field{Key: "user_id", Value: user.ID},
+				logger.Field{Key: "error", Value: err.Error()})
+		} else {
+			logger.Info("Personal project created for user", logger.Field{Key: "user_id", Value: user.ID})
+		}
+	}
+
+	// 8. Build response (exclude sensitive fields)
 	return buildRegisterResponse(user), nil
 }
 
@@ -282,8 +301,8 @@ func (s *AuthService) Login(ctx context.Context, req *LoginRequest, clientIP str
 		return nil, ErrInvalidCredentials // Generic error - don't reveal password wrong
 	}
 
-	// 3. Check user status (1 = active)
-	if user.Status != 1 {
+	// 3. Check user status (active)
+	if user.Status != schema.UserStatusActive {
 		logger.Warn("Disabled account login attempt",
 			logger.Field{Key: "user_id", Value: user.ID},
 			logger.Field{Key: "status", Value: user.Status})
