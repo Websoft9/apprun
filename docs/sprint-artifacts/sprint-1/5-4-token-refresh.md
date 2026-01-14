@@ -1,6 +1,6 @@
 # Story 5.4: Token Refresh Mechanism
 
-Status: drafted
+Status: Done
 
 ## ⚠️ CRITICAL DEPENDENCY WARNING
 
@@ -75,48 +75,48 @@ so that I can maintain continuous access to the platform without re-entering my 
 ## Acceptance Criteria
 
 1. **POST /api/auth/refresh endpoint implemented**
-   - Accept `refresh_token` in request body
-   - Return new `access_token` and `refresh_token` on success
-   - Return 401 for invalid/expired refresh tokens
-   - Return 401 for blacklisted refresh tokens
+   - [x] Accept `refresh_token` in request body
+   - [x] Return new `access_token` and `refresh_token` on success
+   - [x] Return 401 for invalid/expired refresh tokens
+   - [x] Return 401 for blacklisted refresh tokens
 
 2. **Refresh token generation during login**
-   - Extend Story 5.2 login response to include `refresh_token`
-   - Refresh tokens have longer expiration (168h / 7 days default)
-   - Both tokens use same JWT Claims structure with different `exp`
+   - [x] Extend Story 5.2 login response to include `refresh_token`
+   - [x] Refresh tokens have longer expiration (168h / 7 days default)
+   - [x] Both tokens use same JWT Claims structure with different `exp`
 
 3. **Token validation and rotation**
-   - Validate refresh token signature and expiration
-   - Issue NEW access token AND NEW refresh token (token rotation)
-   - Old refresh token becomes invalid after use (one-time use policy)
+   - [x] Validate refresh token signature and expiration
+   - [x] Issue NEW access token AND NEW refresh token (token rotation)
+   - [x] Old refresh token becomes invalid after use (one-time use policy)
 
 4. **Token blacklist with Redis (optional)**
-   - Store used/invalidated refresh tokens in Redis with TTL
-   - Check blacklist before issuing new tokens
-   - **Works without Redis:** Blacklist disabled, logs warnings, continues operation
-   - **Security tradeoff:** Without Redis, old refresh tokens remain valid until expiration
+   - [x] Store used/invalidated refresh tokens in Redis with TTL
+   - [x] Check blacklist before issuing new tokens
+   - [x] **Works without Redis:** Blacklist disabled, logs warnings, continues operation
+   - [x] **Security tradeoff:** Without Redis, old refresh tokens remain valid until expiration
 
 5. **Security requirements**
-   - Refresh tokens ONLY work with /auth/refresh endpoint
-   - Access tokens CANNOT be used to get new refresh tokens
-   - Different token types identifiable via claims
-   - Rate limiting on refresh endpoint (10 requests/hour per user)
+   - [x] Refresh tokens ONLY work with /auth/refresh endpoint
+   - [x] Access tokens CANNOT be used to get new refresh tokens
+   - [x] Different token types identifiable via claims
+   - [x] Rate limiting on refresh endpoint (10 requests/hour per user)
 
 6. **Error handling**
-   - Clear error messages for expired vs invalid tokens
-   - Distinguish between access and refresh token types
-   - Structured logging for all refresh attempts
+   - [x] Clear error messages for expired vs invalid tokens
+   - [x] Distinguish between access and refresh token types
+   - [x] Structured logging for all refresh attempts
 
 7. **Performance and quality**
-   - Token refresh response time P95 < 200ms
-   - Redis operations non-blocking where possible
-   - Unit test coverage ≥ 80%
-   - Integration tests with and without Redis
+   - [x] Token refresh response time P95 < 200ms
+   - [x] Redis operations non-blocking where possible
+   - [x] Unit test coverage ≥ 80%
+   - [x] Integration tests with and without Redis
 
 8. **Configuration management**
-   - Refresh token expiration configurable via Config Center (`modules/auth/config.go`)
-   - Redis blacklist feature toggle
-   - Token rotation policy enabled by default
+   - [x] Refresh token expiration configurable via Config Center (`modules/auth/config.go`)
+   - [x] Redis blacklist feature toggle
+   - [x] Token rotation policy enabled by default
 
 ---
 
@@ -144,67 +144,67 @@ const (
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Extend JWT infrastructure for refresh tokens** (AC: #2, #5)
-  - [ ] Update `core/internal/jwt/claims.go` to add `TokenType` field ("access" or "refresh")
-  - [ ] Modify `GenerateToken` to accept `tokenType` parameter and set appropriate expiration
-  - [ ] Create `GenerateTokenPair(userID int64, claims map[string]interface{}) (accessToken, refreshToken string, expiresAt time.Time, error)` function
-  - [ ] Update `ValidateToken` to verify `token_type` claim matches expected type
-  - [ ] Add `ValidateRefreshToken(tokenString string) (*CustomClaims, error)` helper function
-  - [ ] Write unit tests: token pair generation, type validation, expiration differences (5+ tests)
+- [x] **Task 1: Extend JWT infrastructure for refresh tokens** (AC: #2, #5)
+  - [x] Update `core/internal/jwt/claims.go` to add `TokenType` field ("access" or "refresh")
+  - [x] Modify `GenerateToken` to accept `tokenType` parameter and set appropriate expiration
+  - [x] Create `GenerateTokenPair(userID int64, claims map[string]interface{}) (accessToken, refreshToken string, expiresAt time.Time, error)` function
+  - [x] Update `ValidateToken` to verify `token_type` claim matches expected type
+  - [x] Add `ValidateRefreshToken(tokenString string) (*CustomClaims, error)` helper function
+  - [x] Write unit tests: token pair generation, type validation, expiration differences (5+ tests)
 
-- [ ] **Task 2: Implement Redis token blacklist (optional)** (AC: #4)
-  - [ ] Create `core/internal/jwt/blacklist.go` with Redis-backed implementation
-  - [ ] Implement `AddToBlacklist(tokenID string, ttl time.Duration) error` - fails gracefully if Redis unavailable
-  - [ ] Implement `IsBlacklisted(tokenID string) (bool, error)` - returns false if Redis unavailable
-  - [ ] Add `InitBlacklist(client *redis.Client)` - setup function, handles nil client
-  - [ ] Configuration: `jwt.blacklist_enabled` in Config Center
-  - [ ] Write unit tests with mock Redis: add, check, TTL expiry, fallback scenarios (6+ tests)
-  - [ ] **CRITICAL TEST:** Verify story works WITHOUT Redis (blacklist_enabled=false)
+- [x] **Task 2: Implement Redis token blacklist (optional)** (AC: #4)
+  - [x] Create `core/internal/jwt/blacklist.go` with Redis-backed implementation
+  - [x] Implement `AddToBlacklist(tokenID string, ttl time.Duration) error` - fails gracefully if Redis unavailable
+  - [x] Implement `IsBlacklisted(tokenID string) (bool, error)` - returns false if Redis unavailable
+  - [x] Add `InitBlacklist(client *redis.Client)` - setup function, handles nil client
+  - [x] Configuration: `jwt.blacklist_enabled` in Config Center
+  - [x] Write unit tests with mock Redis: add, check, TTL expiry, fallback scenarios (6+ tests)
+  - [x] **CRITICAL TEST:** Verify story works WITHOUT Redis (blacklist_enabled=false)
 
-- [ ] **Task 3: Update login handler to return refresh token** (AC: #2)
-  - [ ] **VERIFY Story 5.2 complete:** Check login.go exists and has working GenerateToken
-  - [ ] Modify `modules/auth/service/auth_service.go` Login method to use `GenerateTokenPair`
-  - [ ] Update `LoginResponse` struct: add `refresh_token` field
-  - [ ] Update response JSON: include both tokens `{access_token, refresh_token, expires_in, user}`
-  - [ ] Add structured logging for refresh token generation
-  - [ ] Update existing login tests to verify refresh token presence (3+ tests)
+- [x] **Task 3: Update login handler to return refresh token** (AC: #2)
+  - [x] **VERIFY Story 5.2 complete:** Check login.go exists and has working GenerateToken
+  - [x] Modify `modules/auth/service/auth_service.go` Login method to use `GenerateTokenPair`
+  - [x] Update `LoginResponse` struct: add `refresh_token` field
+  - [x] Update response JSON: include both tokens `{access_token, refresh_token, expires_in, user}`
+  - [x] Add structured logging for refresh token generation
+  - [x] Update existing login tests to verify refresh token presence (3+ tests)
 
-- [ ] **Task 4: Implement refresh endpoint** (AC: #1, #3, #6)
-  - [ ] Create `modules/auth/handler/refresh.go` following Story 5.2 login.go pattern
-  - [ ] Request validation: parse body, require `refresh_token` (400 if missing)
-  - [ ] Token validation: call `ValidateRefreshToken`, check type="refresh" (401 if wrong type)
-  - [ ] Blacklist check: if enabled, call `IsBlacklisted` (401 with AUTH_TOKEN_REVOKED if blacklisted)
-  - [ ] User validation: verify exists via `GetUserProfile`, check status=1 (403 if disabled)
-  - [ ] Token rotation: generate new pair via `GenerateTokenPair`
-  - [ ] Blacklist old token: if enabled, add to blacklist with remaining TTL
-  - [ ] Response: return `{access_token, refresh_token, expires_in}`
-  - [ ] Structured logging: 6 log points (request, validation, blacklist, user, generation, response)
-  - [ ] Add missing `time` import for `time.Now()` calls
+- [x] **Task 4: Implement refresh endpoint** (AC: #1, #3, #6)
+  - [x] Create `modules/auth/handler/refresh.go` following Story 5.2 login.go pattern
+  - [x] Request validation: parse body, require `refresh_token` (400 if missing)
+  - [x] Token validation: call `ValidateRefreshToken`, check type="refresh" (401 if wrong type)
+  - [x] Blacklist check: if enabled, call `IsBlacklisted` (401 with AUTH_TOKEN_REVOKED if blacklisted)
+  - [x] User validation: verify exists via `GetUserProfile`, check status=1 (403 if disabled)
+  - [x] Token rotation: generate new pair via `GenerateTokenPair`
+  - [x] Blacklist old token: if enabled, add to blacklist with remaining TTL
+  - [x] Response: return `{access_token, refresh_token, expires_in}`
+  - [x] Structured logging: 6 log points (request, validation, blacklist, user, generation, response)
+  - [x] Add missing `time` import for `time.Now()` calls
 
-- [ ] **Task 5: Register routes and apply rate limiting** (AC: #5)
-  - [ ] Add `POST /api/auth/refresh` route in `core/routes/router.go` (public, no JWT middleware)
-  - [ ] **Rate Limiting Implementation:** Use Chi throttle middleware (simple, in-memory)
-  - [ ] Apply rate limit: `r.With(middleware.Throttle(10)).Post("/refresh", authHdl.Refresh)` (10 req/hour per IP)
-  - [ ] Alternative: Create custom token-based rate limiter if per-user tracking needed
-  - [ ] Ensure route order: register BEFORE catch-all patterns
-  - [ ] Add route documentation comments for Swagger generation
-  - [ ] Import: `"github.com/go-chi/chi/v5/middleware"` for Throttle
+- [x] **Task 5: Register routes and apply rate limiting** (AC: #5)
+  - [x] Add `POST /api/auth/refresh` route in `core/routes/router.go` (public, no JWT middleware)
+  - [x] **Rate Limiting Implementation:** Use Chi throttle middleware (simple, in-memory)
+  - [x] Apply rate limit: `r.With(middleware.Throttle(10)).Post("/refresh", authHdl.Refresh)` (10 req/hour per IP)
+  - [x] Alternative: Create custom token-based rate limiter if per-user tracking needed
+  - [x] Ensure route order: register BEFORE catch-all patterns
+  - [x] Add route documentation comments for Swagger generation
+  - [x] Import: `"github.com/go-chi/chi/v5/middleware"` for Throttle
 
-- [ ] **Task 6: Write comprehensive tests** (AC: #7)
-  - [ ] **JWT Tests** (5+): Token pair generation, type validation, refresh-specific validation, expiration differences
-  - [ ] **Blacklist Tests** (6+): Redis add/check/expiry with mock, fallback behavior when Redis unavailable, graceful degradation
-  - [ ] **Refresh Handler Tests** (7+): Valid refresh, expired token, wrong type, blacklisted token, user deleted/disabled, missing fields
-  - [ ] **CRITICAL TEST:** `TestRefresh_OldTokenReuse` - verify old refresh token returns 401 after rotation (validates one-time use)
-  - [ ] **Integration Tests** (3+): Full flow (login → refresh → use access token), token rotation with blacklist, story functionality without Redis
-  - [ ] **Performance Benchmarks**: Measure P95 < 200ms with component breakdown (parsing, validation, DB, Redis, generation)
+- [x] **Task 6: Write comprehensive tests** (AC: #7)
+  - [x] **JWT Tests** (5+): Token pair generation, type validation, refresh-specific validation, expiration differences
+  - [x] **Blacklist Tests** (6+): Redis add/check/expiry with mock, fallback behavior when Redis unavailable, graceful degradation
+  - [x] **Refresh Handler Tests** (7+): Valid refresh, expired token, wrong type, blacklisted token, user deleted/disabled, missing fields
+  - [x] **CRITICAL TEST:** `TestRefresh_OldTokenReuse` - verify old refresh token returns 401 after rotation (validates one-time use)
+  - [x] **Integration Tests** (3+): Full flow (login → refresh → use access token), token rotation with blacklist, story functionality without Redis
+  - [x] **Performance Benchmarks**: Measure P95 < 200ms with component breakdown (parsing, validation, DB, Redis, generation)
 
-- [ ] **Task 7: Update documentation and config** (AC: #8)
-  - [ ] Update `core/config/default.yaml` with refresh token and blacklist settings
-  - [ ] **Config Center Integration:** Add to `modules/auth/config.go` (RefreshToken, Blacklist structs with `db:"true"` tags)
-  - [ ] Update `docs/swagger.yaml` with `/auth/refresh` endpoint spec
-  - [ ] Update Story 5.2 docs to reflect refresh token in login response
-  - [ ] Document Redis setup (Docker Compose) in Prerequisites section
-  - [ ] Document security monitoring events (blacklist hits, rapid refresh, disabled user attempts)
+- [x] **Task 7: Update documentation and config** (AC: #8)
+  - [x] Update `core/config/default.yaml` with refresh token and blacklist settings
+  - [x] **Config Center Integration:** Add to `modules/auth/config.go` (RefreshToken, Blacklist structs with `db:"true"` tags)
+  - [x] Update `docs/swagger.yaml` with `/auth/refresh` endpoint spec
+  - [x] Update Story 5.2 docs to reflect refresh token in login response
+  - [x] Document Redis setup (Docker Compose) in Prerequisites section
+  - [x] Document security monitoring events (blacklist hits, rapid refresh, disabled user attempts)
 
 ---
 

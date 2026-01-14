@@ -10,17 +10,16 @@
 
 ### By Status
 
-- ✅ **Done**: 18
-- 🔄 **In Progress**: 1
-- 🟢 **Ready For Dev**: 11
-- ✏️ **Drafted**: 1
+- ✅ **Done**: 21
+- 🔄 **In Progress**: 2
+- 🟢 **Ready For Dev**: 8
 - 📋 **Backlog**: 15
 
 ### By Sprint
 
 - **Sprint-0**: 14 stories
-- **Sprint-1**: 14 stories
-- **Sprint-2**: 6 stories
+- **Sprint-1**: 15 stories
+- **Sprint-2**: 5 stories
 - **Sprint-Unknown**: 12 stories
 
 ---
@@ -38,7 +37,7 @@
 | 1-7-makefile-standards | Makefile 标准与命令分组 | ✅ done | Infrastructure & Foundation |
 | 1-8-testing-framework | 测试框架与工具集 | 🟢 ready-for-dev | Infrastructure & Foundation |
 | 1-9-refactor-handlers | 重构现有 Handlers | 🟢 ready-for-dev | Infrastructure & Foundation |
-| 2-1-i18n | i18n 国际化基础设施 | 🟢 ready-for-dev | Internationalization & Localization |
+| 2-1-i18n | i18n 国际化基础设施 | ✅ done | Internationalization & Localization |
 | 2-2-db-field-i18n | Database Field i18n 数据库字段国际化 | 🟢 ready-for-dev | Internationalization & Localization |
 | 2-3-i18n-integration-plan | i18n Integration Plan - i18n 集成计划 | 🟢 ready-for-dev | Internationalization & Localization |
 | 2-4-l10n | Localization (l10n) - 本地化支持 | 🟢 ready-for-dev | Internationalization & Localization |
@@ -55,12 +54,13 @@
 | 1-14-database-package | Database Anti-Corruption Layer | ✅ done | Infrastructure & Foundation |
 | 1-15-go-version-upgrade | Go 版本升级到 1.25.5 | ✅ done | Infrastructure & Foundation |
 | 3-2-config-basic | Configuration Center Foundation | ✅ done | Configuration Management |
-| 3-3-module-config-registry | Module Configuration Registry Enhancement | 🟢 ready-for-dev | Configuration Management |
+| 3-3-module-config-registry | Module Configuration Registry Enhancement | ✅ done | Configuration Management |
 | 4-1-swagger-docs | Swagger API Documentation | ✅ done | API Documentation |
 | 5-1-user-registration | User Registration | ✅ done | Authentication & Authorization |
 | 5-2-user-login | User Login | ✅ done | Authentication & Authorization |
-| 5-3-jwt-middleware | JWT Middleware | 🟢 ready-for-dev | Authentication & Authorization |
-| 5-4-token-refresh | Token Refresh Mechanism | ✏️ drafted | Authentication & Authorization |
+| 5-3-jwt-middleware | JWT Middleware | ✅ done | Authentication & Authorization |
+| 5-4-token-refresh | Token Refresh Mechanism | ✅ done | Authentication & Authorization |
+| 5-5-2-rbac-api-endpoints | RBAC API Endpoints | 🔄 in-progress | Authentication & Authorization |
 | 5-5-rbac-permissions | RBAC 权限控制 | 🔄 in-progress | Authentication & Authorization |
 
 ## Sprint 2
@@ -72,7 +72,6 @@
 | 3-5-config-rollback | 配置版本回滚 | 📋 backlog | Configuration Management |
 | 3-6-config-audit | 配置审计日志 | 📋 backlog | Configuration Management |
 | 5-5-1-rbac-advanced | RBAC 高级特性 | 🟢 ready-for-dev | Authentication & Authorization |
-| 5-5-2-rbac-api-endpoints | RBAC API Endpoints | ✅ done | Authentication & Authorization |
 
 ## Sprint Unknown
 
@@ -93,4 +92,4 @@
 
 ---
 
-*Auto-generated from `sprint-status.yaml` on 2026-01-14 16:36:54*
+*Auto-generated from `sprint-status.yaml` on 2026-01-14 17:27:08*
