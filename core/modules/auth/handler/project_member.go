@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -9,6 +10,7 @@ import (
 
 	"apprun/ent"
 	"apprun/internal/jwt"
+	"apprun/internal/rbac"
 	"apprun/modules/auth/service"
 	"apprun/pkg/errors"
 	"apprun/pkg/logger"
@@ -67,20 +69,21 @@ type MemberListResponse struct {
 }
 
 // AddMember handles adding a member to a project
-// @Summary      Add a member to a project
-// @Description  Add a user to a project with a specific role (requires admin permission)
-// @Tags         rbac
-// @Accept       json
-// @Produce      json
-// @Param        project_id   path      int                      true  "Project ID"
-// @Param        request      body      AddMemberRequest         true  "Member info"
-// @Success      201          {object}  response.Response{data=ent.ProjectMember}
-// @Failure      400          {object}  response.Response
-// @Failure      403          {object}  response.Response
-// @Failure      404          {object}  response.Response
-// @Failure      409          {object}  response.Response
-// @Security     BearerAuth
-// @Router       /api/projects/{project_id}/members [post]
+//
+//	@Summary		Add a member to a project
+//	@Description	Add a user to a project with a specific role (requires admin permission)
+//	@Tags			rbac
+//	@Accept			json
+//	@Produce		json
+//	@Param			project_id	path		int					true	"Project ID"
+//	@Param			request		body		AddMemberRequest	true	"Member info"
+//	@Success		201			{object}	response.Response{data=ent.ProjectMember}
+//	@Failure		400			{object}	response.Response
+//	@Failure		403			{object}	response.Response
+//	@Failure		404			{object}	response.Response
+//	@Failure		409			{object}	response.Response
+//	@Security		BearerAuth
+//	@Router			/api/projects/{project_id}/members [post]
 func (h *ProjectMemberHandler) AddMember(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -133,18 +136,19 @@ func (h *ProjectMemberHandler) AddMember(w http.ResponseWriter, r *http.Request)
 }
 
 // ListMembers handles listing project members
-// @Summary      List project members
-// @Description  Get a list of all members in a project
-// @Tags         rbac
-// @Produce      json
-// @Param        project_id   path      int     true   "Project ID"
-// @Param        role         query     string  false  "Filter by role"
-// @Param        page         query     int     false  "Page number" default(1)
-// @Param        page_size    query     int     false  "Page size" default(20)
-// @Success      200          {object}  response.Response{data=MemberListResponse}
-// @Failure      403          {object}  response.Response
-// @Security     BearerAuth
-// @Router       /api/projects/{project_id}/members [get]
+//
+//	@Summary		List project members
+//	@Description	Get a list of all members in a project
+//	@Tags			rbac
+//	@Produce		json
+//	@Param			project_id	path		int		true	"Project ID"
+//	@Param			role		query		string	false	"Filter by role"
+//	@Param			page		query		int		false	"Page number"	default(1)
+//	@Param			page_size	query		int		false	"Page size"		default(20)
+//	@Success		200			{object}	response.Response{data=MemberListResponse}
+//	@Failure		403			{object}	response.Response
+//	@Security		BearerAuth
+//	@Router			/api/projects/{project_id}/members [get]
 func (h *ProjectMemberHandler) ListMembers(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -184,20 +188,21 @@ func (h *ProjectMemberHandler) ListMembers(w http.ResponseWriter, r *http.Reques
 }
 
 // UpdateRole handles updating a member's role
-// @Summary      Update member role
-// @Description  Update a project member's role (requires admin permission)
-// @Tags         rbac
-// @Accept       json
-// @Produce      json
-// @Param        project_id   path      int                      true  "Project ID"
-// @Param        member_id    path      int                      true  "Member ID"
-// @Param        request      body      UpdateRoleRequest        true  "New role"
-// @Success      200          {object}  response.Response{data=ent.ProjectMember}
-// @Failure      400          {object}  response.Response
-// @Failure      403          {object}  response.Response
-// @Failure      404          {object}  response.Response
-// @Security     BearerAuth
-// @Router       /api/projects/{project_id}/members/{member_id} [put]
+//
+//	@Summary		Update member role
+//	@Description	Update a project member's role (requires admin permission)
+//	@Tags			rbac
+//	@Accept			json
+//	@Produce		json
+//	@Param			project_id	path		int					true	"Project ID"
+//	@Param			member_id	path		int					true	"Member ID"
+//	@Param			request		body		UpdateRoleRequest	true	"New role"
+//	@Success		200			{object}	response.Response{data=ent.ProjectMember}
+//	@Failure		400			{object}	response.Response
+//	@Failure		403			{object}	response.Response
+//	@Failure		404			{object}	response.Response
+//	@Security		BearerAuth
+//	@Router			/api/projects/{project_id}/members/{member_id} [put]
 func (h *ProjectMemberHandler) UpdateRole(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -231,12 +236,11 @@ func (h *ProjectMemberHandler) UpdateRole(w http.ResponseWriter, r *http.Request
 	}
 
 	// Prevent modifying owner role
-	if member.Role == "owner" {
+	if member.Role == rbac.RoleProjectOwner {
 		appErr := errors.New(
 			errors.ErrCodeAuthCannotModifyOwner,
 			"Cannot modify project owner role",
 		)
-		w.WriteHeader(http.StatusForbidden)
 		response.AppErrorWithRequest(w, r, appErr)
 		return
 	}
@@ -266,17 +270,18 @@ func (h *ProjectMemberHandler) UpdateRole(w http.ResponseWriter, r *http.Request
 }
 
 // RemoveMember handles removing a member from a project
-// @Summary      Remove project member
-// @Description  Remove a user from a project (requires admin permission)
-// @Tags         rbac
-// @Produce      json
-// @Param        project_id   path      int  true  "Project ID"
-// @Param        member_id    path      int  true  "Member ID"
-// @Success      204          "No Content"
-// @Failure      403          {object}  response.Response
-// @Failure      404          {object}  response.Response
-// @Security     BearerAuth
-// @Router       /api/projects/{project_id}/members/{member_id} [delete]
+//
+//	@Summary		Remove project member
+//	@Description	Remove a user from a project (requires admin permission)
+//	@Tags			rbac
+//	@Produce		json
+//	@Param			project_id	path	int	true	"Project ID"
+//	@Param			member_id	path	int	true	"Member ID"
+//	@Success		204			"No Content"
+//	@Failure		403			{object}	response.Response
+//	@Failure		404			{object}	response.Response
+//	@Security		BearerAuth
+//	@Router			/api/projects/{project_id}/members/{member_id} [delete]
 func (h *ProjectMemberHandler) RemoveMember(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -296,12 +301,11 @@ func (h *ProjectMemberHandler) RemoveMember(w http.ResponseWriter, r *http.Reque
 	}
 
 	// Prevent removing owner
-	if member.Role == "owner" {
+	if member.Role == rbac.RoleProjectOwner {
 		appErr := errors.New(
 			errors.ErrCodeAuthCannotModifyOwner,
 			"Cannot remove project owner",
 		)
-		w.WriteHeader(http.StatusForbidden)
 		response.AppErrorWithRequest(w, r, appErr)
 		return
 	}
@@ -328,6 +332,6 @@ func (h *ProjectMemberHandler) RemoveMember(w http.ResponseWriter, r *http.Reque
 }
 
 // GetMemberByID is a helper to get member by ID (used internally)
-func (h *ProjectMemberHandler) GetMemberByID(ctx interface{}, memberID int64) (*ent.ProjectMember, error) {
+func (h *ProjectMemberHandler) GetMemberByID(ctx context.Context, memberID int64) (*ent.ProjectMember, error) {
 	return h.memberService.GetMemberByID(ctx, memberID)
 }

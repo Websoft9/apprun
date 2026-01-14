@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"apprun/internal/jwt"
+	"apprun/internal/rbac"
 	"apprun/modules/auth/service"
 	"apprun/pkg/errors"
 	"apprun/pkg/logger"
@@ -28,18 +29,19 @@ func NewProjectHandler(projectService *service.ProjectService, memberService *se
 }
 
 // CreateProject godoc
-// @Summary Create a new project
-// @Description Creates a new project with the authenticated user as owner
-// @Tags Projects
-// @Accept json
-// @Produce json
-// @Param request body service.CreateProjectRequest true "Project creation data"
-// @Success 201 {object} response.Response{data=service.ProjectResponse} "Project created successfully"
-// @Failure 400 {object} response.Response "Invalid request"
-// @Failure 401 {object} response.Response "Unauthorized"
-// @Failure 500 {object} response.Response "Internal server error"
-// @Security BearerAuth
-// @Router /api/projects [post]
+//
+//	@Summary		Create a new project
+//	@Description	Creates a new project with the authenticated user as owner
+//	@Tags			Projects
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		service.CreateProjectRequest					true	"Project creation data"
+//	@Success		201		{object}	response.Response{data=service.ProjectResponse}	"Project created successfully"
+//	@Failure		400		{object}	response.Response								"Invalid request"
+//	@Failure		401		{object}	response.Response								"Unauthorized"
+//	@Failure		500		{object}	response.Response								"Internal server error"
+//	@Security		BearerAuth
+//	@Router			/api/projects [post]
 func (h *ProjectHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -81,15 +83,16 @@ func (h *ProjectHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
 }
 
 // ListProjects godoc
-// @Summary List user's projects
-// @Description Lists all projects where the authenticated user is a member
-// @Tags Projects
-// @Produce json
-// @Success 200 {object} response.Response{data=[]service.ProjectResponse} "List of projects"
-// @Failure 401 {object} response.Response "Unauthorized"
-// @Failure 500 {object} response.Response "Internal server error"
-// @Security BearerAuth
-// @Router /api/projects [get]
+//
+//	@Summary		List user's projects
+//	@Description	Lists all projects where the authenticated user is a member
+//	@Tags			Projects
+//	@Produce		json
+//	@Success		200	{object}	response.Response{data=[]service.ProjectResponse}	"List of projects"
+//	@Failure		401	{object}	response.Response									"Unauthorized"
+//	@Failure		500	{object}	response.Response									"Internal server error"
+//	@Security		BearerAuth
+//	@Router			/api/projects [get]
 func (h *ProjectHandler) ListProjects(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -120,17 +123,18 @@ func (h *ProjectHandler) ListProjects(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetProject godoc
-// @Summary Get project details
-// @Description Gets detailed information about a specific project
-// @Tags Projects
-// @Produce json
-// @Param id path string true "Project UUID"
-// @Success 200 {object} response.Response{data=service.ProjectResponse} "Project details"
-// @Failure 401 {object} response.Response "Unauthorized"
-// @Failure 404 {object} response.Response "Project not found"
-// @Failure 500 {object} response.Response "Internal server error"
-// @Security BearerAuth
-// @Router /api/projects/{id} [get]
+//
+//	@Summary		Get project details
+//	@Description	Gets detailed information about a specific project
+//	@Tags			Projects
+//	@Produce		json
+//	@Param			id	path		string											true	"Project UUID"
+//	@Success		200	{object}	response.Response{data=service.ProjectResponse}	"Project details"
+//	@Failure		401	{object}	response.Response								"Unauthorized"
+//	@Failure		404	{object}	response.Response								"Project not found"
+//	@Failure		500	{object}	response.Response								"Internal server error"
+//	@Security		BearerAuth
+//	@Router			/api/projects/{id} [get]
 func (h *ProjectHandler) GetProject(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -184,20 +188,21 @@ func (h *ProjectHandler) GetProject(w http.ResponseWriter, r *http.Request) {
 }
 
 // UpdateProject godoc
-// @Summary Update project
-// @Description Updates project information (name, description)
-// @Tags Projects
-// @Accept json
-// @Produce json
-// @Param id path string true "Project UUID"
-// @Param request body service.CreateProjectRequest true "Project update data"
-// @Success 200 {object} response.Response{data=service.ProjectResponse} "Project updated successfully"
-// @Failure 400 {object} response.Response "Invalid request"
-// @Failure 401 {object} response.Response "Unauthorized"
-// @Failure 404 {object} response.Response "Project not found"
-// @Failure 500 {object} response.Response "Internal server error"
-// @Security BearerAuth
-// @Router /api/projects/{id} [put]
+//
+//	@Summary		Update project
+//	@Description	Updates project information (name, description)
+//	@Tags			Projects
+//	@Accept			json
+//	@Produce		json
+//	@Param			id		path		string											true	"Project UUID"
+//	@Param			request	body		service.CreateProjectRequest					true	"Project update data"
+//	@Success		200		{object}	response.Response{data=service.ProjectResponse}	"Project updated successfully"
+//	@Failure		400		{object}	response.Response								"Invalid request"
+//	@Failure		401		{object}	response.Response								"Unauthorized"
+//	@Failure		404		{object}	response.Response								"Project not found"
+//	@Failure		500		{object}	response.Response								"Internal server error"
+//	@Security		BearerAuth
+//	@Router			/api/projects/{id} [put]
 func (h *ProjectHandler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -241,7 +246,7 @@ func (h *ProjectHandler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 		response.AppErrorWithRequest(w, r, appErr)
 		return
 	}
-	if role != "owner" && role != "admin" {
+	if role != rbac.RoleProjectOwner && role != rbac.RoleProjectAdmin {
 		appErr := errors.New(errors.ErrCodeAuthNoPermission, "Only owners and admins can update projects")
 		response.AppErrorWithRequest(w, r, appErr)
 		return
@@ -278,17 +283,18 @@ func (h *ProjectHandler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeleteProject godoc
-// @Summary Delete project
-// @Description Archives a project (soft delete)
-// @Tags Projects
-// @Produce json
-// @Param id path string true "Project UUID"
-// @Success 200 {object} response.Response "Project deleted successfully"
-// @Failure 401 {object} response.Response "Unauthorized"
-// @Failure 404 {object} response.Response "Project not found"
-// @Failure 500 {object} response.Response "Internal server error"
-// @Security BearerAuth
-// @Router /api/projects/{id} [delete]
+//
+//	@Summary		Delete project
+//	@Description	Archives a project (soft delete)
+//	@Tags			Projects
+//	@Produce		json
+//	@Param			id	path		string				true	"Project UUID"
+//	@Success		200	{object}	response.Response	"Project deleted successfully"
+//	@Failure		401	{object}	response.Response	"Unauthorized"
+//	@Failure		404	{object}	response.Response	"Project not found"
+//	@Failure		500	{object}	response.Response	"Internal server error"
+//	@Security		BearerAuth
+//	@Router			/api/projects/{id} [delete]
 func (h *ProjectHandler) DeleteProject(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

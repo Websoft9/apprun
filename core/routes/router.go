@@ -137,7 +137,7 @@ func RegisterRBACRoutes(r chi.Router, dbClient *ent.Client) {
 		r.Use(internalMiddleware.ProjectContextMiddleware(dbClient))
 
 		// Get my permissions - requires project:read permission (user checks their own perms)
-		r.With(internalMiddleware.RequirePermission("project", "read")).Get("/my", permissionHandler.GetMyPermissions)
+		r.With(internalMiddleware.RequirePermission("project", "read")).Get("/me", permissionHandler.GetMyPermissions)
 
 		// Check specific permission - requires project:read permission
 		r.With(internalMiddleware.RequirePermission("project", "read")).Post("/check", permissionHandler.CheckPermission)

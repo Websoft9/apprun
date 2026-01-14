@@ -1,57 +1,172 @@
 definitions:
-  config.GetConfigResponse:
+  apprun_modules_auth_service.CreateProjectRequest:
     properties:
-      is_dynamic:
-        description: Whether it's a dynamic configuration
-        example: false
-        type: boolean
-      key:
-        description: Configuration key
-        example: app.name
+      description:
+        maxLength: 500
         type: string
-      source:
-        description: 'Source: "database", "file", "env", "default"'
-        example: default
-        type: string
-      value:
-        description: Configuration value
-        example: apprun
-        type: string
-    type: object
-  config.ListConfigsResponse:
-    properties:
-      configs:
-        additionalProperties:
-          type: string
-        description: Key-value mapping of dynamic configurations
-        type: object
-      count:
-        description: Number of configuration items
-        example: 3
-        type: integer
-    type: object
-  config.UpdateConfigRequest:
-    properties:
-      key:
-        description: Configuration key
-        example: poc.enabled
-        type: string
-      value:
-        description: New value
-        example: "true"
+      name:
+        maxLength: 100
+        minLength: 3
         type: string
     required:
-    - key
-    - value
+    - name
     type: object
-  config.UpdateConfigResponse:
+  apprun_modules_auth_service.LoginRequest:
     properties:
-      key:
-        example: poc.enabled
+      identifier:
+        description: Username or email
+        example: user@example.com
         type: string
-      value:
-        example: "true"
+      password:
+        description: Password
+        example: SecurePass123
         type: string
+    required:
+    - identifier
+    - password
+    type: object
+  apprun_modules_auth_service.LoginResponse:
+    properties:
+      access_token:
+        description: JWT access token (short-lived)
+        type: string
+      expires_in:
+        description: Seconds until access token expires
+        type: integer
+      refresh_token:
+        description: JWT refresh token (long-lived)
+        type: string
+      user:
+        allOf:
+        - $ref: '#/definitions/apprun_modules_auth_service.UserProfile'
+        description: User profile data
+    type: object
+  apprun_modules_auth_service.ProjectResponse:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      owner_id:
+        type: integer
+      status:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  apprun_modules_auth_service.RegisterRequest:
+    properties:
+      email:
+        description: 用户邮箱（必填）
+        example: user@example.com
+        type: string
+      gender:
+        description: 性别（可选：0=未知,1=男,2=女）
+        example: 1
+        type: integer
+      language:
+        description: 语言（可选）
+        example: zh-CN
+        type: string
+      nickname:
+        description: 昵称（可选）
+        example: John
+        type: string
+      password:
+        description: 密码（必填，8+字符，含大小写和数字）
+        example: SecurePass123
+        type: string
+      phone:
+        description: 手机号（可选）
+        example: +86-13800138000
+        type: string
+      timezone:
+        description: 时区（可选）
+        example: Asia/Shanghai
+        type: string
+      username:
+        description: 用户名（可选，3-64字符）
+        example: john_doe
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  apprun_modules_auth_service.RegisterResponse:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        description: Public UUID (exposed as "id" for external API)
+        type: string
+      nickname:
+        type: string
+      status:
+        type: integer
+      username:
+        type: string
+    type: object
+  apprun_modules_auth_service.UserProfile:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      gender:
+        type: integer
+      id:
+        type: string
+      language:
+        type: string
+      nickname:
+        type: string
+      phone:
+        type: string
+      status:
+        type: integer
+      timezone:
+        type: string
+      username:
+        type: string
+    type: object
+  apprun_pkg_response.ErrorInfo:
+    properties:
+      code:
+        type: string
+      details: {}
+      message:
+        type: string
+    type: object
+  apprun_pkg_response.PaginationInfo:
+    properties:
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  apprun_pkg_response.Response:
+    properties:
+      code:
+        type: integer
+      data: {}
+      error:
+        $ref: '#/definitions/apprun_pkg_response.ErrorInfo'
+      message:
+        type: string
+      request_id:
+        type: string
+      success:
+        type: boolean
     type: object
   ent.Project:
     properties:
@@ -241,7 +356,16 @@ definitions:
           $ref: '#/definitions/ent.Servers'
         type: array
     type: object
-  handler.AddMemberRequest:
+  handlers.HealthResponse:
+    properties:
+      service:
+        example: apprun
+        type: string
+      status:
+        example: ok
+        type: string
+    type: object
+  modules_auth_handler.AddMemberRequest:
     properties:
       role:
         type: string
@@ -251,7 +375,7 @@ definitions:
     - role
     - user_id
     type: object
-  handler.CheckPermissionRequest:
+  modules_auth_handler.CheckPermissionRequest:
     properties:
       action:
         type: string
@@ -261,21 +385,21 @@ definitions:
     - action
     - resource
     type: object
-  handler.CheckPermissionResponse:
+  modules_auth_handler.CheckPermissionResponse:
     properties:
       allowed:
         type: boolean
     type: object
-  handler.MemberListResponse:
+  modules_auth_handler.MemberListResponse:
     properties:
       items:
         items:
           $ref: '#/definitions/ent.ProjectMember'
         type: array
       pagination:
-        $ref: '#/definitions/response.PaginationInfo'
+        $ref: '#/definitions/apprun_pkg_response.PaginationInfo'
     type: object
-  handler.PermissionItem:
+  modules_auth_handler.PermissionItem:
     properties:
       actions:
         items:
@@ -284,14 +408,14 @@ definitions:
       resource:
         type: string
     type: object
-  handler.PermissionsResponse:
+  modules_auth_handler.PermissionsResponse:
     properties:
       permissions:
         items:
-          $ref: '#/definitions/handler.PermissionItem'
+          $ref: '#/definitions/modules_auth_handler.PermissionItem'
         type: array
     type: object
-  handler.RefreshRequest:
+  modules_auth_handler.RefreshRequest:
     properties:
       refresh_token:
         example: eyJhbGc...
@@ -299,7 +423,7 @@ definitions:
     required:
     - refresh_token
     type: object
-  handler.RefreshResponse:
+  modules_auth_handler.RefreshResponse:
     properties:
       access_token:
         description: New JWT access token
@@ -311,189 +435,65 @@ definitions:
         description: New JWT refresh token
         type: string
     type: object
-  handler.UpdateRoleRequest:
+  modules_auth_handler.UpdateRoleRequest:
     properties:
       role:
         type: string
     required:
     - role
     type: object
-  handlers.HealthResponse:
+  modules_config.GetConfigResponse:
     properties:
-      service:
+      is_dynamic:
+        description: Whether it's a dynamic configuration
+        example: false
+        type: boolean
+      key:
+        description: Configuration key
+        example: app.name
+        type: string
+      source:
+        description: 'Source: "database", "file", "env", "default"'
+        example: default
+        type: string
+      value:
+        description: Configuration value
         example: apprun
         type: string
-      status:
-        example: ok
-        type: string
     type: object
-  response.ErrorInfo:
+  modules_config.ListConfigsResponse:
     properties:
-      code:
-        type: string
-      details: {}
-      message:
-        type: string
-    type: object
-  response.PaginationInfo:
-    properties:
-      page:
-        type: integer
-      page_size:
-        type: integer
-      total:
-        type: integer
-      total_pages:
+      configs:
+        additionalProperties:
+          type: string
+        description: Key-value mapping of dynamic configurations
+        type: object
+      count:
+        description: Number of configuration items
+        example: 3
         type: integer
     type: object
-  response.Response:
+  modules_config.UpdateConfigRequest:
     properties:
-      code:
-        type: integer
-      data: {}
-      error:
-        $ref: '#/definitions/response.ErrorInfo'
-      message:
+      key:
+        description: Configuration key
+        example: poc.enabled
         type: string
-      request_id:
-        type: string
-      success:
-        type: boolean
-    type: object
-  service.CreateProjectRequest:
-    properties:
-      description:
-        maxLength: 500
-        type: string
-      name:
-        maxLength: 100
-        minLength: 3
+      value:
+        description: New value
+        example: "true"
         type: string
     required:
-    - name
+    - key
+    - value
     type: object
-  service.LoginRequest:
+  modules_config.UpdateConfigResponse:
     properties:
-      identifier:
-        description: Username or email
-        example: user@example.com
+      key:
+        example: poc.enabled
         type: string
-      password:
-        description: Password
-        example: SecurePass123
-        type: string
-    required:
-    - identifier
-    - password
-    type: object
-  service.LoginResponse:
-    properties:
-      access_token:
-        description: JWT access token (short-lived)
-        type: string
-      expires_in:
-        description: Seconds until access token expires
-        type: integer
-      refresh_token:
-        description: JWT refresh token (long-lived)
-        type: string
-      user:
-        allOf:
-        - $ref: '#/definitions/service.UserProfile'
-        description: User profile data
-    type: object
-  service.ProjectResponse:
-    properties:
-      created_at:
-        type: string
-      description:
-        type: string
-      id:
-        type: string
-      name:
-        type: string
-      owner_id:
-        type: integer
-      status:
-        type: integer
-      updated_at:
-        type: string
-    type: object
-  service.RegisterRequest:
-    properties:
-      email:
-        description: 用户邮箱（必填）
-        example: user@example.com
-        type: string
-      gender:
-        description: 性别（可选：0=未知,1=男,2=女）
-        example: 1
-        type: integer
-      language:
-        description: 语言（可选）
-        example: zh-CN
-        type: string
-      nickname:
-        description: 昵称（可选）
-        example: John
-        type: string
-      password:
-        description: 密码（必填，8+字符，含大小写和数字）
-        example: SecurePass123
-        type: string
-      phone:
-        description: 手机号（可选）
-        example: +86-13800138000
-        type: string
-      timezone:
-        description: 时区（可选）
-        example: Asia/Shanghai
-        type: string
-      username:
-        description: 用户名（可选，3-64字符）
-        example: john_doe
-        type: string
-    required:
-    - email
-    - password
-    type: object
-  service.RegisterResponse:
-    properties:
-      created_at:
-        type: string
-      email:
-        type: string
-      id:
-        description: Public UUID (exposed as "id" for external API)
-        type: string
-      nickname:
-        type: string
-      status:
-        type: integer
-      username:
-        type: string
-    type: object
-  service.UserProfile:
-    properties:
-      created_at:
-        type: string
-      email:
-        type: string
-      gender:
-        type: integer
-      id:
-        type: string
-      language:
-        type: string
-      nickname:
-        type: string
-      phone:
-        type: string
-      status:
-        type: integer
-      timezone:
-        type: string
-      username:
+      value:
+        example: "true"
         type: string
     type: object
 info:
@@ -519,7 +519,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/service.LoginRequest'
+          $ref: '#/definitions/apprun_modules_auth_service.LoginRequest'
       produces:
       - application/json
       responses:
@@ -527,27 +527,27 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/apprun_pkg_response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/service.LoginResponse'
+                  $ref: '#/definitions/apprun_modules_auth_service.LoginResponse'
               type: object
         "400":
           description: Validation error
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
         "401":
           description: Invalid credentials
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
         "403":
           description: Account disabled
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
       summary: User login
       tags:
       - auth
@@ -563,23 +563,23 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/apprun_pkg_response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/service.UserProfile'
+                  $ref: '#/definitions/apprun_modules_auth_service.UserProfile'
               type: object
         "401":
           description: Missing or invalid token
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
         "404":
           description: User not found
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
       security:
       - BearerAuth: []
       summary: Get current user profile
@@ -596,7 +596,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/handler.RefreshRequest'
+          $ref: '#/definitions/modules_auth_handler.RefreshRequest'
       produces:
       - application/json
       responses:
@@ -604,27 +604,27 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/apprun_pkg_response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/handler.RefreshResponse'
+                  $ref: '#/definitions/modules_auth_handler.RefreshResponse'
               type: object
         "400":
           description: Missing or invalid refresh token
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
         "401":
           description: Token expired, invalid type, or blacklisted
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
         "403":
           description: Account disabled
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
       summary: Refresh access token
       tags:
       - auth
@@ -639,7 +639,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/service.RegisterRequest'
+          $ref: '#/definitions/apprun_modules_auth_service.RegisterRequest'
       produces:
       - application/json
       responses:
@@ -647,23 +647,23 @@ paths:
           description: Created
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/apprun_pkg_response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/service.RegisterResponse'
+                  $ref: '#/definitions/apprun_modules_auth_service.RegisterResponse'
               type: object
         "400":
           description: Validation error
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
         "409":
           description: Email or username already exists
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
       summary: Register new user
       tags:
       - auth
@@ -693,7 +693,7 @@ paths:
         "400":
           description: Missing key parameter or deletion failed
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
       summary: Delete configuration item
       tags:
       - config
@@ -714,15 +714,15 @@ paths:
         "200":
           description: Configuration retrieved successfully
           schema:
-            $ref: '#/definitions/config.GetConfigResponse'
+            $ref: '#/definitions/modules_config.GetConfigResponse'
         "400":
           description: Missing key parameter
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
         "404":
           description: Configuration not found
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
       summary: Get configuration item
       tags:
       - config
@@ -739,18 +739,18 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/config.UpdateConfigRequest'
+          $ref: '#/definitions/modules_config.UpdateConfigRequest'
       produces:
       - application/json
       responses:
         "200":
           description: Configuration updated successfully
           schema:
-            $ref: '#/definitions/config.UpdateConfigResponse'
+            $ref: '#/definitions/modules_config.UpdateConfigResponse'
         "400":
           description: Invalid request or config not allowed to store in database
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
       summary: Update configuration item
       tags:
       - config
@@ -787,11 +787,11 @@ paths:
         "200":
           description: Configuration list
           schema:
-            $ref: '#/definitions/config.ListConfigsResponse'
+            $ref: '#/definitions/modules_config.ListConfigsResponse'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
       summary: List dynamic configurations
       tags:
       - config
@@ -810,7 +810,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/apprun_pkg_response.Response'
             - properties:
                 data:
                   additionalProperties:
@@ -830,21 +830,21 @@ paths:
           description: List of projects
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/apprun_pkg_response.Response'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/service.ProjectResponse'
+                    $ref: '#/definitions/apprun_modules_auth_service.ProjectResponse'
                   type: array
               type: object
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
       security:
       - BearerAuth: []
       summary: List user's projects
@@ -860,7 +860,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/service.CreateProjectRequest'
+          $ref: '#/definitions/apprun_modules_auth_service.CreateProjectRequest'
       produces:
       - application/json
       responses:
@@ -868,23 +868,23 @@ paths:
           description: Project created successfully
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/apprun_pkg_response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/service.ProjectResponse'
+                  $ref: '#/definitions/apprun_modules_auth_service.ProjectResponse'
               type: object
         "400":
           description: Invalid request
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
       security:
       - BearerAuth: []
       summary: Create a new project
@@ -905,19 +905,19 @@ paths:
         "200":
           description: Project deleted successfully
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
         "404":
           description: Project not found
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
       security:
       - BearerAuth: []
       summary: Delete project
@@ -938,23 +938,23 @@ paths:
           description: Project details
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/apprun_pkg_response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/service.ProjectResponse'
+                  $ref: '#/definitions/apprun_modules_auth_service.ProjectResponse'
               type: object
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
         "404":
           description: Project not found
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
       security:
       - BearerAuth: []
       summary: Get project details
@@ -975,7 +975,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/service.CreateProjectRequest'
+          $ref: '#/definitions/apprun_modules_auth_service.CreateProjectRequest'
       produces:
       - application/json
       responses:
@@ -983,27 +983,27 @@ paths:
           description: Project updated successfully
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/apprun_pkg_response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/service.ProjectResponse'
+                  $ref: '#/definitions/apprun_modules_auth_service.ProjectResponse'
               type: object
         "400":
           description: Invalid request
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
         "404":
           description: Project not found
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
       security:
       - BearerAuth: []
       summary: Update project
@@ -1039,15 +1039,15 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/apprun_pkg_response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/handler.MemberListResponse'
+                  $ref: '#/definitions/modules_auth_handler.MemberListResponse'
               type: object
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
       security:
       - BearerAuth: []
       summary: List project members
@@ -1068,7 +1068,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/handler.AddMemberRequest'
+          $ref: '#/definitions/modules_auth_handler.AddMemberRequest'
       produces:
       - application/json
       responses:
@@ -1076,7 +1076,7 @@ paths:
           description: Created
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/apprun_pkg_response.Response'
             - properties:
                 data:
                   $ref: '#/definitions/ent.ProjectMember'
@@ -1084,19 +1084,19 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
       security:
       - BearerAuth: []
       summary: Add a member to a project
@@ -1124,11 +1124,11 @@ paths:
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
       security:
       - BearerAuth: []
       summary: Remove project member
@@ -1154,7 +1154,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/handler.UpdateRoleRequest'
+          $ref: '#/definitions/modules_auth_handler.UpdateRoleRequest'
       produces:
       - application/json
       responses:
@@ -1162,7 +1162,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/apprun_pkg_response.Response'
             - properties:
                 data:
                   $ref: '#/definitions/ent.ProjectMember'
@@ -1170,15 +1170,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
       security:
       - BearerAuth: []
       summary: Update member role
@@ -1200,7 +1200,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/handler.CheckPermissionRequest'
+          $ref: '#/definitions/modules_auth_handler.CheckPermissionRequest'
       produces:
       - application/json
       responses:
@@ -1208,25 +1208,25 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/apprun_pkg_response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/handler.CheckPermissionResponse'
+                  $ref: '#/definitions/modules_auth_handler.CheckPermissionResponse'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
       security:
       - BearerAuth: []
       summary: Check permission
       tags:
       - rbac
-  /api/projects/{project_id}/permissions/my:
+  /api/projects/{project_id}/permissions/me:
     get:
       description: Get the current user's permissions in a project
       parameters:
@@ -1242,15 +1242,15 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/response.Response'
+            - $ref: '#/definitions/apprun_pkg_response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/handler.PermissionsResponse'
+                  $ref: '#/definitions/modules_auth_handler.PermissionsResponse'
               type: object
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/response.Response'
+            $ref: '#/definitions/apprun_pkg_response.Response'
       security:
       - BearerAuth: []
       summary: Get my permissions

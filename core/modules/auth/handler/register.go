@@ -27,17 +27,17 @@ func NewAuthHandler(authService *service.AuthService) *AuthHandler {
 
 // Register handles user registration requests.
 //
-// @Summary      Register new user
-// @Description  Create a new user account with email and password
-// @Tags         auth
-// @Accept       json
-// @Produce      json
-// @Param        request body service.RegisterRequest true "Registration data"
-// @Success      201 {object} response.Response{data=service.RegisterResponse}
-// @Failure      400 {object} response.Response "Validation error"
-// @Failure      409 {object} response.Response "Email or username already exists"
-// @Failure      500 {object} response.Response "Internal server error"
-// @Router       /api/auth/register [post]
+//	@Summary		Register new user
+//	@Description	Create a new user account with email and password
+//	@Tags			auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		service.RegisterRequest	true	"Registration data"
+//	@Success		201		{object}	response.Response{data=service.RegisterResponse}
+//	@Failure		400		{object}	response.Response	"Validation error"
+//	@Failure		409		{object}	response.Response	"Email or username already exists"
+//	@Failure		500		{object}	response.Response	"Internal server error"
+//	@Router			/api/auth/register [post]
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	logger.Info("Registration request received",
 		logger.Field{Key: "method", Value: r.Method},

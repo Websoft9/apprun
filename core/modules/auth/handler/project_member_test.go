@@ -265,9 +265,9 @@ func TestUpdateRole_CannotModifyOwner(t *testing.T) {
 
 	memberHandler.UpdateRole(w, req)
 
-	// Check response - should fail with 403
-	if w.Code != http.StatusForbidden {
-		t.Errorf("Expected status 403, got %d. Body: %s", w.Code, w.Body.String())
+	// Check response - should fail with 422 (business rule violation)
+	if w.Code != http.StatusUnprocessableEntity {
+		t.Errorf("Expected status 422, got %d. Body: %s", w.Code, w.Body.String())
 	}
 
 	var resp response.Response
@@ -310,9 +310,9 @@ func TestRemoveMember_CannotRemoveOwner(t *testing.T) {
 
 	memberHandler.RemoveMember(w, req)
 
-	// Check response - should fail with 403
-	if w.Code != http.StatusForbidden {
-		t.Errorf("Expected status 403, got %d. Body: %s", w.Code, w.Body.String())
+	// Check response - should fail with 422 (business rule violation)
+	if w.Code != http.StatusUnprocessableEntity {
+		t.Errorf("Expected status 422, got %d. Body: %s", w.Code, w.Body.String())
 	}
 
 	var resp response.Response

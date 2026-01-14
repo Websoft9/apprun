@@ -1,6 +1,7 @@
 # Story 5.2: User Login
 
-Status: completed
+Status: done  
+Completed: 2026-01-14
 
 ## Story
 

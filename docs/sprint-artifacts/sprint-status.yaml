@@ -179,7 +179,7 @@ development_status:
     title: User Registration
     sprint: sprint-1
   5-2-user-login:
-    status: ready-for-dev
+    status: done
     title: User Login
     sprint: sprint-1
   5-3-jwt-middleware:
@@ -198,8 +198,9 @@ development_status:
     status: ready-for-dev
     title: RBAC 高级特性
   5-5-2-rbac-api-endpoints:
-    status: ready-for-dev
+    status: in-progress
     title: RBAC API Endpoints
+    sprint: sprint-1
   epic-5-retrospective:
     status: optional
     title: Auth Epic Retrospective

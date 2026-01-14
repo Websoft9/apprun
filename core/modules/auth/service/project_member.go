@@ -199,14 +199,8 @@ func (s *ProjectMemberService) IsMember(ctx context.Context, projectID, userID i
 }
 
 // GetMemberByID retrieves a member by ID
-func (s *ProjectMemberService) GetMemberByID(ctx interface{}, memberID int64) (*ent.ProjectMember, error) {
-	// Cast ctx to context.Context
-	ctxTyped, ok := ctx.(context.Context)
-	if !ok {
-		// If not, try to create a background context
-		ctxTyped = context.Background()
-	}
-	return s.memberRepo.GetMemberByID(ctxTyped, memberID)
+func (s *ProjectMemberService) GetMemberByID(ctx context.Context, memberID int64) (*ent.ProjectMember, error) {
+	return s.memberRepo.GetMemberByID(ctx, memberID)
 }
 
 // isValidProjectRole validates if a role is valid for projects

@@ -28,6 +28,7 @@
 - [ ] 添加 policyVersion 机制（避免脏读）
 - [ ] 实现自动 policy reload（文件监听 fsnotify）
 - [ ] 支持定时 policy reload（可配置间隔）
+- [ ] **实现事务处理机制**（数据库 + Casbin 原子性操作）
 
 ### 非功能验收
 - [ ] 权限检查延迟 P95 < 5ms（使用缓存）
@@ -149,25 +150,118 @@ var (
 
 ## Implementation Tasks
 
-### Task 1: Cache Layer Implementation
+### Task 1: Transaction Handling for RBAC Operations
+**Priority**: P0 (高优先级 - 数据一致性关键)
+
+**问题背景**：
+当前在 `AddMember`, `UpdateMemberRole`, `RemoveMember` 等操作中，数据库操作和 Casbin 操作不在同一个事务中。如果 Casbin 操作失败，会尝试回滚数据库，但这不是原子操作，存在数据不一致的风险。
+
+**技术方案**：
+
+1. **使用 Ent 事务包装数据库和 Casbin 操作**
+
+```go
+// 示例：AddMember with transaction
+func (s *ProjectMemberService) AddMember(ctx context.Context, projectID, userID int64, role string) (*ent.ProjectMember, error) {
+    // 验证逻辑...
+    
+    // 开启事务
+    tx, err := s.client.Tx(ctx)
+    if err != nil {
+        return nil, errors.Wrap(err, errors.ErrCodeInternalError, "Failed to start transaction")
+    }
+    
+    // 定义回滚和提交逻辑
+    var member *ent.ProjectMember
+    err = withRollback(ctx, tx, func(ctx context.Context) error {
+        // 1. 在事务中创建成员记录
+        member, err = tx.ProjectMember.Create()...
+        if err != nil {
+            return err
+        }
+        
+        // 2. 添加 Casbin 策略
+        enforcer := rbac.GetEnforcer()
+        domain := rbac.FormatDomain(projectID)
+        _, err = enforcer.AddGroupingPolicy(rbac.FormatUserKey(userID), role, domain)
+        if err != nil {
+            return errors.Wrap(err, errors.ErrCodeAuthPermCheckError, "Failed to add role")
+        }
+        
+        // 3. 保存 Casbin 策略到数据库
+        if err := enforcer.SavePolicy(); err != nil {
+            return errors.Wrap(err, errors.ErrCodeAuthPermCheckError, "Failed to save policies")
+        }
+        
+        return nil
+    })
+    
+    if err != nil {
+        return nil, err
+    }
+    
+    return member, nil
+}
+
+// 辅助函数：事务管理
+func withRollback(ctx context.Context, tx *ent.Tx, fn func(context.Context) error) error {
+    err := fn(ctx)
+    if err != nil {
+        if rerr := tx.Rollback(); rerr != nil {
+            logger.Error("Failed to rollback transaction",
+                logger.Field{Key: "error", Value: rerr},
+                logger.Field{Key: "original_error", Value: err})
+        }
+        return err
+    }
+    return tx.Commit()
+}
+```
+
+2. **Casbin 策略存储策略**
+
+由于 Casbin 策略需要持久化，有两个选择：
+
+**选项 A：Casbin 使用数据库适配器（推荐）**
+- 将 Casbin 策略存储在同一数据库中
+- 支持事务一致性
+- 需要配置 Ent Casbin Adapter
+
+**选项 B：使用补偿机制（当前方案）**
+- 保持文件存储策略
+- 增强回滚逻辑
+- 添加策略同步检查
+
+**实施步骤**：
+- [ ] 评估 Ent Casbin Adapter 集成可行性
+- [ ] 实现事务包装函数 `withRollback`
+- [ ] 重构 AddMember 使用事务
+- [ ] 重构 UpdateMemberRole 使用事务  
+- [ ] 重构 RemoveMember 使用事务
+- [ ] 添加事务失败的集成测试
+- [ ] 添加策略一致性检查工具
+
+---
+
+### Task 2: Cache Layer Implementation
 - [ ] 实现两层缓存（sync.Map + Redis）
 - [ ] 实现缓存 key 生成（带 policyVersion）
 - [ ] 实现缓存失效逻辑
 - [ ] 添加缓存降级机制
 
-### Task 2: Policy Version & Reload
+### Task 3: Policy Version & Reload
 - [ ] 实现 policyVersion 管理
 - [ ] 实现文件监听 reload
 - [ ] 实现定时 reload
 - [ ] 添加 reload 日志和指标
 
-### Task 3: Monitoring & Metrics
+### Task 4: Monitoring & Metrics
 - [ ] 添加 Prometheus 指标
 - [ ] 实现缓存统计 API
 - [ ] 创建 Grafana Dashboard 模板
 - [ ] 添加性能测试脚本
 
-### Task 4: Performance Testing
+### Task 5: Performance Testing
 - [ ] 1000 并发测试
 - [ ] P95 延迟测试
 - [ ] 缓存命中率测试

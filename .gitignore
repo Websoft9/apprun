@@ -42,3 +42,5 @@ ssl/
 # Locale backup files
 *.backup.*
 core/locales/*.backup.*
+# Ignore locale backup files
+core/locales/*.backup.*

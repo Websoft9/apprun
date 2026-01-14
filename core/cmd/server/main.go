@@ -26,23 +26,23 @@ import (
 	_ "github.com/lib/pq"
 )
 
-// @title           AppRun API
-// @version         1.0
-// @description     AppRun Platform REST API Documentation
-// @termsOfService  http://swagger.io/terms/
+//	@title			AppRun API
+//	@version		1.0
+//	@description	AppRun Platform REST API Documentation
+//	@termsOfService	http://swagger.io/terms/
 
-// @contact.name    API Support
-// @contact.email   support@websoft9.com
+//	@contact.name	API Support
+//	@contact.email	support@websoft9.com
 
-// @license.name    Apache 2.0
-// @license.url     http://www.apache.org/licenses/LICENSE-2.0.html
+//	@license.name	Apache 2.0
+//	@license.url	http://www.apache.org/licenses/LICENSE-2.0.html
 
-// @securityDefinitions.apikey BearerAuth
-// @in header
-// @name Authorization
-// @description Type "Bearer" followed by a space and JWT token.
+//	@securityDefinitions.apikey	BearerAuth
+//	@in							header
+//	@name						Authorization
+//	@description				Type "Bearer" followed by a space and JWT token.
 
-// @schemes         http https
+// @schemes	http https
 func main() {
 	if err := run(); err != nil {
 		log.Fatalf("❌ %v", err)

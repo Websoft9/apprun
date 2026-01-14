@@ -16,18 +16,18 @@ import (
 
 // Login handles user login requests.
 //
-// @Summary      User login
-// @Description  Authenticate user and return JWT token
-// @Tags         auth
-// @Accept       json
-// @Produce      json
-// @Param        request body service.LoginRequest true "Login credentials"
-// @Success      200 {object} response.Response{data=service.LoginResponse}
-// @Failure      400 {object} response.Response "Validation error"
-// @Failure      401 {object} response.Response "Invalid credentials"
-// @Failure      403 {object} response.Response "Account disabled"
-// @Failure      500 {object} response.Response "Internal server error"
-// @Router       /api/auth/login [post]
+//	@Summary		User login
+//	@Description	Authenticate user and return JWT token
+//	@Tags			auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		service.LoginRequest	true	"Login credentials"
+//	@Success		200		{object}	response.Response{data=service.LoginResponse}
+//	@Failure		400		{object}	response.Response	"Validation error"
+//	@Failure		401		{object}	response.Response	"Invalid credentials"
+//	@Failure		403		{object}	response.Response	"Account disabled"
+//	@Failure		500		{object}	response.Response	"Internal server error"
+//	@Router			/api/auth/login [post]
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	logger.Info("Login request received",
 		logger.Field{Key: "method", Value: r.Method},
@@ -111,17 +111,17 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 // Me returns the authenticated user's profile.
 //
-// @Summary      Get current user profile
-// @Description  Retrieve profile of the authenticated user
-// @Tags         auth
-// @Accept       json
-// @Produce      json
-// @Security     BearerAuth
-// @Success      200 {object} response.Response{data=service.UserProfile}
-// @Failure      401 {object} response.Response "Missing or invalid token"
-// @Failure      404 {object} response.Response "User not found"
-// @Failure      500 {object} response.Response "Internal server error"
-// @Router       /api/auth/me [get]
+//	@Summary		Get current user profile
+//	@Description	Retrieve profile of the authenticated user
+//	@Tags			auth
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Success		200	{object}	response.Response{data=service.UserProfile}
+//	@Failure		401	{object}	response.Response	"Missing or invalid token"
+//	@Failure		404	{object}	response.Response	"User not found"
+//	@Failure		500	{object}	response.Response	"Internal server error"
+//	@Router			/api/auth/me [get]
 func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 	logger.Info("Profile request received",
 		logger.Field{Key: "method", Value: r.Method},

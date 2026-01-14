@@ -60,15 +60,16 @@ type CheckPermissionResponse struct {
 }
 
 // GetMyPermissions handles getting current user's permissions in a project
-// @Summary      Get my permissions
-// @Description  Get the current user's permissions in a project
-// @Tags         rbac
-// @Produce      json
-// @Param        project_id   path      int  true  "Project ID"
-// @Success      200          {object}  response.Response{data=PermissionsResponse}
-// @Failure      403          {object}  response.Response
-// @Security     BearerAuth
-// @Router       /api/projects/{project_id}/permissions/my [get]
+//
+//	@Summary		Get my permissions
+//	@Description	Get the current user's permissions in a project
+//	@Tags			rbac
+//	@Produce		json
+//	@Param			project_id	path		int	true	"Project ID"
+//	@Success		200			{object}	response.Response{data=PermissionsResponse}
+//	@Failure		403			{object}	response.Response
+//	@Security		BearerAuth
+//	@Router			/api/projects/{project_id}/permissions/me [get]
 func (h *PermissionHandler) GetMyPermissions(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -121,18 +122,19 @@ func (h *PermissionHandler) GetMyPermissions(w http.ResponseWriter, r *http.Requ
 }
 
 // CheckPermission handles checking if user has a specific permission
-// @Summary      Check permission
-// @Description  Check if the current user has a specific permission in a project
-// @Tags         rbac
-// @Accept       json
-// @Produce      json
-// @Param        project_id   path      int                         true  "Project ID"
-// @Param        request      body      CheckPermissionRequest      true  "Permission to check"
-// @Success      200          {object}  response.Response{data=CheckPermissionResponse}
-// @Failure      400          {object}  response.Response
-// @Failure      403          {object}  response.Response
-// @Security     BearerAuth
-// @Router       /api/projects/{project_id}/permissions/check [post]
+//
+//	@Summary		Check permission
+//	@Description	Check if the current user has a specific permission in a project
+//	@Tags			rbac
+//	@Accept			json
+//	@Produce		json
+//	@Param			project_id	path		int						true	"Project ID"
+//	@Param			request		body		CheckPermissionRequest	true	"Permission to check"
+//	@Success		200			{object}	response.Response{data=CheckPermissionResponse}
+//	@Failure		400			{object}	response.Response
+//	@Failure		403			{object}	response.Response
+//	@Security		BearerAuth
+//	@Router			/api/projects/{project_id}/permissions/check [post]
 func (h *PermissionHandler) CheckPermission(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

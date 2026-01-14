@@ -28,18 +28,18 @@ type RefreshResponse struct {
 // Refresh handles token refresh requests (POST /api/auth/refresh).
 // Validates refresh token, checks blacklist, verifies user status, and issues new token pair.
 //
-// @Summary      Refresh access token
-// @Description  Exchange refresh token for new access/refresh token pair
-// @Tags         auth
-// @Accept       json
-// @Produce      json
-// @Param        request body RefreshRequest true "Refresh token"
-// @Success      200 {object} response.Response{data=RefreshResponse}
-// @Failure      400 {object} response.Response "Missing or invalid refresh token"
-// @Failure      401 {object} response.Response "Token expired, invalid type, or blacklisted"
-// @Failure      403 {object} response.Response "Account disabled"
-// @Failure      500 {object} response.Response "Internal server error"
-// @Router       /api/auth/refresh [post]
+//	@Summary		Refresh access token
+//	@Description	Exchange refresh token for new access/refresh token pair
+//	@Tags			auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		RefreshRequest	true	"Refresh token"
+//	@Success		200		{object}	response.Response{data=RefreshResponse}
+//	@Failure		400		{object}	response.Response	"Missing or invalid refresh token"
+//	@Failure		401		{object}	response.Response	"Token expired, invalid type, or blacklisted"
+//	@Failure		403		{object}	response.Response	"Account disabled"
+//	@Failure		500		{object}	response.Response	"Internal server error"
+//	@Router			/api/auth/refresh [post]
 func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	lang := i18n.GetLanguage(r.Context())
 

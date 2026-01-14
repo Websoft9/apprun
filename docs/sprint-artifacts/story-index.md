@@ -10,9 +10,9 @@
 
 ### By Status
 
-- ✅ **Done**: 16
+- ✅ **Done**: 18
 - 🔄 **In Progress**: 1
-- 🟢 **Ready For Dev**: 13
+- 🟢 **Ready For Dev**: 11
 - ✏️ **Drafted**: 1
 - 📋 **Backlog**: 15
 
@@ -58,7 +58,7 @@
 | 3-3-module-config-registry | Module Configuration Registry Enhancement | 🟢 ready-for-dev | Configuration Management |
 | 4-1-swagger-docs | Swagger API Documentation | ✅ done | API Documentation |
 | 5-1-user-registration | User Registration | ✅ done | Authentication & Authorization |
-| 5-2-user-login | User Login | 🟢 ready-for-dev | Authentication & Authorization |
+| 5-2-user-login | User Login | ✅ done | Authentication & Authorization |
 | 5-3-jwt-middleware | JWT Middleware | 🟢 ready-for-dev | Authentication & Authorization |
 | 5-4-token-refresh | Token Refresh Mechanism | ✏️ drafted | Authentication & Authorization |
 | 5-5-rbac-permissions | RBAC 权限控制 | 🔄 in-progress | Authentication & Authorization |
@@ -72,7 +72,7 @@
 | 3-5-config-rollback | 配置版本回滚 | 📋 backlog | Configuration Management |
 | 3-6-config-audit | 配置审计日志 | 📋 backlog | Configuration Management |
 | 5-5-1-rbac-advanced | RBAC 高级特性 | 🟢 ready-for-dev | Authentication & Authorization |
-| 5-5-2-rbac-api-endpoints | RBAC API Endpoints | 🟢 ready-for-dev | Authentication & Authorization |
+| 5-5-2-rbac-api-endpoints | RBAC API Endpoints | ✅ done | Authentication & Authorization |
 
 ## Sprint Unknown
 
@@ -93,4 +93,4 @@
 
 ---
 
-*Auto-generated from `sprint-status.yaml` on 2026-01-14 14:46:02*
+*Auto-generated from `sprint-status.yaml` on 2026-01-14 16:36:54*
