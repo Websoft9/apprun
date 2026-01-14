@@ -2,6 +2,7 @@ package jwt
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -93,7 +94,7 @@ func IsBlacklisted(tokenID string) (bool, error) {
 	key := fmt.Sprintf("jwt:blacklist:%s", tokenID)
 	val, err := cacheClient.Get(ctx, key)
 
-	if err == cache.ErrKeyNotFound {
+	if errors.Is(err, cache.ErrKeyNotFound) {
 		return false, nil // Not in blacklist
 	}
 	if err != nil {

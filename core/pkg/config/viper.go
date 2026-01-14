@@ -31,10 +31,14 @@ func InitializeGlobalViper(configDir string) error {
 
 	// Manually bind environment variables for nested keys that Viper doesn't auto-detect
 	// This is necessary because Viper's AutomaticEnv() doesn't work for nested keys by default
-	_ = viper.BindEnv("auth.jwt.secret", "JWT_SECRET")
-	_ = viper.BindEnv("auth.jwt.access_token_expiration", "JWT_ACCESS_TOKEN_EXPIRATION")
-	_ = viper.BindEnv("auth.jwt.issuer", "JWT_ISSUER")
-	_ = viper.BindEnv("auth.jwt.audience", "JWT_AUDIENCE")
+	//nolint:errcheck // These BindEnv calls never return an error
+	viper.BindEnv("auth.jwt.secret", "JWT_SECRET")
+	//nolint:errcheck // These BindEnv calls never return an error
+	viper.BindEnv("auth.jwt.access_token_expiration", "JWT_ACCESS_TOKEN_EXPIRATION")
+	//nolint:errcheck // These BindEnv calls never return an error
+	viper.BindEnv("auth.jwt.issuer", "JWT_ISSUER")
+	//nolint:errcheck // These BindEnv calls never return an error
+	viper.BindEnv("auth.jwt.audience", "JWT_AUDIENCE")
 
 	// Create aliases for JWT config to support both paths:
 	// - auth.jwt.* (YAML config path)

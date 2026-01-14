@@ -27,7 +27,7 @@ const (
 	DefaultAudience = "apprun-api"
 )
 
-// Default whitelist paths that bypass JWT authentication
+// DefaultWhitelistPaths are the default whitelist paths that bypass JWT authentication
 var DefaultWhitelistPaths = []string{
 	"/api/v1/auth/register",
 	"/api/v1/auth/login",
@@ -131,6 +131,7 @@ func (r *RuntimeConfig) IsPathWhitelisted(path string) bool {
 // ============================================================================
 
 // LegacyConfig is the old config structure for backward compatibility.
+//
 // Deprecated: Use Config instead. Will be removed in v2.0.
 type LegacyConfig struct {
 	Secret         string   `mapstructure:"secret" json:"secret"`
@@ -140,6 +141,7 @@ type LegacyConfig struct {
 }
 
 // ToConfig converts LegacyConfig to the new Config structure.
+//
 // Deprecated: Use Config directly. Will be removed in v2.0.
 func (lc *LegacyConfig) ToConfig() (*Config, error) {
 	expiry, err := time.ParseDuration(lc.Expiry)

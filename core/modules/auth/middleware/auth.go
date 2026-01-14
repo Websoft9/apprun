@@ -12,6 +12,18 @@ import (
 	"apprun/pkg/response"
 )
 
+// contextKey is a custom type for context keys to avoid collisions
+type contextKey string
+
+const (
+	// ContextKeyUserID is the context key for user ID
+	ContextKeyUserID contextKey = "user_id"
+	// ContextKeyUsername is the context key for username
+	ContextKeyUsername contextKey = "username"
+	// ContextKeyEmail is the context key for email
+	ContextKeyEmail contextKey = "email"
+)
+
 // JWTMiddleware provides JWT authentication middleware
 type JWTMiddleware struct{}
 
@@ -48,9 +60,9 @@ func (m *JWTMiddleware) JWTAuth(next http.Handler) http.Handler {
 
 		// Inject context with user information
 		ctx := r.Context()
-		ctx = context.WithValue(ctx, "user_id", claims.UserID)
-		ctx = context.WithValue(ctx, "username", claims.Username)
-		ctx = context.WithValue(ctx, "email", claims.Email)
+		ctx = context.WithValue(ctx, ContextKeyUserID, claims.UserID)
+		ctx = context.WithValue(ctx, ContextKeyUsername, claims.Username)
+		ctx = context.WithValue(ctx, ContextKeyEmail, claims.Email)
 
 		// Call next handler with updated context
 		next.ServeHTTP(w, r.WithContext(ctx))

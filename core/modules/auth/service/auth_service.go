@@ -275,7 +275,7 @@ func (s *AuthService) Login(ctx context.Context, req *LoginRequest, clientIP str
 	}
 
 	// 2. Verify password
-	if err := password.Verify(req.Password, user.PasswordHash); err != nil {
+	if verifyErr := password.Verify(req.Password, user.PasswordHash); verifyErr != nil {
 		logger.Warn("Invalid password",
 			logger.Field{Key: "user_id", Value: user.ID},
 			logger.Field{Key: "identifier", Value: req.Identifier})

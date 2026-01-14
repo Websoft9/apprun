@@ -2,6 +2,7 @@ package database
 
 import (
 	"apprun/pkg/env"
+	"fmt"
 )
 
 // Config holds database connection configuration
@@ -38,7 +39,7 @@ func DefaultConfig() *Config {
 // Returns Client interface for database operations
 func NewDatabaseFromConfig(cfg *Config) (interface{}, error) {
 	if cfg == nil {
-		cfg = DefaultConfig()
+		return nil, fmt.Errorf("config cannot be nil")
 	}
 
 	// Import context for Connect function

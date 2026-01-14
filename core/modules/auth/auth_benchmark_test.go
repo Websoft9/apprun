@@ -333,11 +333,12 @@ func TestConcurrentLogin_1000QPS(t *testing.T) {
 				atomic.AddInt64(&metrics.TotalRequests, 1)
 				metrics.Latencies = append(metrics.Latencies, latency)
 
-				if err != nil {
+				switch {
+				case err != nil:
 					atomic.AddInt64(&metrics.FailedRequests, 1)
-				} else if resp.AccessToken != "" {
+				case resp.AccessToken != "":
 					atomic.AddInt64(&metrics.SuccessRequests, 1)
-				} else {
+				default:
 					atomic.AddInt64(&metrics.FailedRequests, 1)
 				}
 

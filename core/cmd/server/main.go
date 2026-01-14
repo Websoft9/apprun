@@ -146,8 +146,8 @@ func run() error {
 	authConfig := authmod.DefaultConfig()
 	// TODO: Load from config service when dynamic config loading is implemented
 	// For now, use default config or environment variables via Viper
-	if err := password.SetCost(authConfig.Security.BcryptCost); err != nil {
-		log.Printf("⚠️  Warning: Invalid bcrypt cost %d, using default: %v", authConfig.Security.BcryptCost, err)
+	if costErr := password.SetCost(authConfig.Security.BcryptCost); costErr != nil {
+		log.Printf("⚠️  Warning: Invalid bcrypt cost %d, using default: %v", authConfig.Security.BcryptCost, costErr)
 	} else {
 		log.Printf("✅ Bcrypt cost set to %d", authConfig.Security.BcryptCost)
 	}

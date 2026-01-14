@@ -45,10 +45,16 @@ func (s *TokenService) GenerateToken(userID int64, userClaims map[string]interfa
 	}
 	expiresAt := time.Now().Add(expiresIn)
 
+	// Type assertions are intentionally unchecked - empty strings on failure
+	//nolint:errcheck // Type assertion failure is acceptable, defaults to empty string
+	username, _ := userClaims["username"].(string)
+	//nolint:errcheck // Type assertion failure is acceptable, defaults to empty string
+	email, _ := userClaims["email"].(string)
+
 	claims := CustomClaims{
 		UserID:    userID,
-		Username:  userClaims["username"].(string),
-		Email:     userClaims["email"].(string),
+		Username:  username,
+		Email:     email,
 		TokenType: "access",
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expiresAt),
@@ -112,10 +118,16 @@ func (s *TokenService) GenerateTokenPair(userID int64, userClaims map[string]int
 	}
 	accessExpiresAt := time.Now().Add(accessExpiration)
 
+	// Type assertions are intentionally unchecked - empty strings on failure
+	//nolint:errcheck // Type assertion failure is acceptable, defaults to empty string
+	username, _ := userClaims["username"].(string)
+	//nolint:errcheck // Type assertion failure is acceptable, defaults to empty string
+	email, _ := userClaims["email"].(string)
+
 	accessClaims := CustomClaims{
 		UserID:    userID,
-		Username:  userClaims["username"].(string),
-		Email:     userClaims["email"].(string),
+		Username:  username,
+		Email:     email,
 		TokenType: "access",
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(accessExpiresAt),
@@ -139,10 +151,16 @@ func (s *TokenService) GenerateTokenPair(userID int64, userClaims map[string]int
 	}
 	refreshExpiresAt := time.Now().Add(refreshExpiration)
 
+	// Type assertions are intentionally unchecked - empty strings on failure
+	//nolint:errcheck // Type assertion failure is acceptable, defaults to empty string
+	usernameRefresh, _ := userClaims["username"].(string)
+	//nolint:errcheck // Type assertion failure is acceptable, defaults to empty string
+	emailRefresh, _ := userClaims["email"].(string)
+
 	refreshClaims := CustomClaims{
 		UserID:    userID,
-		Username:  userClaims["username"].(string),
-		Email:     userClaims["email"].(string),
+		Username:  usernameRefresh,
+		Email:     emailRefresh,
 		TokenType: "refresh",
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(refreshExpiresAt),
@@ -190,6 +208,7 @@ func InitGlobalService(cfg pkgconfig.Provider) {
 }
 
 // GenerateToken is a backward-compatible package-level function.
+//
 // Deprecated: Use TokenService.GenerateToken instead.
 func GenerateToken(userID int64, userClaims map[string]interface{}) (string, time.Time, error) {
 	if globalTokenService == nil {
@@ -200,6 +219,7 @@ func GenerateToken(userID int64, userClaims map[string]interface{}) (string, tim
 }
 
 // ValidateToken is a backward-compatible package-level function.
+//
 // Deprecated: Use TokenService.ValidateToken instead.
 func ValidateToken(tokenString string) (*CustomClaims, error) {
 	if globalTokenService == nil {
@@ -210,6 +230,7 @@ func ValidateToken(tokenString string) (*CustomClaims, error) {
 }
 
 // GenerateTokenPair is a backward-compatible package-level function.
+//
 // Deprecated: Use TokenService.GenerateTokenPair instead.
 func GenerateTokenPair(userID int64, userClaims map[string]interface{}) (string, string, time.Time, error) {
 	if globalTokenService == nil {
@@ -220,6 +241,7 @@ func GenerateTokenPair(userID int64, userClaims map[string]interface{}) (string,
 }
 
 // ValidateRefreshToken is a backward-compatible package-level function.
+//
 // Deprecated: Use TokenService.ValidateRefreshToken instead.
 func ValidateRefreshToken(tokenString string) (*CustomClaims, error) {
 	if globalTokenService == nil {

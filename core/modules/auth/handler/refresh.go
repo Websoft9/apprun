@@ -73,13 +73,14 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 			logger.Field{Key: "error", Value: err.Error()},
 			logger.Field{Key: "remote_addr", Value: r.RemoteAddr})
 
-		if stdErrors.Is(err, jwt.ErrTokenExpired) {
+		switch {
+		case stdErrors.Is(err, jwt.ErrTokenExpired):
 			msg := i18n.Translate(lang, "auth.error.refresh_token_expired", nil)
 			response.Error(w, http.StatusUnauthorized, errors.ErrCodeAuthTokenExpired, msg)
-		} else if stdErrors.Is(err, jwt.ErrInvalidTokenType) {
+		case stdErrors.Is(err, jwt.ErrInvalidTokenType):
 			msg := i18n.Translate(lang, "auth.error.invalid_token_type", nil)
 			response.Error(w, http.StatusUnauthorized, errors.ErrCodeAuthInvalidTokenType, msg)
-		} else {
+		default:
 			msg := i18n.Translate(lang, "auth.error.invalid_refresh_token", nil)
 			response.Error(w, http.StatusUnauthorized, errors.ErrCodeAuthInvalidToken, msg)
 		}
@@ -88,11 +89,11 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 
 	// 4. Check if token is blacklisted (if blacklist enabled)
 	if jwt.IsBlacklistEnabled() {
-		blacklisted, err := jwt.IsBlacklisted(claims.ID)
-		if err != nil {
+		blacklisted, blacklistErr := jwt.IsBlacklisted(claims.ID)
+		if blacklistErr != nil {
 			logger.Error("Failed to check token blacklist",
 				logger.Field{Key: "token_id", Value: claims.ID},
-				logger.Field{Key: "error", Value: err.Error()})
+				logger.Field{Key: "error", Value: blacklistErr.Error()})
 			// Continue anyway (fail open)
 		}
 		if blacklisted {
