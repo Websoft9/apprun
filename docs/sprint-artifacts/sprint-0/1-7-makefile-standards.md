@@ -185,6 +185,40 @@ good-target:
 
 ---
 
+## Definition of Done
+
+- [ ] **Makefile Structure**
+  - [ ] All commands organized into 8 functional groups
+  - [ ] Command naming follows kebab-case convention
+  - [ ] All commands declared in .PHONY
+  - [ ] help target displays grouped commands
+
+- [ ] **Code Quality**
+  - [ ] No `|| true` without explicit comments
+  - [ ] Complex logic (>15 lines) extracted to scripts/
+  - [ ] All commands have emoji + description
+  - [ ] Error handling provides clear guidance
+
+- [ ] **Testing**
+  - [ ] All Makefile commands tested manually
+  - [ ] dev-start/dev-stop working correctly
+  - [ ] Dependencies start in correct order
+  - [ ] Error messages helpful and actionable
+
+- [ ] **Documentation & Review**
+  - [ ] README.md updated with new commands
+  - [ ] Migration guide created for deprecated commands
+  - [ ] DevOps review: operational best practices verified
+  - [ ] Developer review: daily workflow usability confirmed
+  - [ ] Security review: no credentials exposed in output
+
+- [ ] **Backward Compatibility**
+  - [ ] Old commands work with deprecation warnings
+  - [ ] Existing workflows not broken
+  - [ ] CI/CD pipelines updated if needed
+
+---
+
 ## Technical Notes
 
 ### 向后兼容

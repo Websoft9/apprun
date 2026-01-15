@@ -89,18 +89,18 @@ help:
 # 1. Core Development (核心开发)
 # ============================================
 
-# Start application (runs bin/server, builds if missing)
+# Start application using new CLI (apprun serve)
 app-start:
 	@echo "🚀 Starting application..."
-	@if [ ! -f core/bin/server ]; then \
-		echo "⚠️  bin/server not found, building..." && $(MAKE) build-fast; \
+	@if [ ! -f core/bin/apprun ]; then \
+		echo "⚠️  bin/apprun not found, building..." && $(MAKE) build-fast; \
 	fi
-	@cd core && ./bin/server
+	@cd core && ./bin/apprun serve
 
 # Stop application process
 app-stop:
 	@echo "🛑 Stopping application..."
-	@pkill -f "bin/server" || echo "⚠️  No running app process found"
+	@pkill -f "bin/apprun" || pkill -f "bin/server" || echo "⚠️  No running app process found"
 	@echo "✅ Application stopped"
 
 # Clean application artifacts
@@ -159,15 +159,27 @@ dev-clean: app-clean deps-clean
 
 # 构建（正确顺序：生成代码 -> 提取翻译 -> 生成文档 -> 编译）
 build: generate i18n swagger
-	@echo "🔨 Building application..."
-	cd core && go build -o bin/server ./cmd/server
-	@echo "✅ Build complete: core/bin/server"
+	@echo "🔨 Building application with version info..."
+	@VERSION=$$(git describe --tags --always --dirty 2>/dev/null || echo "dev"); \
+	GIT_COMMIT=$$(git rev-parse HEAD 2>/dev/null || echo "unknown"); \
+	BUILD_TIME=$$(date -u +"%Y-%m-%dT%H:%M:%SZ"); \
+	cd core && go build -ldflags="-X apprun/pkg/version.Version=$$VERSION \
+		-X apprun/pkg/version.GitCommit=$$GIT_COMMIT \
+		-X apprun/pkg/version.BuildTime=$$BUILD_TIME" \
+		-o bin/apprun .
+	@echo "✅ Build complete: core/bin/apprun"
+	@# Create backward compatibility symlink
+	@cd core/bin && rm -f server && ln -sf apprun server
+	@echo "✅ Backward compatibility: bin/server -> bin/apprun"
 
 # 快速构建（跳过文档生成）
 build-fast: generate
 	@echo "⚡ Quick build (skip docs)..."
-	cd core && go build -o bin/server ./cmd/server
-	@echo "✅ Quick build complete: core/bin/server"
+	@cd core && go build -o bin/apprun .
+	@echo "✅ Quick build complete: core/bin/apprun"
+	@# Create backward compatibility symlink
+	@cd core/bin && rm -f server && ln -sf apprun server
+	@echo "✅ Backward compatibility: bin/server -> bin/apprun"
 
 # 代码生成 (Ent ORM)
 generate:
@@ -413,7 +425,7 @@ check: lint test security
 # Generate Swagger API documentation
 swagger:
 	@echo "📚 Generating Swagger API documentation..."
-	@cd core && swag init -g cmd/server/main.go -o docs
+	@cd core && swag init -g internal/bootstrap/server.go -o docs
 	@echo "✅ Swagger docs generated in core/docs/"
 	@echo "💡 Access at: http://localhost:$${HTTP_PORT:-8080}/api/docs/"
 

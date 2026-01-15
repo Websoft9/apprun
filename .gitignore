@@ -35,12 +35,14 @@ ssl/
 *.pem
 *.csr
 
+# Build artifacts
+core/bin/
+!core/bin/.gitkeep
+
 # Editor/IDE
 # .idea/
 # .vscode/
 
 # Locale backup files
 *.backup.*
-core/locales/*.backup.*
-# Ignore locale backup files
 core/locales/*.backup.*

@@ -1,4 +1,4 @@
-# generated: 2026-01-14
+# generated: 2026-01-15
 # project: apprun
 # project_key: apprun
 # tracking_system: file-system
@@ -26,7 +26,7 @@
 #   - optional: Can be completed but not required
 #   - done: Retrospective has been completed
 
-generated: '2026-01-14'
+generated: '2026-01-15'
 project: apprun
 project_key: apprun
 tracking_system: file-system
@@ -57,9 +57,13 @@ development_status:
     status: done
     title: 数据库增量迁移
     sprint: sprint-0
-  1-6-admin-cli:
+  1-6-unified-cli-architecture:
+    status: review
+    title: Unified CLI Architecture (统一 CLI 命令架构)
+    sprint: sprint-0
+  1-6-1-admin-management-commands:
     status: ready-for-dev
-    title: 服务端 CLI 框架
+    title: Admin Management Commands (管理命令集)
     sprint: sprint-0
   1-7-makefile-standards:
     status: done
@@ -100,6 +104,10 @@ development_status:
   1-16-redis-cache-package:
     status: done
     title: Redis Cache Package
+    sprint: sprint-2
+  1-17-platform-initialization:
+    status: ready-for-dev
+    title: Platform Initialization (平台初始化)
     sprint: sprint-2
   epic-1-retrospective:
     status: optional

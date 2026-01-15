@@ -18,28 +18,80 @@
 
 ---
 
+## Refactoring Scope
+
+**Target Files**:
+- `core/handlers/config.go` - Configuration management handlers (PRIMARY)
+- `core/handlers/project.go` - Project management handlers (SECONDARY)
+- `core/handlers/user.go` - User management handlers (FUTURE)
+
+**Target Patterns to Refactor**:
+1. ❌ Direct `json.NewEncoder(w).Encode()` → ✅ Use `pkg/response`
+2. ❌ Manual HTTP status code handling → ✅ Use `pkg/response` status mapping
+3. ❌ String error messages → ✅ Use `pkg/errors` with error codes
+4. ❌ Duplicate JSON parsing logic → ✅ Use `pkg/request` (Story 1.11)
+5. ❌ Unstructured logging → ✅ Use `pkg/logger` with structured fields
+
+**Estimated Impact**:
+- ~150 lines of duplicated code removal
+- ~8 handler functions refactored
+- Test coverage increase from ~40% to >80%
+
+---
+
 ## Acceptance Criteria
 
-- [ ] 重构 `handlers/config.go`
-- [ ] 使用统一响应工具包
-- [ ] 使用错误处理框架
-- [ ] 移除重复代码
-- [ ] 添加请求参数验证
-- [ ] 更新单元测试
-- [ ] 确保向后兼容
+### AC-001: Response Package Integration ✓
+- [ ] All handlers use `response.Success()` for 200 responses
+- [ ] All handlers use `response.Error()` with error codes for failures
+- [ ] All list endpoints use `response.List()` with pagination
+- [ ] All validation errors use `response.ValidationError()`
+- [ ] Remove all direct `json.NewEncoder(w).Encode()` calls
+
+### AC-002: Error Handling Standardization ✓
+- [ ] All database errors wrapped with `pkg/errors.Wrap()`
+- [ ] All handlers use error codes from `pkg/errors/codes.go`
+- [ ] Error responses include proper HTTP status mapping
+- [ ] No bare string error messages in responses
+
+### AC-003: Logger Integration ✓
+- [ ] All handlers use `logger.L().WithContext(r.Context())`
+- [ ] Request ID automatically injected in logs
+- [ ] Structured logging fields for key operations
+- [ ] Remove all `log.Printf()` calls
+
+### AC-004: Code Quality ✓
+- [ ] Remove duplicate JSON parsing logic (>50 lines reduction)
+- [ ] golangci-lint passes with zero new warnings
+- [ ] Test coverage ≥ 80% on refactored handlers
+- [ ] All existing tests continue to pass (backward compatibility)
 
 ---
 
 ## Implementation Tasks
 
-- [ ] 分析现有 config.go 代码
-- [ ] 重构 ListConfigs（使用 response.List）
-- [ ] 重构 GetConfig（使用 response.Success/Error）
-- [ ] 重构 CreateConfig（使用 errors 包）
-- [ ] 重构 UpdateConfig
-- [ ] 重构 DeleteConfig
-- [ ] 添加请求参数验证
-- [ ] 更新单元测试
+### Phase 1: Config Handlers Refactor (4 hours)
+- [ ] Analyze current `handlers/config.go` (identify 8 functions to refactor)
+- [ ] Refactor `ListConfigs()` - use `response.List()` with pagination
+- [ ] Refactor `GetConfig()` - use `response.Success()`/`response.Error()`
+- [ ] Refactor `CreateConfig()` - use `errors.Wrap()` + error codes
+- [ ] Refactor `UpdateConfig()` - add `logger.L().WithContext()` logging
+- [ ] Refactor `DeleteConfig()` - standardize error handling
+- [ ] Update unit tests for config handlers (add 10+ test cases)
+- [ ] Run integration tests to verify backward compatibility
+
+### Phase 2: Project Handlers Refactor (3 hours)
+- [ ] Analyze current `handlers/project.go` (identify functions)
+- [ ] Apply same refactoring patterns as config handlers
+- [ ] Add structured logging with project context
+- [ ] Update tests
+
+### Phase 3: Testing & Documentation (1 hour)
+- [ ] Run full test suite: `go test ./handlers/... -v -cover`
+- [ ] Verify coverage ≥ 80%: `go tool cover -func=coverage.out`
+- [ ] Run linter: `golangci-lint run ./handlers/...`
+- [ ] Update handler documentation with new patterns
+- [ ] Create refactoring guide for future handlers
 
 ---
 
@@ -71,32 +123,69 @@ func (h *Handler) GetConfig(w http.ResponseWriter, r *http.Request) {
 // handlers/config.go (新代码)
 
 import (
-    "github.com/yourusername/apprun/core/pkg/response"
-    "github.com/yourusername/apprun/core/pkg/errors"
+    "apprun/pkg/response"
+    "apprun/pkg/errors"
+    "apprun/pkg/logger"
 )
 
 func (h *Handler) GetConfig(w http.ResponseWriter, r *http.Request) {
+    log := logger.L().WithContext(r.Context())
     id := chi.URLParam(r, "id")
     
     // 参数验证
     if id == "" {
-        response.Error(w, http.StatusBadRequest, errors.ErrInvalidRequest, "config ID is required")
+        log.Warn("Missing config ID", logger.Field{"path", r.URL.Path})
+        response.ErrorWithRequest(w, r, http.StatusBadRequest, 
+            errors.ErrCodeInvalidParam, "config ID is required")
         return
     }
     
     config, err := h.repo.GetConfig(r.Context(), id)
     if err != nil {
+        appErr := errors.Wrap(err, errors.ErrCodeNotFound, "Failed to get config")
         if errors.IsNotFound(err) {
-            response.Error(w, http.StatusNotFound, errors.ErrResourceNotFound, "config not found")
+            log.Info("Config not found", logger.Field{"config_id", id})
+            response.AppErrorWithRequest(w, r, appErr)
         } else {
-            response.Error(w, http.StatusInternalServerError, errors.ErrInternalError, "failed to get config")
+            log.Error("Database error", logger.Field{"error", err.Error()})
+            response.AppErrorWithRequest(w, r, 
+                errors.Wrap(err, errors.ErrCodeInternalError, "Internal error"))
         }
         return
     }
     
-    response.Success(w, config)
+    log.Info("Config retrieved", logger.Field{"config_id", id})
+    response.SuccessWithRequest(w, r, config)
 }
 ```
+
+---
+
+## Definition of Done
+
+- [ ] **Code Quality**
+  - [ ] All acceptance criteria (AC-001 to AC-004) met
+  - [ ] golangci-lint passes with zero new warnings
+  - [ ] No code duplication (DRY principle applied)
+  - [ ] Code follows project coding standards
+
+- [ ] **Testing**
+  - [ ] All unit tests passing (existing + new)
+  - [ ] Test coverage ≥ 80% on refactored handlers
+  - [ ] Integration tests passing (backward compatibility verified)
+  - [ ] Manual testing completed (health check endpoints)
+
+- [ ] **Review & Documentation**
+  - [ ] Code reviewed and approved (2 reviewers minimum)
+  - [ ] Refactoring patterns documented for team reference
+  - [ ] Handler documentation updated with examples
+  - [ ] PR description includes before/after metrics
+
+- [ ] **Deployment Readiness**
+  - [ ] No breaking changes to API contracts
+  - [ ] Database connections properly closed
+  - [ ] Error messages user-friendly and informative
+  - [ ] Deployed to dev environment successfully
 
 ---
 

@@ -108,55 +108,95 @@ type Closer interface {
 
 ```
 apprun/
-├── cmd/                    # 可执行程序入口
-│   └── server/main.go
-│
-├── modules/                # 业务模块（模块化单体）
-│   ├── config/            # 配置管理模块
-│   │   ├── handler.go     # HTTP API
-│   │   ├── service.go     # 业务逻辑
-│   │   ├── repository.go  # 数据访问
-│   │   └── types.go       # 领域模型
+├── core/                       # Go 应用核心代码
+│   ├── main.go                # 主入口（package main）
+│   ├── cmd/                   # Cobra 命令实现（package cmd）
+│   │   ├── root.go           # 根命令 + 全局 flags
+│   │   ├── serve.go          # apprun serve（启动服务）
+│   │   ├── migrate.go        # apprun migrate（数据库迁移）
+│   │   └── version.go        # apprun version（版本信息）
 │   │
-│   ├── user/              # 用户模块
-│   │   ├── handler.go
-│   │   ├── service.go
-│   │   ├── repository.go
-│   │   └── types.go
+│   ├── modules/              # 业务模块（模块化单体）
+│   │   ├── config/          # 配置管理模块
+│   │   │   ├── handler.go   # HTTP API
+│   │   │   ├── service.go   # 业务逻辑
+│   │   │   ├── repository.go # 数据访问
+│   │   │   └── types.go     # 领域模型
+│   │   │
+│   │   ├── auth/            # 认证授权模块
+│   │   │   ├── handler/
+│   │   │   ├── service/
+│   │   │   ├── repository/
+│   │   │   └── config.go    # 模块配置
+│   │   │
+│   │   └── user/            # 用户模块
+│   │       ├── handler.go
+│   │       ├── service.go
+│   │       ├── repository.go
+│   │       └── types.go
 │   │
-│   └── app/               # 应用管理模块
-│       ├── handler.go
-│       ├── service.go
-│       ├── repository.go
-│       └── types.go
+│   ├── internal/            # 内部基础设施（非业务模块）
+│   │   ├── bootstrap/       # 启动编排逻辑
+│   │   │   └── server.go   # 服务器启动 + Swagger 注释
+│   │   ├── middleware/      # 中间件
+│   │   ├── jwt/            # JWT 认证
+│   │   ├── rbac/           # RBAC 权限
+│   │   └── password/       # 密码加密
+│   │
+│   ├── pkg/                 # 可复用工具包（通用库）
+│   │   ├── version/        # 版本管理
+│   │   ├── database/       # 数据库客户端
+│   │   ├── cache/          # 缓存客户端
+│   │   ├── logger/         # 日志库
+│   │   ├── errors/         # 错误处理
+│   │   ├── response/       # 统一响应
+│   │   └── i18n/           # 国际化
+│   │
+│   ├── ent/                # Ent ORM
+│   │   └── schema/
+│   │
+│   ├── routes/             # 路由配置
+│   ├── handlers/           # HTTP 处理器
+│   ├── docs/               # Swagger 文档（自动生成）
+│   ├── config/             # 配置文件
+│   │   ├── default.yaml
+│   │   └── conf_d/
+│   └── bin/                # 编译产物（.gitignore）
+│       ├── apprun         # CLI 可执行文件
+│       └── server         # 向后兼容符号链接
 │
-├── internal/              # 内部基础设施（非业务模块）
-│   ├── config/           # 全局配置加载器
-│   ├── middleware/       # 中间件
-│   ├── validator/        # 验证器
-│   └── database/         # 数据库连接
+├── docker/                 # Docker 配置
+│   ├── Dockerfile
+│   └── docker-compose.yml
 │
-├── pkg/                   # 可复用工具包
-│   ├── logger/
-│   └── errors/
+├── docs/                   # 项目文档
+│   ├── architecture/      # 架构文档
+│   ├── standards/         # 编码规范
+│   └── sprint-artifacts/  # 迭代产物
 │
-├── ent/                   # Ent ORM
-│   └── schema/
+├── tests/                  # 测试（E2E/集成测试）
+│   ├── e2e/
+│   └── integration/
 │
-├── config/                # 配置文件
-│   ├── default.yaml
-│   └── conf_d/
-│
-├── docs/                  # 文档
-├── tests/                 # 测试
-├── Makefile
+├── scripts/                # 辅助脚本
+├── examples/               # 示例配置
+├── Makefile               # 构建入口（根目录唯一）
 └── README.md
 ```
 
 **优势**:
 - ✅ 模块边界清晰，易于理解和维护
+- ✅ CLI 扁平化结构，符合 Go 标准项目布局
+- ✅ 启动逻辑在 `internal/bootstrap/`，符合分层规范
 - ✅ 便于独立测试和部署
 - ✅ 未来可无缝拆分为微服务
+
+**关键设计决策**：
+- **main.go 在 core/ 根目录**：避免包冲突，Go 标准做法
+- **cmd/ 包含 Cobra 命令**：扁平化结构，不使用 cmd/cli/ 子目录
+- **internal/bootstrap/**：应用启动编排，依赖业务模块
+- **pkg/**：通用可复用库，不依赖业务逻辑
+- **modules/**：业务模块，垂直切分
 
 ### 2.3 常量组织规范 (Constants Organization)
 

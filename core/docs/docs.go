@@ -43,7 +43,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/apprun_modules_auth_service.LoginRequest"
+                            "$ref": "#/definitions/service.LoginRequest"
                         }
                     }
                 ],
@@ -53,13 +53,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/apprun_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/apprun_modules_auth_service.LoginResponse"
+                                            "$ref": "#/definitions/service.LoginResponse"
                                         }
                                     }
                                 }
@@ -69,25 +69,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Validation error",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "401": {
                         "description": "Invalid credentials",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "403": {
                         "description": "Account disabled",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -117,13 +117,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/apprun_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/apprun_modules_auth_service.UserProfile"
+                                            "$ref": "#/definitions/service.UserProfile"
                                         }
                                     }
                                 }
@@ -133,19 +133,19 @@ const docTemplate = `{
                     "401": {
                         "description": "Missing or invalid token",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "404": {
                         "description": "User not found",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -171,7 +171,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/modules_auth_handler.RefreshRequest"
+                            "$ref": "#/definitions/handler.RefreshRequest"
                         }
                     }
                 ],
@@ -181,13 +181,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/apprun_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/modules_auth_handler.RefreshResponse"
+                                            "$ref": "#/definitions/handler.RefreshResponse"
                                         }
                                     }
                                 }
@@ -197,25 +197,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Missing or invalid refresh token",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "401": {
                         "description": "Token expired, invalid type, or blacklisted",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "403": {
                         "description": "Account disabled",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -241,7 +241,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/apprun_modules_auth_service.RegisterRequest"
+                            "$ref": "#/definitions/service.RegisterRequest"
                         }
                     }
                 ],
@@ -251,13 +251,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/apprun_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/apprun_modules_auth_service.RegisterResponse"
+                                            "$ref": "#/definitions/service.RegisterResponse"
                                         }
                                     }
                                 }
@@ -267,19 +267,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Validation error",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "409": {
                         "description": "Email or username already exists",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -311,19 +311,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Configuration retrieved successfully",
                         "schema": {
-                            "$ref": "#/definitions/modules_config.GetConfigResponse"
+                            "$ref": "#/definitions/config.GetConfigResponse"
                         }
                     },
                     "400": {
                         "description": "Missing key parameter",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "404": {
                         "description": "Configuration not found",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -347,7 +347,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/modules_config.UpdateConfigRequest"
+                            "$ref": "#/definitions/config.UpdateConfigRequest"
                         }
                     }
                 ],
@@ -355,13 +355,13 @@ const docTemplate = `{
                     "200": {
                         "description": "Configuration updated successfully",
                         "schema": {
-                            "$ref": "#/definitions/modules_config.UpdateConfigResponse"
+                            "$ref": "#/definitions/config.UpdateConfigResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid request or config not allowed to store in database",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -399,7 +399,7 @@ const docTemplate = `{
                     "400": {
                         "description": "Missing key parameter or deletion failed",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -446,13 +446,13 @@ const docTemplate = `{
                     "200": {
                         "description": "Configuration list",
                         "schema": {
-                            "$ref": "#/definitions/modules_config.ListConfigsResponse"
+                            "$ref": "#/definitions/config.ListConfigsResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -482,7 +482,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/apprun_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -522,7 +522,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/apprun_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -530,7 +530,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/apprun_modules_auth_service.ProjectResponse"
+                                                "$ref": "#/definitions/service.ProjectResponse"
                                             }
                                         }
                                     }
@@ -541,13 +541,13 @@ const docTemplate = `{
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -576,7 +576,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/apprun_modules_auth_service.CreateProjectRequest"
+                            "$ref": "#/definitions/service.CreateProjectRequest"
                         }
                     }
                 ],
@@ -586,13 +586,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/apprun_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/apprun_modules_auth_service.ProjectResponse"
+                                            "$ref": "#/definitions/service.ProjectResponse"
                                         }
                                     }
                                 }
@@ -602,19 +602,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -650,13 +650,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/apprun_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/apprun_modules_auth_service.ProjectResponse"
+                                            "$ref": "#/definitions/service.ProjectResponse"
                                         }
                                     }
                                 }
@@ -666,19 +666,19 @@ const docTemplate = `{
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "404": {
                         "description": "Project not found",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -714,7 +714,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/apprun_modules_auth_service.CreateProjectRequest"
+                            "$ref": "#/definitions/service.CreateProjectRequest"
                         }
                     }
                 ],
@@ -724,13 +724,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/apprun_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/apprun_modules_auth_service.ProjectResponse"
+                                            "$ref": "#/definitions/service.ProjectResponse"
                                         }
                                     }
                                 }
@@ -740,25 +740,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "404": {
                         "description": "Project not found",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -790,25 +790,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Project deleted successfully",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "404": {
                         "description": "Project not found",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -864,13 +864,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/apprun_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/modules_auth_handler.MemberListResponse"
+                                            "$ref": "#/definitions/handler.MemberListResponse"
                                         }
                                     }
                                 }
@@ -880,7 +880,7 @@ const docTemplate = `{
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -916,7 +916,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/modules_auth_handler.AddMemberRequest"
+                            "$ref": "#/definitions/handler.AddMemberRequest"
                         }
                     }
                 ],
@@ -926,7 +926,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/apprun_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -942,25 +942,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -1005,7 +1005,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/modules_auth_handler.UpdateRoleRequest"
+                            "$ref": "#/definitions/handler.UpdateRoleRequest"
                         }
                     }
                 ],
@@ -1015,7 +1015,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/apprun_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -1031,19 +1031,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -1085,13 +1085,13 @@ const docTemplate = `{
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -1129,7 +1129,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/modules_auth_handler.CheckPermissionRequest"
+                            "$ref": "#/definitions/handler.CheckPermissionRequest"
                         }
                     }
                 ],
@@ -1139,13 +1139,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/apprun_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/modules_auth_handler.CheckPermissionResponse"
+                                            "$ref": "#/definitions/handler.CheckPermissionResponse"
                                         }
                                     }
                                 }
@@ -1155,13 +1155,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -1197,13 +1197,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/apprun_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/modules_auth_handler.PermissionsResponse"
+                                            "$ref": "#/definitions/handler.PermissionsResponse"
                                         }
                                     }
                                 }
@@ -1213,7 +1213,7 @@ const docTemplate = `{
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/apprun_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -1241,248 +1241,77 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "apprun_modules_auth_service.CreateProjectRequest": {
+        "config.GetConfigResponse": {
             "type": "object",
-            "required": [
-                "name"
-            ],
             "properties": {
-                "description": {
-                    "type": "string",
-                    "maxLength": 500
+                "is_dynamic": {
+                    "description": "Whether it's a dynamic configuration",
+                    "type": "boolean",
+                    "example": false
                 },
-                "name": {
+                "key": {
+                    "description": "Configuration key",
                     "type": "string",
-                    "maxLength": 100,
-                    "minLength": 3
+                    "example": "app.name"
+                },
+                "source": {
+                    "description": "Source: \"database\", \"file\", \"env\", \"default\"",
+                    "type": "string",
+                    "example": "default"
+                },
+                "value": {
+                    "description": "Configuration value",
+                    "type": "string",
+                    "example": "apprun"
                 }
             }
         },
-        "apprun_modules_auth_service.LoginRequest": {
-            "type": "object",
-            "required": [
-                "identifier",
-                "password"
-            ],
-            "properties": {
-                "identifier": {
-                    "description": "Username or email",
-                    "type": "string",
-                    "example": "user@example.com"
-                },
-                "password": {
-                    "description": "Password",
-                    "type": "string",
-                    "example": "SecurePass123"
-                }
-            }
-        },
-        "apprun_modules_auth_service.LoginResponse": {
+        "config.ListConfigsResponse": {
             "type": "object",
             "properties": {
-                "access_token": {
-                    "description": "JWT access token (short-lived)",
-                    "type": "string"
+                "configs": {
+                    "description": "Key-value mapping of dynamic configurations",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
                 },
-                "expires_in": {
-                    "description": "Seconds until access token expires",
-                    "type": "integer"
-                },
-                "refresh_token": {
-                    "description": "JWT refresh token (long-lived)",
-                    "type": "string"
-                },
-                "user": {
-                    "description": "User profile data",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/apprun_modules_auth_service.UserProfile"
-                        }
-                    ]
-                }
-            }
-        },
-        "apprun_modules_auth_service.ProjectResponse": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "owner_id": {
-                    "type": "integer"
-                },
-                "status": {
-                    "type": "integer"
-                },
-                "updated_at": {
-                    "type": "string"
-                }
-            }
-        },
-        "apprun_modules_auth_service.RegisterRequest": {
-            "type": "object",
-            "required": [
-                "email",
-                "password"
-            ],
-            "properties": {
-                "email": {
-                    "description": "用户邮箱（必填）",
-                    "type": "string",
-                    "example": "user@example.com"
-                },
-                "gender": {
-                    "description": "性别（可选：0=未知,1=男,2=女）",
+                "count": {
+                    "description": "Number of configuration items",
                     "type": "integer",
-                    "example": 1
-                },
-                "language": {
-                    "description": "语言（可选）",
-                    "type": "string",
-                    "example": "zh-CN"
-                },
-                "nickname": {
-                    "description": "昵称（可选）",
-                    "type": "string",
-                    "example": "John"
-                },
-                "password": {
-                    "description": "密码（必填，8+字符，含大小写和数字）",
-                    "type": "string",
-                    "example": "SecurePass123"
-                },
-                "phone": {
-                    "description": "手机号（可选）",
-                    "type": "string",
-                    "example": "+86-13800138000"
-                },
-                "timezone": {
-                    "description": "时区（可选）",
-                    "type": "string",
-                    "example": "Asia/Shanghai"
-                },
-                "username": {
-                    "description": "用户名（可选，3-64字符）",
-                    "type": "string",
-                    "example": "john_doe"
+                    "example": 3
                 }
             }
         },
-        "apprun_modules_auth_service.RegisterResponse": {
+        "config.UpdateConfigRequest": {
             "type": "object",
+            "required": [
+                "key",
+                "value"
+            ],
             "properties": {
-                "created_at": {
-                    "type": "string"
+                "key": {
+                    "description": "Configuration key",
+                    "type": "string",
+                    "example": "poc.enabled"
                 },
-                "email": {
-                    "type": "string"
-                },
-                "id": {
-                    "description": "Public UUID (exposed as \"id\" for external API)",
-                    "type": "string"
-                },
-                "nickname": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "integer"
-                },
-                "username": {
-                    "type": "string"
+                "value": {
+                    "description": "New value",
+                    "type": "string",
+                    "example": "true"
                 }
             }
         },
-        "apprun_modules_auth_service.UserProfile": {
+        "config.UpdateConfigResponse": {
             "type": "object",
             "properties": {
-                "created_at": {
-                    "type": "string"
+                "key": {
+                    "type": "string",
+                    "example": "poc.enabled"
                 },
-                "email": {
-                    "type": "string"
-                },
-                "gender": {
-                    "type": "integer"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "language": {
-                    "type": "string"
-                },
-                "nickname": {
-                    "type": "string"
-                },
-                "phone": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "integer"
-                },
-                "timezone": {
-                    "type": "string"
-                },
-                "username": {
-                    "type": "string"
-                }
-            }
-        },
-        "apprun_pkg_response.ErrorInfo": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "string"
-                },
-                "details": {},
-                "message": {
-                    "type": "string"
-                }
-            }
-        },
-        "apprun_pkg_response.PaginationInfo": {
-            "type": "object",
-            "properties": {
-                "page": {
-                    "type": "integer"
-                },
-                "page_size": {
-                    "type": "integer"
-                },
-                "total": {
-                    "type": "integer"
-                },
-                "total_pages": {
-                    "type": "integer"
-                }
-            }
-        },
-        "apprun_pkg_response.Response": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer"
-                },
-                "data": {},
-                "error": {
-                    "$ref": "#/definitions/apprun_pkg_response.ErrorInfo"
-                },
-                "message": {
-                    "type": "string"
-                },
-                "request_id": {
-                    "type": "string"
-                },
-                "success": {
-                    "type": "boolean"
+                "value": {
+                    "type": "string",
+                    "example": "true"
                 }
             }
         },
@@ -1750,20 +1579,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.HealthResponse": {
-            "type": "object",
-            "properties": {
-                "service": {
-                    "type": "string",
-                    "example": "apprun"
-                },
-                "status": {
-                    "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
-        "modules_auth_handler.AddMemberRequest": {
+        "handler.AddMemberRequest": {
             "type": "object",
             "required": [
                 "role",
@@ -1778,7 +1594,7 @@ const docTemplate = `{
                 }
             }
         },
-        "modules_auth_handler.CheckPermissionRequest": {
+        "handler.CheckPermissionRequest": {
             "type": "object",
             "required": [
                 "action",
@@ -1793,7 +1609,7 @@ const docTemplate = `{
                 }
             }
         },
-        "modules_auth_handler.CheckPermissionResponse": {
+        "handler.CheckPermissionResponse": {
             "type": "object",
             "properties": {
                 "allowed": {
@@ -1801,7 +1617,7 @@ const docTemplate = `{
                 }
             }
         },
-        "modules_auth_handler.MemberListResponse": {
+        "handler.MemberListResponse": {
             "type": "object",
             "properties": {
                 "items": {
@@ -1811,11 +1627,11 @@ const docTemplate = `{
                     }
                 },
                 "pagination": {
-                    "$ref": "#/definitions/apprun_pkg_response.PaginationInfo"
+                    "$ref": "#/definitions/response.PaginationInfo"
                 }
             }
         },
-        "modules_auth_handler.PermissionItem": {
+        "handler.PermissionItem": {
             "type": "object",
             "properties": {
                 "actions": {
@@ -1829,18 +1645,18 @@ const docTemplate = `{
                 }
             }
         },
-        "modules_auth_handler.PermissionsResponse": {
+        "handler.PermissionsResponse": {
             "type": "object",
             "properties": {
                 "permissions": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/modules_auth_handler.PermissionItem"
+                        "$ref": "#/definitions/handler.PermissionItem"
                     }
                 }
             }
         },
-        "modules_auth_handler.RefreshRequest": {
+        "handler.RefreshRequest": {
             "type": "object",
             "required": [
                 "refresh_token"
@@ -1852,7 +1668,7 @@ const docTemplate = `{
                 }
             }
         },
-        "modules_auth_handler.RefreshResponse": {
+        "handler.RefreshResponse": {
             "type": "object",
             "properties": {
                 "access_token": {
@@ -1869,7 +1685,7 @@ const docTemplate = `{
                 }
             }
         },
-        "modules_auth_handler.UpdateRoleRequest": {
+        "handler.UpdateRoleRequest": {
             "type": "object",
             "required": [
                 "role"
@@ -1880,77 +1696,261 @@ const docTemplate = `{
                 }
             }
         },
-        "modules_config.GetConfigResponse": {
+        "handlers.HealthResponse": {
             "type": "object",
             "properties": {
-                "is_dynamic": {
-                    "description": "Whether it's a dynamic configuration",
-                    "type": "boolean",
-                    "example": false
-                },
-                "key": {
-                    "description": "Configuration key",
-                    "type": "string",
-                    "example": "app.name"
-                },
-                "source": {
-                    "description": "Source: \"database\", \"file\", \"env\", \"default\"",
-                    "type": "string",
-                    "example": "default"
-                },
-                "value": {
-                    "description": "Configuration value",
+                "service": {
                     "type": "string",
                     "example": "apprun"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
-        "modules_config.ListConfigsResponse": {
+        "response.ErrorInfo": {
             "type": "object",
             "properties": {
-                "configs": {
-                    "description": "Key-value mapping of dynamic configurations",
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
-                    }
+                "code": {
+                    "type": "string"
                 },
-                "count": {
-                    "description": "Number of configuration items",
-                    "type": "integer",
-                    "example": 3
+                "details": {},
+                "message": {
+                    "type": "string"
                 }
             }
         },
-        "modules_config.UpdateConfigRequest": {
+        "response.PaginationInfo": {
+            "type": "object",
+            "properties": {
+                "page": {
+                    "type": "integer"
+                },
+                "page_size": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                },
+                "total_pages": {
+                    "type": "integer"
+                }
+            }
+        },
+        "response.Response": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "data": {},
+                "error": {
+                    "$ref": "#/definitions/response.ErrorInfo"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "request_id": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "service.CreateProjectRequest": {
             "type": "object",
             "required": [
-                "key",
-                "value"
+                "name"
             ],
             "properties": {
-                "key": {
-                    "description": "Configuration key",
+                "description": {
                     "type": "string",
-                    "example": "poc.enabled"
+                    "maxLength": 500
                 },
-                "value": {
-                    "description": "New value",
+                "name": {
                     "type": "string",
-                    "example": "true"
+                    "maxLength": 100,
+                    "minLength": 3
                 }
             }
         },
-        "modules_config.UpdateConfigResponse": {
+        "service.LoginRequest": {
+            "type": "object",
+            "required": [
+                "identifier",
+                "password"
+            ],
+            "properties": {
+                "identifier": {
+                    "description": "Username or email",
+                    "type": "string",
+                    "example": "user@example.com"
+                },
+                "password": {
+                    "description": "Password",
+                    "type": "string",
+                    "example": "SecurePass123"
+                }
+            }
+        },
+        "service.LoginResponse": {
             "type": "object",
             "properties": {
-                "key": {
-                    "type": "string",
-                    "example": "poc.enabled"
+                "access_token": {
+                    "description": "JWT access token (short-lived)",
+                    "type": "string"
                 },
-                "value": {
+                "expires_in": {
+                    "description": "Seconds until access token expires",
+                    "type": "integer"
+                },
+                "refresh_token": {
+                    "description": "JWT refresh token (long-lived)",
+                    "type": "string"
+                },
+                "user": {
+                    "description": "User profile data",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/service.UserProfile"
+                        }
+                    ]
+                }
+            }
+        },
+        "service.ProjectResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "owner_id": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "service.RegisterRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "description": "用户邮箱（必填）",
                     "type": "string",
-                    "example": "true"
+                    "example": "user@example.com"
+                },
+                "gender": {
+                    "description": "性别（可选：0=未知,1=男,2=女）",
+                    "type": "integer",
+                    "example": 1
+                },
+                "language": {
+                    "description": "语言（可选）",
+                    "type": "string",
+                    "example": "zh-CN"
+                },
+                "nickname": {
+                    "description": "昵称（可选）",
+                    "type": "string",
+                    "example": "John"
+                },
+                "password": {
+                    "description": "密码（必填，8+字符，含大小写和数字）",
+                    "type": "string",
+                    "example": "SecurePass123"
+                },
+                "phone": {
+                    "description": "手机号（可选）",
+                    "type": "string",
+                    "example": "+86-13800138000"
+                },
+                "timezone": {
+                    "description": "时区（可选）",
+                    "type": "string",
+                    "example": "Asia/Shanghai"
+                },
+                "username": {
+                    "description": "用户名（可选，3-64字符）",
+                    "type": "string",
+                    "example": "john_doe"
+                }
+            }
+        },
+        "service.RegisterResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "description": "Public UUID (exposed as \"id\" for external API)",
+                    "type": "string"
+                },
+                "nickname": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "integer"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "service.UserProfile": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "gender": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "language": {
+                    "type": "string"
+                },
+                "nickname": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "integer"
+                },
+                "timezone": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
                 }
             }
         }
