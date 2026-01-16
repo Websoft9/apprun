@@ -132,8 +132,8 @@ func TestUpdateRole_Success(t *testing.T) {
 	}
 
 	var resp response.Response
-	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-		t.Fatalf("Failed to parse response: %v", err)
+	if parseErr := json.Unmarshal(w.Body.Bytes(), &resp); parseErr != nil {
+		t.Fatalf("Failed to parse response: %v", parseErr)
 	}
 
 	if !resp.Success {

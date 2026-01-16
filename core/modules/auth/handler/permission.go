@@ -148,15 +148,15 @@ func (h *PermissionHandler) CheckPermission(w http.ResponseWriter, r *http.Reque
 
 	// Parse request body
 	var req CheckPermissionRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if decodeErr := json.NewDecoder(r.Body).Decode(&req); decodeErr != nil {
 		appErr := errors.New(errors.ErrCodeInvalidParam, "Invalid request body")
 		response.AppErrorWithRequest(w, r, appErr)
 		return
 	}
 
 	// Validate request
-	if err := req.Validate(); err != nil {
-		response.AppErrorWithRequest(w, r, err)
+	if validateErr := req.Validate(); validateErr != nil {
+		response.AppErrorWithRequest(w, r, validateErr)
 		return
 	}
 

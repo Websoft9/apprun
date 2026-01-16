@@ -41,8 +41,11 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 	fmt.Println("  - Support for multiple environments (dev, staging, prod)")
 	fmt.Println("  - Deployment confirmation and rollback")
 	fmt.Println()
-	fmt.Println("Configure your API credentials:")
-	fmt.Println("  apprun configure")
+	fmt.Println("Configuration:")
+	fmt.Println("  apprun configure                              # Set default endpoint")
+	fmt.Println("  apprun deploy --endpoint https://api.example.com  # Override endpoint")
+	fmt.Println()
+	fmt.Println("Note: Full implementation provided in Story 1.6.2 (CLI-API Adapter)")
 
 	return nil
 }

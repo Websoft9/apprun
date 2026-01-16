@@ -1,3 +1,4 @@
+// Package service provides business logic for authentication and authorization.
 package service
 
 import (

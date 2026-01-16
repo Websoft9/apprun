@@ -12,7 +12,7 @@
 - PostgreSQL 14+
 - Redis 7+ (optional, for caching)
 - Govulncheck 
-- [Atlas](https://atlasgo.io/community-edition)
+- [Atlas 1.0+](https://atlasgo.io/getting-started)
 - Docker & Docker Compose
 - GitHub account
 - AI Coding Agent (GitHub Copilot, Cursor, or similar)

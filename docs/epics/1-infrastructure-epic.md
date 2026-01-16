@@ -43,8 +43,7 @@
 - **Story 1.15**: Go 1.25.5 升级
 - **Story 1.16**: Redis Cache Package
 
-### 📝 Pending (5/18)
-- **Story 1.6.1**: Admin Management Commands (管理命令集)
+### 📝 Pending (4/18)
 - **Story 1.8**: 测试框架与工具集
 - **Story 1.9**: 重构现有 Handlers
 - **Story 1.11**: Request Package

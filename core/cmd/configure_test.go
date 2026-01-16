@@ -32,7 +32,7 @@ func TestUserConfig_SaveAndLoad(t *testing.T) {
 	}
 
 	// Test saveUserConfig
-	err := saveUserConfig(testConfig, configPath)
+	err := saveUserConfig(testConfig)
 	require.NoError(t, err, "saveUserConfig should not return error")
 
 	// Verify file exists
@@ -197,7 +197,7 @@ func TestUserConfig_FilePermissions(t *testing.T) {
 	}
 
 	// Save config
-	err := saveUserConfig(testConfig, configPath)
+	err := saveUserConfig(testConfig)
 	require.NoError(t, err)
 
 	// Check file permissions (should be 0600 - user read/write only)
@@ -230,7 +230,7 @@ func TestUserConfig_DirectoryCreation(t *testing.T) {
 	}
 
 	// Save config - should create nested directories
-	err := saveUserConfig(testConfig, nestedPath)
+	err := saveUserConfig(testConfig)
 	require.NoError(t, err)
 
 	// Verify directory was created
@@ -265,7 +265,7 @@ func TestUserConfig_YAMLFormat(t *testing.T) {
 	}
 
 	// Save config
-	err := saveUserConfig(testConfig, configPath)
+	err := saveUserConfig(testConfig)
 	require.NoError(t, err)
 
 	// Read and verify YAML format

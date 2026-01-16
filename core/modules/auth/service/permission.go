@@ -1,3 +1,4 @@
+// Package service provides business logic for authentication and authorization.
 package service
 
 import (
@@ -70,13 +71,15 @@ func (s *PermissionService) GetPermissionsForRole(ctx context.Context, projectID
 	// For each resource, check what actions the role can perform
 	enforcer := rbac.GetEnforcer()
 	domain := rbac.FormatDomain(projectID)
-	roleKey := rbac.FormatRole(projectID, role)
+	// Use simple role name, not formatted role key
+	// Casbin grouping policy: u:<userID> -> owner -> p:<projectID>
+	// So we check permissions for the role name directly
 
 	for _, resource := range resources {
 		var allowedActions []string
 		for _, action := range actions {
 			// Check if the role has this permission
-			ok, err := enforcer.Enforce(roleKey, domain, resource, action)
+			ok, err := enforcer.Enforce(role, domain, resource, action)
 			if err != nil {
 				continue
 			}

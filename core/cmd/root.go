@@ -38,12 +38,26 @@ Find more information at: https://github.com/websoft9/apprun`,
 		// Skip config loading for commands that don't need it
 		// version command should work without any configuration
 		// configure command manages user config, not application config
-		if cmd.Name() == "version" || cmd.Name() == "help" || cmd.Name() == "completion" || cmd.Name() == "configure" || cmd.Name() == "show" {
-			return
+		// client commands (deploy, logs, backup) are placeholders in Story 1.6, full implementation in Story 1.6.2
+		skipConfigCommands := []string{"version", "help", "completion", "configure", "show", "deploy", "logs", "backup"}
+		for _, skipCmd := range skipConfigCommands {
+			if cmd.Name() == skipCmd {
+				return
+			}
 		}
 
 		// Determine config directory
+		// Priority: 1. --config flag, 2. CONFIG_DIR env var, 3. user config, 4. default
 		configDir := "./config"
+
+		// Check if user has configured a config path via 'apprun configure'
+		userConfig, err := GetUserConfig()
+		if err == nil && userConfig.ConfigPath != "" {
+			// Use configured path as default
+			configDir = filepath.Dir(userConfig.ConfigPath)
+		}
+
+		// Override with flag if provided
 		if configFile != "" {
 			configDir = configFile
 		} else if envConfigDir := os.Getenv("CONFIG_DIR"); envConfigDir != "" {
@@ -108,12 +122,14 @@ Find more information at: https://github.com/websoft9/apprun`,
 				fmt.Fprintf(os.Stderr, "Command: %s\n", cmd.Name())
 				fmt.Fprintf(os.Stderr, "Missing environment variables: %s\n\n", strings.Join(missingVars, ", "))
 				fmt.Fprintf(os.Stderr, "Solutions:\n")
-				fmt.Fprintf(os.Stderr, "  1. Run from project root:\n")
+				fmt.Fprintf(os.Stderr, "  1. Configure CLI settings (recommended):\n")
+				fmt.Fprintf(os.Stderr, "     apprun configure\n\n")
+				fmt.Fprintf(os.Stderr, "  2. Run from project root:\n")
 				fmt.Fprintf(os.Stderr, "     cd /path/to/apprun/core\n")
 				fmt.Fprintf(os.Stderr, "     ./bin/%s\n\n", cmdPath)
-				fmt.Fprintf(os.Stderr, "  2. Specify config directory:\n")
+				fmt.Fprintf(os.Stderr, "  3. Specify config directory:\n")
 				fmt.Fprintf(os.Stderr, "     ./%s --config /path/to/config\n\n", cmdPath)
-				fmt.Fprintf(os.Stderr, "  3. Set essential environment variables:\n")
+				fmt.Fprintf(os.Stderr, "  4. Set essential environment variables:\n")
 
 				// Show command-specific environment variable examples
 				switch cmd.Name() {
@@ -156,6 +172,13 @@ Find more information at: https://github.com/websoft9/apprun`,
 			fmt.Fprintf(os.Stderr, "  - File is readable\n")
 			fmt.Fprintf(os.Stderr, "  - Required fields are present\n\n")
 			os.Exit(1)
+		}
+
+		// Set the absolute config directory path for use by subcommands
+		// This allows migration commands to find migrations directory relative to config
+		absConfigDir, err := filepath.Abs(configDir)
+		if err == nil {
+			os.Setenv("APPRUN_CONFIG_DIR", absConfigDir)
 		}
 
 		if verbose {

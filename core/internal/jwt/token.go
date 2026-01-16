@@ -2,6 +2,7 @@ package jwt
 
 import (
 	"errors"
+	"sync"
 	"time"
 
 	pkgconfig "apprun/pkg/config"
@@ -199,54 +200,54 @@ func (s *TokenService) ValidateRefreshToken(tokenString string) (*CustomClaims, 
 // Backward Compatibility - Package-level functions (Deprecated)
 // ============================================================================
 
-var globalTokenService *TokenService
+var (
+	globalTokenService *TokenService
+	once               sync.Once
+)
 
 // InitGlobalService initializes the global token service with a config provider.
 // This is for backward compatibility with code that uses package-level functions.
 func InitGlobalService(cfg pkgconfig.Provider) {
-	globalTokenService = NewTokenService(cfg)
+	once.Do(func() {
+		globalTokenService = NewTokenService(cfg)
+	})
+}
+
+// getOrInitGlobalService returns the global token service, initializing it if necessary.
+func getOrInitGlobalService() *TokenService {
+	once.Do(func() {
+		if globalTokenService == nil {
+			// Fallback to Viper for backward compatibility
+			globalTokenService = NewTokenService(pkgconfig.NewViperProvider(nil))
+		}
+	})
+	return globalTokenService
 }
 
 // GenerateToken is a backward-compatible package-level function.
 //
 // Deprecated: Use TokenService.GenerateToken instead.
 func GenerateToken(userID int64, userClaims map[string]interface{}) (string, time.Time, error) {
-	if globalTokenService == nil {
-		// Fallback to Viper for backward compatibility
-		globalTokenService = NewTokenService(pkgconfig.NewViperProvider(nil))
-	}
-	return globalTokenService.GenerateToken(userID, userClaims)
+	return getOrInitGlobalService().GenerateToken(userID, userClaims)
 }
 
 // ValidateToken is a backward-compatible package-level function.
 //
 // Deprecated: Use TokenService.ValidateToken instead.
 func ValidateToken(tokenString string) (*CustomClaims, error) {
-	if globalTokenService == nil {
-		// Fallback to Viper for backward compatibility
-		globalTokenService = NewTokenService(pkgconfig.NewViperProvider(nil))
-	}
-	return globalTokenService.ValidateToken(tokenString)
+	return getOrInitGlobalService().ValidateToken(tokenString)
 }
 
 // GenerateTokenPair is a backward-compatible package-level function.
 //
 // Deprecated: Use TokenService.GenerateTokenPair instead.
 func GenerateTokenPair(userID int64, userClaims map[string]interface{}) (string, string, time.Time, error) {
-	if globalTokenService == nil {
-		// Fallback to Viper for backward compatibility
-		globalTokenService = NewTokenService(pkgconfig.NewViperProvider(nil))
-	}
-	return globalTokenService.GenerateTokenPair(userID, userClaims)
+	return getOrInitGlobalService().GenerateTokenPair(userID, userClaims)
 }
 
 // ValidateRefreshToken is a backward-compatible package-level function.
 //
 // Deprecated: Use TokenService.ValidateRefreshToken instead.
 func ValidateRefreshToken(tokenString string) (*CustomClaims, error) {
-	if globalTokenService == nil {
-		// Fallback to Viper for backward compatibility
-		globalTokenService = NewTokenService(pkgconfig.NewViperProvider(nil))
-	}
-	return globalTokenService.ValidateRefreshToken(tokenString)
+	return getOrInitGlobalService().ValidateRefreshToken(tokenString)
 }

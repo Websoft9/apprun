@@ -4,7 +4,7 @@
 # Environment configuration
 env "local" {
   # Database connection URL (override via ATLAS_URL env var)
-  url = getenv("ATLAS_URL", "postgres://postgres:password@localhost:5432/apprun?sslmode=disable")
+  url = "postgres://apprun:dev_password_123@localhost:5432/apprun_dev?sslmode=disable"
   
   # Dev database for computing diffs (uses temp container)
   dev = "docker://postgres/15/dev?search_path=public"
@@ -16,19 +16,33 @@ env "local" {
   
   # Schema source (Ent schema)
   src = "ent://ent/schema"
+  
+  # Exclude Atlas metadata tables from inspection
+  # This prevents diff/inspect from reporting atlas_schema_revisions as drift
+  schemas = ["public"]
+  exclude = [
+    # Pattern to exclude Atlas migration tracking table
+    # Note: This table is managed by Atlas SDK, not by application schema
+    "atlas_schema_revisions",
+  ]
 }
 
 env "production" {
-  url = getenv("ATLAS_URL")
+  url = getenv("DATABASE_URL")
   
   migration {
     dir = "file://migrations"
   }
   
   src = "ent://ent/schema"
+  
+  schemas = ["public"]
+  exclude = [
+    "atlas_schema_revisions",
+  ]
 }
 
-# Diff policy - prevent destructive changes
+# Diff policy - prevent destructive changes (global)
 diff {
   # Skip dropping columns (data safety)
   skip {

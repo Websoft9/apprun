@@ -29,6 +29,7 @@ A lightweight BaaS (Backend as a Service) framework built with Go following the 
 ### Prerequisites
 - Docker 20.10+
 - Docker Compose 2.0+
+- Go 1.23+ (for local development)
 
 ### Quick Start
 
@@ -44,6 +45,44 @@ docker-compose up -d
 # API: http://localhost:8080
 # Swagger UI: http://localhost:8080/api/docs/index.html
 ```
+
+### Local Development
+
+**Build and run locally:**
+
+```bash
+# Build the binary
+make build
+
+# Configure CLI (first time)
+cd core
+./bin/apprun configure
+
+# Start the server
+./bin/apprun serve
+
+# Or use Makefile target
+make app-start
+```
+
+**CLI Commands:**
+
+```bash
+# View all commands
+./bin/apprun --help
+
+# Server commands (local operations)
+./bin/apprun serve                  # Start HTTP server
+./bin/apprun migrate status         # Check migration status
+./bin/apprun migrate apply          # Apply migrations
+./bin/apprun configure              # Configure CLI settings
+./bin/apprun version                # Show version info
+
+# Legacy compatibility
+./bin/server                        # Symlink to apprun, still works
+```
+
+For complete CLI reference, see [docs/cli-reference.md](./docs/cli-reference.md).
 
 ### Production Deployment
 

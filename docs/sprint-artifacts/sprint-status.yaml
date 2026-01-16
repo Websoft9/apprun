@@ -1,4 +1,4 @@
-# generated: 2026-01-15
+# generated: 2026-01-16
 # project: apprun
 # project_key: apprun
 # tracking_system: file-system
@@ -26,7 +26,7 @@
 #   - optional: Can be completed but not required
 #   - done: Retrospective has been completed
 
-generated: '2026-01-15'
+generated: '2026-01-16'
 project: apprun
 project_key: apprun
 tracking_system: file-system
@@ -58,13 +58,13 @@ development_status:
     title: 数据库增量迁移
     sprint: sprint-0
   1-6-unified-cli-architecture:
-    status: review
+    status: done
     title: Unified CLI Architecture (统一 CLI 命令架构)
     sprint: sprint-0
-  1-6-1-admin-management-commands:
+  1-6-2-cli-api-adapter:
     status: ready-for-dev
-    title: Admin Management Commands (管理命令集)
-    sprint: sprint-0
+    title: CLI-API Adapter (Schema-Driven CLI Auto-Generation)
+    sprint: sprint-2
   1-7-makefile-standards:
     status: done
     title: Makefile 标准与命令分组

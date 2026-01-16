@@ -42,8 +42,11 @@ func runBackup(cmd *cobra.Command, args []string) error {
 	fmt.Println("  - Restore from backup")
 	fmt.Println("  - Authentication via API key from ~/.apprun/config.yaml")
 	fmt.Println()
-	fmt.Println("Configure your API credentials:")
-	fmt.Println("  apprun configure")
+	fmt.Println("Configuration:")
+	fmt.Println("  apprun configure                              # Set default endpoint")
+	fmt.Println("  apprun backup --endpoint https://api.example.com  # Override endpoint")
+	fmt.Println()
+	fmt.Println("Note: Full implementation provided in Story 1.6.2 (CLI-API Adapter)")
 
 	return nil
 }

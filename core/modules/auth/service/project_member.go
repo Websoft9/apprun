@@ -44,9 +44,19 @@ func (s *ProjectMemberService) AddMember(ctx context.Context, projectID, userID 
 		return nil, errors.New(errors.ErrCodeNotFound, "Project not found")
 	}
 
+	// Check if member already exists
+	existingMember, err := s.memberRepo.GetMember(ctx, projectID, userID)
+	if err == nil && existingMember != nil {
+		return nil, errors.New(errors.ErrCodeConflict, "User is already a member of this project")
+	}
+
 	// Add member to database
 	member, err := s.memberRepo.AddMember(ctx, projectID, userID, role)
 	if err != nil {
+		// Check if it's a duplicate key error
+		if ent.IsConstraintError(err) {
+			return nil, errors.Wrap(err, errors.ErrCodeConflict, "User is already a member of this project")
+		}
 		return nil, errors.Wrap(err, errors.ErrCodeInternalError, "Failed to add member")
 	}
 
@@ -157,7 +167,7 @@ func (s *ProjectMemberService) RemoveMember(ctx context.Context, memberID int64)
 	}
 
 	// Remove from database
-	if err := s.memberRepo.RemoveMember(ctx, memberID); err != nil {
+	if removeErr := s.memberRepo.RemoveMember(ctx, memberID); removeErr != nil {
 		return errors.Wrap(err, errors.ErrCodeInternalError, "Failed to remove member")
 	}
 

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	stderrors "errors"
 	"net/http"
 
 	"apprun/internal/jwt"
@@ -156,7 +157,7 @@ func (h *ProjectHandler) GetProject(w http.ResponseWriter, r *http.Request) {
 	// Get project
 	project, err := h.projectService.GetProjectByUUID(ctx, projectUUID)
 	if err != nil {
-		if err == service.ErrProjectNotFound {
+		if stderrors.Is(err, service.ErrProjectNotFound) {
 			response.AppErrorWithRequest(w, r, err)
 			return
 		}
@@ -224,7 +225,7 @@ func (h *ProjectHandler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 	// Get project first to get internal ID
 	project, err := h.projectService.GetProjectByUUID(ctx, projectUUID)
 	if err != nil {
-		if err == service.ErrProjectNotFound {
+		if stderrors.Is(err, service.ErrProjectNotFound) {
 			response.AppErrorWithRequest(w, r, err)
 			return
 		}
@@ -254,8 +255,8 @@ func (h *ProjectHandler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 
 	// Parse request
 	var req service.CreateProjectRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		logger.Warn("Invalid request body", logger.Field{Key: "error", Value: err.Error()})
+	if decodeErr := json.NewDecoder(r.Body).Decode(&req); decodeErr != nil {
+		logger.Warn("Invalid request body", logger.Field{Key: "error", Value: decodeErr.Error()})
 		appErr := errors.New(errors.ErrCodeInvalidParam, "Invalid request body")
 		response.AppErrorWithRequest(w, r, appErr)
 		return
@@ -316,7 +317,7 @@ func (h *ProjectHandler) DeleteProject(w http.ResponseWriter, r *http.Request) {
 	// Get project first to get internal ID
 	project, err := h.projectService.GetProjectByUUID(ctx, projectUUID)
 	if err != nil {
-		if err == service.ErrProjectNotFound {
+		if stderrors.Is(err, service.ErrProjectNotFound) {
 			response.AppErrorWithRequest(w, r, err)
 			return
 		}

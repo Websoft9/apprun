@@ -12,6 +12,11 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+var (
+	// Flag for endpoint override
+	endpointFlag string
+)
+
 // Validation functions
 
 // isValidURL checks if the string is a valid HTTP/HTTPS URL
@@ -72,10 +77,12 @@ Configuration includes:
   - config_path: Application config file path for server commands (default: ./config/default.yaml)
 
 The configuration file is used by CLI commands to avoid repeated parameter entry.
+You can override the configured endpoint using the --endpoint flag for individual commands.
 
 Examples:
   apprun configure           # Interactive configuration wizard
   apprun configure show      # Display current configuration
+  apprun deploy --endpoint https://api.example.com  # Override endpoint for one command
 `,
 	RunE: runConfigure,
 }
@@ -101,6 +108,9 @@ Examples:
 func init() {
 	rootCmd.AddCommand(configureCmd)
 	configureCmd.AddCommand(configureShowCmd)
+
+	// Add --endpoint flag to root command for client commands
+	rootCmd.PersistentFlags().StringVar(&endpointFlag, "endpoint", "", "API endpoint override for client commands")
 }
 
 func runConfigure(cmd *cobra.Command, args []string) error {
@@ -152,7 +162,7 @@ func runConfigure(cmd *cobra.Command, args []string) error {
 	}
 
 	// Save configuration
-	if err := saveUserConfig(newConfig, configPath); err != nil {
+	if err := saveUserConfig(newConfig); err != nil {
 		return fmt.Errorf("failed to save configuration: %w", err)
 	}
 
@@ -324,7 +334,7 @@ func loadUserConfig() (*UserConfig, string, error) {
 }
 
 // saveUserConfig saves the user configuration to ~/.apprun/config.yaml
-func saveUserConfig(config *UserConfig, configPath string) error {
+func saveUserConfig(config *UserConfig) error {
 	configPath, err := getUserConfigPath()
 	if err != nil {
 		return err
@@ -332,8 +342,8 @@ func saveUserConfig(config *UserConfig, configPath string) error {
 
 	// Create directory if it doesn't exist
 	configDir := filepath.Dir(configPath)
-	if err := os.MkdirAll(configDir, 0755); err != nil {
-		return fmt.Errorf("failed to create config directory: %w", err)
+	if mkdirErr := os.MkdirAll(configDir, 0750); mkdirErr != nil {
+		return fmt.Errorf("failed to create config directory: %w", mkdirErr)
 	}
 
 	// Marshal config to YAML
@@ -364,4 +374,24 @@ func GetUserConfig() (*UserConfig, error) {
 	}
 
 	return config, nil
+}
+
+// GetEffectiveEndpoint returns the effective endpoint, with flag taking precedence over config
+func GetEffectiveEndpoint() (string, error) {
+	// Flag takes precedence
+	if endpointFlag != "" {
+		return endpointFlag, nil
+	}
+
+	// Fall back to config file
+	config, err := GetUserConfig()
+	if err != nil {
+		return "", err
+	}
+
+	if config.Endpoint == "" {
+		return "", fmt.Errorf("no endpoint configured. Run 'apprun configure' or use --endpoint flag")
+	}
+
+	return config.Endpoint, nil
 }

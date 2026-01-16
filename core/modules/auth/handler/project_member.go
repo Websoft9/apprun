@@ -97,15 +97,15 @@ func (h *ProjectMemberHandler) AddMember(w http.ResponseWriter, r *http.Request)
 
 	// 2. Parse request body
 	var req AddMemberRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if decodeErr := json.NewDecoder(r.Body).Decode(&req); decodeErr != nil {
 		appErr := errors.New(errors.ErrCodeInvalidParam, "Invalid request body")
 		response.AppErrorWithRequest(w, r, appErr)
 		return
 	}
 
 	// 3. Validate request
-	if err := req.Validate(); err != nil {
-		response.AppErrorWithRequest(w, r, err)
+	if validateErr := req.Validate(); validateErr != nil {
+		response.AppErrorWithRequest(w, r, validateErr)
 		return
 	}
 
@@ -216,15 +216,15 @@ func (h *ProjectMemberHandler) UpdateRole(w http.ResponseWriter, r *http.Request
 
 	// Parse request body
 	var req UpdateRoleRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if decodeErr := json.NewDecoder(r.Body).Decode(&req); decodeErr != nil {
 		appErr := errors.New(errors.ErrCodeInvalidParam, "Invalid request body")
 		response.AppErrorWithRequest(w, r, appErr)
 		return
 	}
 
 	// Validate request
-	if err := req.Validate(); err != nil {
-		response.AppErrorWithRequest(w, r, err)
+	if validateErr := req.Validate(); validateErr != nil {
+		response.AppErrorWithRequest(w, r, validateErr)
 		return
 	}
 

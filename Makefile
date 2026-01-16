@@ -59,11 +59,16 @@ help:
 	@echo "  make check         - Full quality check (lint + test + security)"
 	@echo ""
 	@echo "🗄️  Database:"
+	@echo "  make db-sync       - Auto-sync schema (dev mode)"
 	@echo "  make db-migrate    - Apply migrations"
 	@echo "  make db-diff       - Generate migration (NAME=xxx)"
 	@echo "  make db-status     - Show migration status"
 	@echo "  make db-rollback   - Rollback last migration"
 	@echo "  make db-reset      - Reset database"
+	@echo "  make db-inspect    - Check for schema drift"
+	@echo "  make db-repair     - Preview repair SQL (dry-run)"
+	@echo "  make db-repair-execute - Apply repair (dev only)"
+	@echo "  ⚠️  Note: Requires Atlas CLI - install: curl -sSf https://atlasgo.sh | sh"
 	@echo ""
 	@echo "🐳 Docker:"
 	@echo "  make docker-build  - Build Docker images"
@@ -224,129 +229,52 @@ config-example:
 # 5. Database (数据库迁移)
 # ============================================
 
-# Atlas Docker image
-ATLAS_IMAGE := arigaio/atlas:latest
-POSTGRES_URL := postgres://apprun:dev_password_123@host.docker.internal:5432/apprun_dev?sslmode=disable
+# Auto-sync schema changes (development mode)
+db-sync:
+	@cd core && ./bin/apprun migrate sync
 
-# Generate migration from schema changes (alias for migrate-diff)
+# Generate migration from schema changes
 # Usage: make db-diff NAME=add_project_table
 db-diff:
 ifndef NAME
 	$(error NAME is required. Usage: make db-diff NAME=add_project_table)
 endif
 	@echo "📝 Generating migration: $(NAME)..."
-	@docker run --rm \
-		-v $(PWD)/core:/app \
-		-w /app \
-		$(ATLAS_IMAGE) \
-		migrate diff $(NAME) \
-		--dir "file://migrations" \
-		--to "ent://ent/schema" \
-		--dev-url "docker://postgres/15/dev?search_path=public"
-	@echo "✅ Migration generated! Please review:"
-	@ls -la core/migrations/*.sql | tail -1
+	@cd core && ./bin/apprun migrate diff $(NAME)
 	@echo ""
 	@echo "⚠️  IMPORTANT: Review the generated SQL before committing!"
 
-# Apply pending migrations (alias for migrate-apply)
+# Apply pending migrations
 db-migrate:
-	@echo "🚀 Applying migrations to dev database..."
-	@docker run --rm \
-		-v $(PWD)/core:/app \
-		-w /app \
-		--add-host=host.docker.internal:host-gateway \
-		$(ATLAS_IMAGE) \
-		migrate apply \
-		--dir "file://migrations" \
-		--url "$(POSTGRES_URL)"
-	@echo "✅ Migrations applied!"
+	@cd core && ./bin/apprun migrate apply
 
-# Show migration status (alias for migrate-status)
+# Show migration status
 db-status:
-	@echo "📊 Migration status:"
-	@docker run --rm \
-		-v $(PWD)/core:/app \
-		-w /app \
-		--add-host=host.docker.internal:host-gateway \
-		$(ATLAS_IMAGE) \
-		migrate status \
-		--dir "file://migrations" \
-		--url "$(POSTGRES_URL)"
+	@cd core && ./bin/apprun migrate status
 
-# Validate migrations (alias for migrate-validate)
+# Validate migrations
 db-validate:
-	@echo "✅ Validating migrations..."
-	@docker run --rm \
-		-v $(PWD)/core:/app \
-		-w /app \
-		$(ATLAS_IMAGE) \
-		migrate validate \
-		--dir "file://migrations" \
-		--dev-url "docker://postgres/15/test?search_path=public"
+	@cd core && ./bin/apprun migrate validate
 
-# Lint migrations (alias for migrate-lint)
-db-lint:
-	@echo "🔍 Linting migrations..."
-	@docker run --rm \
-		-v $(PWD)/core:/app \
-		-w /app \
-		$(ATLAS_IMAGE) \
-		migrate lint \
-		--dir "file://migrations" \
-		--dev-url "docker://postgres/15/test?search_path=public" \
-		--latest 1
-	@echo "✅ Migration lint completed"
-
-# Generate migration checksum (alias for migrate-hash)
-db-hash:
-	@echo "🔐 Generating migration checksums..."
-	@docker run --rm \
-		-v $(PWD)/core:/app \
-		-w /app \
-		$(ATLAS_IMAGE) \
-		migrate hash \
-		--dir "file://migrations"
-	@echo "✅ Checksums generated in core/migrations/atlas.sum"
-
-# Set baseline version (alias for migrate-baseline)
-db-baseline:
-	@echo "📍 Setting migration baseline..."
-	@docker run --rm \
-		-v $(PWD)/core:/app \
-		-w /app \
-		--add-host=host.docker.internal:host-gateway \
-		$(ATLAS_IMAGE) \
-		migrate set 002 \
-		--dir "file://migrations" \
-		--url "$(POSTGRES_URL)"
-	@echo "✅ Baseline set to version 002"
-	@echo "💡 Now you can run 'make db-migrate' to apply new migrations"
-
-# Rollback last migration (placeholder - needs implementation)
+# Rollback last migration
 db-rollback:
-	@echo "⚠️  Rollback not yet implemented"
-	@echo "💡 Manually revert by running SQL from previous migration"
+	@cd core && ./bin/apprun migrate rollback
 
-# Reset database (drop and recreate)
+# Reset database (DANGER!)
 db-reset:
-	@echo "⚠️  This will drop and recreate the database!"
-	@echo "Press Ctrl+C to cancel, or wait 5 seconds..."
-	@sleep 5
-	@echo "🗑️  Resetting database..."
-	@docker compose -f docker-compose.dev.yml down -v
-	@docker compose -f docker-compose.dev.yml up -d
-	@sleep 3
-	@$(MAKE) db-migrate
-	@echo "✅ Database reset complete"
+	@cd core && ./bin/apprun migrate reset
 
-# Backward compatibility aliases
-migrate-diff: db-diff
-migrate-apply: db-migrate
-migrate-status: db-status
-migrate-validate: db-validate
-migrate-lint: db-lint
-migrate-hash: db-hash
-migrate-baseline: db-baseline
+# Inspect database schema (check for drift)
+db-inspect:
+	@cd core && ./bin/apprun migrate inspect
+
+# Repair database schema (declarative migration)
+db-repair:
+	@cd core && ./bin/apprun migrate repair
+
+# Repair database schema (execute)
+db-repair-execute:
+	@cd core && ./bin/apprun migrate repair --execute
 
 # ============================================
 # 3. Testing (测试)
@@ -596,9 +524,11 @@ clean:
 clean-all: clean app-clean deps-clean docker-clean
 	@echo "✅ Complete cleanup done"
 
-# Check Go toolchain version
+# Check Go toolchain version and required dependencies
 check-deps:
-	@echo "🔍 Checking Go toolchain version..."
+	@echo "🔍 Checking dependencies..."
+	@echo ""
+	@echo "1️⃣ Checking Go toolchain..."
 	@required_version=$$(grep "^go " core/go.mod | awk '{print $$2}'); \
 	current_toolchain=$$(go env GOTOOLCHAIN); \
 	if [ "$$current_toolchain" = "auto" ] || [ "$$current_toolchain" = "local" ]; then \
@@ -609,6 +539,31 @@ check-deps:
 	else \
 		echo "✅ GOTOOLCHAIN=$$current_toolchain (fixed version)"; \
 	fi
+	@echo ""
+	@echo "2️⃣ Checking Atlas CLI (required for database migrations)..."
+	@if command -v atlas >/dev/null 2>&1; then \
+		echo "✅ Atlas CLI installed: $$(atlas version | head -1)"; \
+	else \
+		echo "❌ Atlas CLI not found!"; \
+		echo ""; \
+		echo "Atlas CLI is required for database migrations."; \
+		echo "Install with:"; \
+		echo "  curl -sSf https://atlasgo.sh | sh"; \
+		echo ""; \
+		echo "Or on macOS:"; \
+		echo "  brew install ariga/tap/atlas"; \
+		echo ""; \
+		exit 1; \
+	fi
+	@echo ""
+	@echo "3️⃣ Checking Docker (optional, but recommended)..."
+	@if command -v docker >/dev/null 2>&1; then \
+		echo "✅ Docker installed: $$(docker --version)"; \
+	else \
+		echo "⚠️  Docker not found (optional for dev environment)"; \
+	fi
+	@echo ""
+	@echo "✅ All required dependencies are available"
 
 # Install development tools
 install:

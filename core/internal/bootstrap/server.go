@@ -123,8 +123,8 @@ func StartServer() error {
 	// Phase 2.3: Initialize Platform Project (Story 5.5 - RBAC)
 	// Create unique platform project for platform-level resources
 	// This must happen early since it's required for system initialization
-	if err := initializePlatformProject(ctx, dbClient.GetEntClient()); err != nil {
-		log.Printf("⚠️  Warning: Failed to initialize platform project: %v", err)
+	if initErr := initializePlatformProject(ctx, dbClient.GetEntClient()); initErr != nil {
+		log.Printf("⚠️  Warning: Failed to initialize platform project: %v", initErr)
 		log.Println("⚠️  Platform-level resources may not work correctly")
 	} else {
 		log.Println("✅ Platform project initialized")
@@ -155,8 +155,8 @@ func StartServer() error {
 		PolicyPath:  env.Get("RBAC_POLICY_PATH", ""), // Empty = use embedded default policy
 		UseDatabase: false,                           // MVP: false (file-based), Production: true
 	}
-	if err := rbac.InitEnforcer(rbacCfg); err != nil {
-		log.Printf("⚠️  Warning: Failed to initialize RBAC enforcer: %v", err)
+	if rbacErr := rbac.InitEnforcer(rbacCfg); rbacErr != nil {
+		log.Printf("⚠️  Warning: Failed to initialize RBAC enforcer: %v", rbacErr)
 		log.Println("⚠️  Permission checks will fail - RBAC is required for protected routes")
 		// In production, this should be a fatal error
 		// For development, we allow graceful degradation

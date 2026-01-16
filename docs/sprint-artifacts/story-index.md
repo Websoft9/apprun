@@ -1,25 +1,25 @@
 # Story Index
 
-**Generated**: 2026-01-15
+**Generated**: 2026-01-16
 
 ---
 
 ## Summary
 
-**Total Stories**: 48
+**Total Stories**: 49
 
 ### By Status
 
 - ✅ **Done**: 22
 - 🔄 **In Progress**: 2
-- 🟢 **Ready For Dev**: 9
+- 🟢 **Ready For Dev**: 10
 - 📋 **Backlog**: 15
 
 ### By Sprint
 
 - **Sprint-0**: 15 stories
 - **Sprint-1**: 15 stories
-- **Sprint-2**: 6 stories
+- **Sprint-2**: 7 stories
 - **Sprint-Unknown**: 12 stories
 
 ---
@@ -70,6 +70,7 @@
 |----------|-------|--------|------|
 | 1-16-redis-cache-package | Redis Cache Package | ✅ done | Infrastructure & Foundation |
 | 1-17-platform-initialization | Platform Initialization (平台初始化) | 🟢 ready-for-dev | Infrastructure & Foundation |
+| 1-6-2-cli-api-adapter | CLI-API Adapter (Schema-Driven CLI Auto-Generation) | 🟢 ready-for-dev | Infrastructure & Foundation |
 | 3-4-config-hot-reload | 配置热更新与通知机制 | 📋 backlog | Configuration Management |
 | 3-5-config-rollback | 配置版本回滚 | 📋 backlog | Configuration Management |
 | 3-6-config-audit | 配置审计日志 | 📋 backlog | Configuration Management |
@@ -94,4 +95,4 @@
 
 ---
 
-*Auto-generated from `sprint-status.yaml` on 2026-01-15 16:44:58*
+*Auto-generated from `sprint-status.yaml` on 2026-01-16 18:14:15*
