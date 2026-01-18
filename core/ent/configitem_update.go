@@ -70,6 +70,33 @@ func (_u *ConfigitemUpdate) SetNillableIsDynamic(v *bool) *ConfigitemUpdate {
 	return _u
 }
 
+// SetProjectID sets the "project_id" field.
+func (_u *ConfigitemUpdate) SetProjectID(v int64) *ConfigitemUpdate {
+	_u.mutation.ResetProjectID()
+	_u.mutation.SetProjectID(v)
+	return _u
+}
+
+// SetNillableProjectID sets the "project_id" field if the given value is not nil.
+func (_u *ConfigitemUpdate) SetNillableProjectID(v *int64) *ConfigitemUpdate {
+	if v != nil {
+		_u.SetProjectID(*v)
+	}
+	return _u
+}
+
+// AddProjectID adds value to the "project_id" field.
+func (_u *ConfigitemUpdate) AddProjectID(v int64) *ConfigitemUpdate {
+	_u.mutation.AddProjectID(v)
+	return _u
+}
+
+// ClearProjectID clears the value of the "project_id" field.
+func (_u *ConfigitemUpdate) ClearProjectID() *ConfigitemUpdate {
+	_u.mutation.ClearProjectID()
+	return _u
+}
+
 // SetStatus sets the "status" field.
 func (_u *ConfigitemUpdate) SetStatus(v configitem.Status) *ConfigitemUpdate {
 	_u.mutation.SetStatus(v)
@@ -167,6 +194,15 @@ func (_u *ConfigitemUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	if value, ok := _u.mutation.IsDynamic(); ok {
 		_spec.SetField(configitem.FieldIsDynamic, field.TypeBool, value)
 	}
+	if value, ok := _u.mutation.ProjectID(); ok {
+		_spec.SetField(configitem.FieldProjectID, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedProjectID(); ok {
+		_spec.AddField(configitem.FieldProjectID, field.TypeInt64, value)
+	}
+	if _u.mutation.ProjectIDCleared() {
+		_spec.ClearField(configitem.FieldProjectID, field.TypeInt64)
+	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(configitem.FieldStatus, field.TypeEnum, value)
 	}
@@ -232,6 +268,33 @@ func (_u *ConfigitemUpdateOne) SetNillableIsDynamic(v *bool) *ConfigitemUpdateOn
 	if v != nil {
 		_u.SetIsDynamic(*v)
 	}
+	return _u
+}
+
+// SetProjectID sets the "project_id" field.
+func (_u *ConfigitemUpdateOne) SetProjectID(v int64) *ConfigitemUpdateOne {
+	_u.mutation.ResetProjectID()
+	_u.mutation.SetProjectID(v)
+	return _u
+}
+
+// SetNillableProjectID sets the "project_id" field if the given value is not nil.
+func (_u *ConfigitemUpdateOne) SetNillableProjectID(v *int64) *ConfigitemUpdateOne {
+	if v != nil {
+		_u.SetProjectID(*v)
+	}
+	return _u
+}
+
+// AddProjectID adds value to the "project_id" field.
+func (_u *ConfigitemUpdateOne) AddProjectID(v int64) *ConfigitemUpdateOne {
+	_u.mutation.AddProjectID(v)
+	return _u
+}
+
+// ClearProjectID clears the value of the "project_id" field.
+func (_u *ConfigitemUpdateOne) ClearProjectID() *ConfigitemUpdateOne {
+	_u.mutation.ClearProjectID()
 	return _u
 }
 
@@ -361,6 +424,15 @@ func (_u *ConfigitemUpdateOne) sqlSave(ctx context.Context) (_node *Configitem, 
 	}
 	if value, ok := _u.mutation.IsDynamic(); ok {
 		_spec.SetField(configitem.FieldIsDynamic, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.ProjectID(); ok {
+		_spec.SetField(configitem.FieldProjectID, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedProjectID(); ok {
+		_spec.AddField(configitem.FieldProjectID, field.TypeInt64, value)
+	}
+	if _u.mutation.ProjectIDCleared() {
+		_spec.ClearField(configitem.FieldProjectID, field.TypeInt64)
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(configitem.FieldStatus, field.TypeEnum, value)

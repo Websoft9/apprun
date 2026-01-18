@@ -108,57 +108,247 @@ type Closer interface {
 
 ```
 apprun/
-├── cmd/                    # 可执行程序入口
-│   └── server/main.go
-│
-├── modules/                # 业务模块（模块化单体）
-│   ├── config/            # 配置管理模块
-│   │   ├── handler.go     # HTTP API
-│   │   ├── service.go     # 业务逻辑
-│   │   ├── repository.go  # 数据访问
-│   │   └── types.go       # 领域模型
+├── core/                       # Go 应用核心代码
+│   ├── main.go                # 主入口（package main）
+│   ├── cmd/                   # Cobra 命令实现（package cmd）
+│   │   ├── root.go           # 根命令 + 全局 flags
+│   │   ├── serve.go          # apprun serve（启动服务）
+│   │   ├── migrate.go        # apprun migrate（数据库迁移）
+│   │   └── version.go        # apprun version（版本信息）
 │   │
-│   ├── user/              # 用户模块
-│   │   ├── handler.go
-│   │   ├── service.go
-│   │   ├── repository.go
-│   │   └── types.go
+│   ├── modules/              # 业务模块（模块化单体）
+│   │   ├── config/          # 配置管理模块
+│   │   │   ├── handler.go   # HTTP API
+│   │   │   ├── service.go   # 业务逻辑
+│   │   │   ├── repository.go # 数据访问
+│   │   │   └── types.go     # 领域模型
+│   │   │
+│   │   ├── auth/            # 认证授权模块
+│   │   │   ├── handler/
+│   │   │   ├── service/
+│   │   │   ├── repository/
+│   │   │   └── config.go    # 模块配置
+│   │   │
+│   │   └── user/            # 用户模块
+│   │       ├── handler.go
+│   │       ├── service.go
+│   │       ├── repository.go
+│   │       └── types.go
 │   │
-│   └── app/               # 应用管理模块
-│       ├── handler.go
-│       ├── service.go
-│       ├── repository.go
-│       └── types.go
+│   ├── internal/            # 内部基础设施（非业务模块）
+│   │   ├── bootstrap/       # 启动编排逻辑
+│   │   │   └── server.go   # 服务器启动 + Swagger 注释
+│   │   ├── middleware/      # 中间件
+│   │   ├── jwt/            # JWT 认证
+│   │   ├── rbac/           # RBAC 权限
+│   │   └── password/       # 密码加密
+│   │
+│   ├── pkg/                 # 可复用工具包（通用库）
+│   │   ├── version/        # 版本管理
+│   │   ├── database/       # 数据库客户端
+│   │   ├── cache/          # 缓存客户端
+│   │   ├── logger/         # 日志库
+│   │   ├── errors/         # 错误处理
+│   │   ├── response/       # 统一响应
+│   │   └── i18n/           # 国际化
+│   │
+│   ├── ent/                # Ent ORM
+│   │   └── schema/
+│   │
+│   ├── routes/             # 路由配置
+│   ├── handlers/           # HTTP 处理器
+│   ├── docs/               # Swagger 文档（自动生成）
+│   ├── config/             # 配置文件
+│   │   ├── default.yaml
+│   │   └── conf_d/
+│   └── bin/                # 编译产物（.gitignore）
+│       ├── apprun         # CLI 可执行文件
+│       └── server         # 向后兼容符号链接
 │
-├── internal/              # 内部基础设施（非业务模块）
-│   ├── config/           # 全局配置加载器
-│   ├── middleware/       # 中间件
-│   ├── validator/        # 验证器
-│   └── database/         # 数据库连接
+├── docker/                 # Docker 配置
+│   ├── Dockerfile
+│   └── docker-compose.yml
 │
-├── pkg/                   # 可复用工具包
-│   ├── logger/
-│   └── errors/
+├── docs/                   # 项目文档
+│   ├── architecture/      # 架构文档
+│   ├── standards/         # 编码规范
+│   └── sprint-artifacts/  # 迭代产物
 │
-├── ent/                   # Ent ORM
-│   └── schema/
+├── tests/                  # 测试（E2E/集成测试）
+│   ├── e2e/
+│   └── integration/
 │
-├── config/                # 配置文件
-│   ├── default.yaml
-│   └── conf_d/
-│
-├── docs/                  # 文档
-├── tests/                 # 测试
-├── Makefile
+├── scripts/                # 辅助脚本
+├── examples/               # 示例配置
+├── Makefile               # 构建入口（根目录唯一）
 └── README.md
 ```
 
-**优势**：
+**优势**:
 - ✅ 模块边界清晰，易于理解和维护
+- ✅ CLI 扁平化结构，符合 Go 标准项目布局
+- ✅ 启动逻辑在 `internal/bootstrap/`，符合分层规范
 - ✅ 便于独立测试和部署
 - ✅ 未来可无缝拆分为微服务
 
-### 2.2 模块内部结构
+**关键设计决策**：
+- **main.go 在 core/ 根目录**：避免包冲突，Go 标准做法
+- **cmd/ 包含 Cobra 命令**：扁平化结构，不使用 cmd/cli/ 子目录
+- **internal/bootstrap/**：应用启动编排，依赖业务模块
+- **pkg/**：通用可复用库，不依赖业务逻辑
+- **modules/**：业务模块，垂直切分
+
+### 2.3 常量组织规范 (Constants Organization)
+
+**决策日期**: 2026-01-12  
+**决策背景**: BMad Method 强调"业务内聚优于文件类型分离"
+
+#### 2.3.1 基本原则
+
+**所有模块常量统一定义在各自的 `config.go` 文件中**，而不是单独创建 `constants.go`。
+
+**原因**:
+1. **业务内聚**: 常量与配置在语义上相关（验证规则、默认值、业务枚举）
+2. **可发现性**: 新开发者在一个文件找到所有配置相关项
+3. **维护性**: 修改验证规则时只需编辑一个文件
+4. **Config Center 兼容**: 常量和配置自然共存
+
+#### 2.3.2 文件组织结构
+
+```go
+// modules/auth/config.go
+package auth
+
+import "time"
+
+// ============================================================================
+// Module Constants (Validation Rules & Enums)
+// ============================================================================
+
+const (
+    // Password validation rules
+    MinPasswordLength = 8
+    MaxPasswordLength = 128
+    
+    // Username validation rules
+    MinUsernameLength = 3
+    MaxUsernameLength = 64
+    
+    // Account status codes
+    StatusActive   int8 = 1
+    StatusDisabled int8 = 2
+    StatusPending  int8 = 3
+    
+    // Gender codes
+    GenderUnknown int8 = 0
+    GenderMale    int8 = 1
+    GenderFemale  int8 = 2
+    
+    // Default values
+    DefaultBcryptCost          = 10
+    DefaultMaxFailedAttempts   = 5
+    DefaultFailedLoginCacheTTL = 5 * time.Minute
+)
+
+// ============================================================================
+// Runtime Configuration (Config Center Managed)
+// ============================================================================
+
+type Config struct {
+    JWT      jwt.Config     `yaml:"jwt"`
+    Security SecurityConfig `yaml:"security"`
+}
+
+type SecurityConfig struct {
+    BcryptCost        int           `yaml:"bcrypt_cost" default:"10" db:"true" validate:"min=4,max=31"`
+    MaxFailedAttempts int           `yaml:"max_failed_attempts" default:"5" db:"true"`
+    // ...
+}
+
+func DefaultConfig() *Config {
+    return &Config{
+        Security: SecurityConfig{
+            BcryptCost:        DefaultBcryptCost,  // ← References constant
+            MaxFailedAttempts: DefaultMaxFailedAttempts,
+        },
+    }
+}
+```
+
+#### 2.3.3 命名约定
+
+| 常量类型 | 命名模式 | 示例 |
+|---------|---------|------|
+| **最小值** | `Min<Name>` | `MinPasswordLength`, `MinUserAge` |
+| **最大值** | `Max<Name>` | `MaxPasswordLength`, `MaxRetries` |
+| **默认值** | `Default<Name>` | `DefaultTimeout`, `DefaultBcryptCost` |
+| **状态码** | `Status<Name>` | `StatusActive`, `StatusPending` |
+| **错误码** | `Err<Name>` | `ErrInvalidEmail`, `ErrUserNotFound` |
+| **类型码** | `Type<Name>` | `TypeAdmin`, `TypeGuest` |
+
+#### 2.3.4 何时使用独立的 constants.go
+
+**仅在以下情况使用独立文件**:
+1. 模块有 **50+ 个常量**（极少见）
+2. 常量需要 **跨多个子包共享**
+3. 常量需要 **复杂的初始化逻辑**（如计算、组合）
+
+**示例** (大型模块，需要独立文件):
+```go
+// modules/workflow/constants.go (>50 常量)
+package workflow
+
+const (
+    // 状态机状态 (20+ 个状态)
+    StateInit       = "init"
+    StatePending    = "pending"
+    StateRunning    = "running"
+    // ... 50+ more states
+    
+    // 动作类型 (20+ 个动作)
+    ActionCreate    = "create"
+    ActionUpdate    = "update"
+    // ... 50+ more actions
+)
+```
+
+#### 2.3.5 使用示例
+
+```go
+// ✅ 推荐：从 config 包导入常量
+import "apprun/modules/auth"
+
+func ValidatePassword(pwd string) error {
+    if len(pwd) < auth.MinPasswordLength {
+        return errors.New("password too short")
+    }
+    if len(pwd) > auth.MaxPasswordLength {
+        return errors.New("password too long")
+    }
+    return nil
+}
+
+// ✅ 推荐：使用状态常量
+user.Status = auth.StatusActive
+
+// ❌ 避免：硬编码魔术数字
+user.Status = 1  // 应使用 auth.StatusActive
+```
+
+#### 2.3.6 实际项目应用
+
+**已应用此规范的模块**:
+- ✅ `pkg/jwt/config.go` - JWT 常量（MinSecretLength, DefaultExpiry, DefaultWhitelistPaths）
+- ✅ `modules/auth/config.go` - Auth 模块常量（密码规则、状态码、性别码、bcrypt配置）
+
+**未来模块应遵循此模式**:
+- `modules/user/config.go` - 用户模块常量
+- `modules/project/config.go` - 项目模块常量
+- `pkg/logger/config.go` - 日志模块常量
+
+---
+
+## 3. 代码风格
 
 ```
 modules/config/
@@ -558,7 +748,71 @@ type User struct {
 
 ## 6. 测试规范
 
-### 6.1 测试文件命名
+### 6.1 测试文件位置
+
+**原则：所有测试与代码同目录**
+
+这是 Go 官方推荐的最佳实践，遵循 Go 标准库和所有知名开源项目（Kubernetes、Docker、Prometheus）的做法。
+
+```
+modules/auth/
+├── handler/
+│   ├── login.go
+│   └── login_test.go              # 单元测试
+├── service/
+│   ├── auth_service.go
+│   ├── auth_service_test.go       # 单元测试
+│   └── auth_integration_test.go   # 集成测试
+└── repository/
+    ├── user_repo.go
+    └── user_repo_test.go          # 单元测试
+```
+
+**区分单元测试和集成测试**：
+
+- **单元测试**：`xxx_test.go` - 测试单个函数/方法，使用 mock
+- **集成测试**：`xxx_integration_test.go` - 测试完整流程，使用真实数据库
+
+**运行方式**：
+
+```bash
+# 只运行单元测试（快速，CI 默认）
+go test -short ./...
+
+# 只运行集成测试
+go test -run Integration ./...
+
+# 运行所有测试
+go test ./...
+```
+
+**集成测试标准模板**：
+
+```go
+//go:build integration
+// +build integration
+
+package auth_test  // 使用 _test 后缀，只测试公开 API
+
+func TestLoginIntegration(t *testing.T) {
+    if testing.Short() {
+        t.Skip("Skipping integration test in short mode")
+    }
+    // 测试代码
+}
+```
+
+**优势**：
+- ✅ Go 官方推荐，符合社区标准
+- ✅ 可以测试包内私有函数/方法
+- ✅ `go test ./...` 自动发现所有测试
+- ✅ 测试覆盖率统计自动关联
+- ✅ IDE 智能提示和跳转完美支持
+- ✅ 测试和代码版本同步演进
+
+**不推荐**：将测试放在独立的 `tests/` 目录（这会导致无法测试私有函数，违背 Go 惯例）
+
+### 6.2 测试文件命名
 
 ```
 user.go       → user_test.go
@@ -566,7 +820,7 @@ service.go    → service_test.go
 handler.go    → handler_test.go
 ```
 
-### 6.2 单元测试
+### 6.3 单元测试
 
 ```go
 // internal/service/user_test.go
@@ -609,7 +863,7 @@ func TestUserService_GetUser_NotFound(t *testing.T) {
 }
 ```
 
-### 6.3 表格驱动测试
+### 6.4 表格驱动测试
 
 ```go
 func TestValidateEmail(t *testing.T) {
@@ -681,9 +935,324 @@ type Cache interface {
 
 ## 8. 配置管理
 
-### 8.1 配置结构
+### 8.1 配置中心架构
+
+apprun 使用 **Config Center Registry Pattern**，模块配置独立定义在各自包内，通过注册表统一管理。
+
+**设计原则**：
+- **Business Cohesion**: 模块配置定义在模块包内（如 `pkg/i18n/config.go`，`internal/jwt/config.go`）
+- **Centralized Management**: Config Center 通过 Registry 统一管理所有模块配置
+- **Three-Layer Model**: Business Structs (Source) → Config Center (Mapper) → Data Sources (YAML/DB/Env)
+
+### 8.2 模块配置标准结构
+
+**每个需要配置的模块必须包含 `config.go` 文件**，定义模块配置结构和工厂函数。
+
+#### 8.2.1 Config.go 标准模板
 
 ```go
+// pkg/yourmodule/config.go 或 internal/yourmodule/config.go
+package yourmodule
+
+import "time"
+
+// Config defines the configuration for YourModule
+// Tags: yaml (YAML key), default (default value), db (allow database storage), validate (validation rules)
+type Config struct {
+    // Add your configuration fields here
+    Enabled bool   `yaml:"enabled" default:"true" db:"true" validate:""`
+    Timeout string `yaml:"timeout" default:"30s" db:"false" validate:"required"`
+    
+    // Nested configuration
+    Advanced AdvancedConfig `yaml:"advanced"`
+}
+
+// AdvancedConfig defines advanced configuration options
+type AdvancedConfig struct {
+    MaxRetries int `yaml:"max_retries" default:"3" db:"false" validate:"min=0,max=10"`
+}
+
+// DefaultConfig returns the default configuration
+func DefaultConfig() Config {
+    return Config{
+        Enabled: true,
+        Timeout: "30s",
+        Advanced: AdvancedConfig{
+            MaxRetries: 3,
+        },
+    }
+}
+
+// ToRuntimeConfig converts Config to runtime configuration
+// Use this when you need to parse or transform config values
+func (c *Config) ToRuntimeConfig() (*RuntimeConfig, error) {
+    timeout, err := time.ParseDuration(c.Timeout)
+    if err != nil {
+        return nil, err
+    }
+    
+    return &RuntimeConfig{
+        Enabled:    c.Enabled,
+        Timeout:    timeout, // Parsed duration
+        MaxRetries: c.Advanced.MaxRetries,
+    }, nil
+}
+
+// RuntimeConfig is the internal configuration used by module at runtime
+// Use parsed/transformed types (time.Duration, *url.URL, etc.)
+type RuntimeConfig struct {
+    Enabled    bool
+    Timeout    time.Duration // Parsed from string
+    MaxRetries int
+}
+```
+
+#### 8.2.2 配置注册（main.go）
+
+```go
+// cmd/server/main.go
+
+import (
+    "apprun/modules/config"
+    "apprun/pkg/i18n"
+    "apprun/internal/jwt"
+    "apprun/pkg/yourmodule"
+)
+
+func initializeConfigRegistry() *config.ConfigRegistry {
+    registry := config.NewRegistry()
+    
+    // Register module configurations
+    if err := registry.Register("logger", &logger.Config{}); err != nil {
+        log.Fatalf("Failed to register logger config: %v", err)
+    }
+    
+    if err := registry.Register("i18n", &i18n.Config{}); err != nil {
+        log.Fatalf("Failed to register i18n config: %v", err)
+    }
+    
+    if err := registry.Register("jwt", &jwt.Config{}); err != nil {
+        log.Fatalf("Failed to register jwt config: %v", err)
+    }
+    
+    // Register your module
+    if err := registry.Register("yourmodule", &yourmodule.Config{}); err != nil {
+        log.Fatalf("Failed to register yourmodule config: %v", err)
+    }
+    
+    return registry
+}
+```
+
+#### 8.2.3 配置文件（YAML）
+
+```yaml
+# config/default.yaml
+
+# Your module configuration
+yourmodule:
+  enabled: true
+  timeout: 30s
+  advanced:
+    max_retries: 3
+
+# JWT configuration example
+jwt:
+  secret: ${JWT_SECRET}  # Environment variable
+  expiry: 24h
+  issuer: "apprun"
+  whitelist_paths:
+    - /api/v1/auth/register
+    - /api/v1/auth/login
+    - /health
+```
+
+### 8.3 工厂函数作为"配置连接器"
+
+**工厂函数是模块与配置中心的连接桥梁**，提供优雅的初始化方式。
+
+#### 8.3.1 工厂函数标准模板
+
+```go
+// pkg/yourmodule/yourmodule.go
+
+// NewServiceFromConfig creates a service instance from configuration (recommended)
+// This is the "Config Connector" - bridges module and Config Center
+func NewServiceFromConfig(cfg *Config) (*Service, error) {
+    // Convert to runtime config
+    runtimeCfg, err := cfg.ToRuntimeConfig()
+    if err != nil {
+        return nil, fmt.Errorf("failed to convert config: %w", err)
+    }
+    
+    // Initialize service with runtime config
+    return NewService(runtimeCfg), nil
+}
+
+// NewService creates a service instance from runtime configuration
+// Use this for direct initialization (testing, advanced use cases)
+func NewService(runtimeCfg *RuntimeConfig) *Service {
+    return &Service{
+        enabled:    runtimeCfg.Enabled,
+        timeout:    runtimeCfg.Timeout,
+        maxRetries: runtimeCfg.MaxRetries,
+    }
+}
+```
+
+#### 8.3.2 使用模式
+
+**模式 1: 配置中心模式（推荐生产环境）**
+```go
+// Application startup - load from Config Center
+registry := config.NewRegistry()
+registry.Register("yourmodule", &yourmodule.Config{})
+
+bootstrap := config.NewBootstrapWithRegistry("./config", registry)
+configService, _ := bootstrap.CreateService(ctx, dbClient)
+
+// Get module config from registry and initialize
+yourmoduleCfg := &yourmodule.Config{
+    // Config loaded from YAML/Env/DB by Config Center
+}
+service, err := yourmodule.NewServiceFromConfig(yourmoduleCfg)
+```
+
+**模式 2: 直接配置模式（测试/简单场景）**
+```go
+// Testing - direct configuration without Config Center
+cfg := &yourmodule.Config{
+    Enabled: true,
+    Timeout: "5s",
+}
+service, err := yourmodule.NewServiceFromConfig(cfg)
+```
+
+**模式 3: Runtime Config 模式（高级场景）**
+```go
+// Advanced - bypass config conversion for performance
+runtimeCfg := &yourmodule.RuntimeConfig{
+    Enabled:    true,
+    Timeout:    5 * time.Second,
+    MaxRetries: 3,
+}
+service := yourmodule.NewService(runtimeCfg)
+```
+
+### 8.4 配置优先级（6-Layer System）
+
+Config Center 使用 6 层优先级系统，**从低到高**：
+
+1. **Struct Tag Defaults** - `default:"value"` tag
+2. **default.yaml** - Base configuration file
+3. **Specialized Files** - `database.yaml`, `server.yaml`, etc.
+4. **conf_d/ Directory** - Additional config files
+5. **Database** - Only for `db:"true"` fields
+6. **Environment Variables** - Highest priority
+
+```bash
+# Example: Override JWT secret via environment
+export JWT_SECRET="production-secret-key"
+export JWT_EXPIRY="1h"
+```
+
+### 8.5 配置标签说明
+
+| Tag | Description | Example | Required |
+|-----|-------------|---------|----------|
+| `yaml` | YAML key name | `yaml:"timeout"` | Yes |
+| `default` | Default value | `default:"30s"` | Recommended |
+| `db` | Allow database storage | `db:"true"` or `db:"false"` | Yes |
+| `validate` | Validation rules | `validate:"required,min=1"` | Optional |
+| `json` | JSON key (for API) | `json:"timeout"` | Optional |
+
+**Validation Rules** (using go-playground/validator):
+- `required` - Field must be non-zero
+- `min=N` / `max=N` - Min/max value for numbers
+- `len=N` - Exact length for strings/slices
+- `oneof=A B C` - Value must be one of the options
+- `url` / `email` - Format validation
+
+### 8.6 实际案例对比
+
+#### JWT Module (已实现)
+
+```go
+// internal/jwt/config.go
+type Config struct {
+    Secret         string   `yaml:"secret" default:"" db:"false" validate:"required,min=32"`
+    Expiry         string   `yaml:"expiry" default:"24h" db:"false" validate:"required"`
+    Issuer         string   `yaml:"issuer" default:"apprun" db:"false"`
+    WhitelistPaths []string `yaml:"whitelist_paths" default:"[...]" db:"false"`
+}
+
+func (c *Config) ToRuntimeConfig() (*RuntimeConfig, error) {
+    duration, err := time.ParseDuration(c.Expiry)
+    if err != nil {
+        return nil, err
+    }
+    
+    whitelist := make(map[string]bool, len(c.WhitelistPaths))
+    for _, path := range c.WhitelistPaths {
+        whitelist[path] = true
+    }
+    
+    return &RuntimeConfig{
+        Secret:    c.Secret,
+        Expiry:    duration,
+        Issuer:    c.Issuer,
+        Whitelist: whitelist,
+    }, nil
+}
+
+// modules/auth/middleware/auth.go
+func NewJWTMiddlewareFromConfig(cfg *jwt.Config) (*JWTMiddleware, error) {
+    runtimeCfg, err := cfg.ToRuntimeConfig()
+    if err != nil {
+        return nil, err
+    }
+    return NewJWTMiddleware(runtimeCfg), nil
+}
+```
+
+#### i18n Module (参考实现)
+
+```go
+// pkg/i18n/config.go
+type Config struct {
+    DefaultLanguage     string   `yaml:"default_language" default:"en-US" db:"false"`
+    SupportedLanguages  []string `yaml:"supported_languages" db:"false"`
+    TranslationsPath    string   `yaml:"translations_path" default:"./locales" db:"false"`
+}
+
+// pkg/i18n/i18n.go
+func InitWithConfig(cfg *Config) error {
+    // Load translations based on config
+    return loadTranslations(cfg.TranslationsPath, cfg.SupportedLanguages)
+}
+```
+
+### 8.7 最佳实践
+
+**✅ DO**:
+- 每个模块定义独立的 `config.go`
+- 使用 `DefaultConfig()` 提供合理默认值
+- 提供 `ToRuntimeConfig()` 处理类型转换
+- 创建工厂函数 `NewXXXFromConfig(cfg *Config)` 作为配置连接器
+- 在 `main.go` 中注册所有模块配置
+- 使用环境变量覆盖敏感配置（如密钥）
+
+**❌ DON'T**:
+- ❌ 在 `internal/config/types.go` 中定义业务模块配置（违反 Registry Pattern）
+- ❌ 在模块内部直接读取配置文件（破坏解耦）
+- ❌ 硬编码配置值（如白名单路径、超时时间）
+- ❌ 使用全局变量存储配置（不利于测试）
+- ❌ 跳过配置验证（validate tag）
+
+### 8.8 旧配置结构（已废弃）
+
+```go
+// ❌ OLD - 不符合 Registry Pattern
 // internal/config/config.go
 
 type Config struct {
@@ -722,6 +1291,11 @@ func Load(path string) (*Config, error) {
     return &config, nil
 }
 ```
+
+**迁移说明**: 
+- 旧的全局 Config 结构已被 Registry Pattern 替代
+- 每个模块现在独立定义配置
+- 参考 `pkg/i18n/config.go` 和 `internal/jwt/config.go` 作为标准实现
 
 ---
 

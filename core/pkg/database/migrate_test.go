@@ -51,10 +51,41 @@ func TestNewMigrator(t *testing.T) {
 	// Test with default directory
 	m := NewMigrator(nil, "")
 	assert.Equal(t, "migrations", m.migrationsDir)
+	assert.NotEmpty(t, m.workingDir, "working directory should be set")
 
 	// Test with custom directory
 	m2 := NewMigrator(nil, "custom/migrations")
 	assert.Equal(t, "custom/migrations", m2.migrationsDir)
+	assert.NotEmpty(t, m2.workingDir, "working directory should be set")
+}
+
+func TestNewMigratorFromConfig_WorkingDirectory(t *testing.T) {
+	ctx := context.Background()
+
+	// Save current working directory
+	originalWd, _ := os.Getwd()
+	defer os.Chdir(originalWd)
+
+	// Test without APPRUN_CONFIG_DIR (should use current directory)
+	cfg := &Config{
+		Driver:   "postgres",
+		Host:     "localhost",
+		Port:     5432,
+		User:     "test",
+		Password: "test",
+		DBName:   "test_db",
+	}
+
+	// This will fail to connect, but we can test the directory setup
+	m, err := NewMigratorFromConfig(ctx, cfg)
+	if err != nil {
+		// Expected - database not available in test
+		t.Logf("Database connection failed (expected in test): %v", err)
+		return
+	}
+
+	assert.NotEmpty(t, m.workingDir, "working directory should be set")
+	assert.Equal(t, "migrations", m.migrationsDir)
 }
 
 func TestMigrationStatus(t *testing.T) {

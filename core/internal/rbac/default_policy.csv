@@ -1,0 +1,54 @@
+# Casbin Policy Configuration
+# Generated for Story 5-5: RBAC Permissions
+
+# Platform-level policies (global permissions)
+p, platform_admin, *, *
+
+# Project-level policies (role definitions)
+
+## Owner (all permissions)
+p, owner, config, *
+p, owner, data, *
+p, owner, storage, *
+p, owner, function, *
+p, owner, workflow, *
+p, owner, member, *
+p, owner, project, *
+
+## Admin (all except delete project)
+p, admin, config, create
+p, admin, config, read
+p, admin, config, update
+p, admin, config, delete
+p, admin, data, *
+p, admin, storage, *
+p, admin, function, *
+p, admin, workflow, *
+p, admin, member, create
+p, admin, member, read
+p, admin, member, update
+p, admin, member, delete
+p, admin, project, read
+p, admin, project, update
+
+## Member (read/write data and files)
+p, member, config, read
+p, member, data, create
+p, member, data, read
+p, member, data, update
+p, member, data, delete
+p, member, storage, create
+p, member, storage, read
+p, member, storage, update
+p, member, storage, delete
+p, member, function, read
+p, member, function, execute
+p, member, workflow, read
+p, member, workflow, execute
+
+## Viewer (read-only)
+p, viewer, config, read
+p, viewer, data, read
+p, viewer, storage, read
+p, viewer, function, read
+p, viewer, workflow, read

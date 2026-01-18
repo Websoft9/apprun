@@ -8,12 +8,47 @@ import (
 )
 
 var (
+	// CasbinRulesColumns holds the columns for the "casbin_rules" table.
+	CasbinRulesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "ptype", Type: field.TypeString, Size: 100},
+		{Name: "v0", Type: field.TypeString, Nullable: true, Size: 100},
+		{Name: "v1", Type: field.TypeString, Nullable: true, Size: 100},
+		{Name: "v2", Type: field.TypeString, Nullable: true, Size: 100},
+		{Name: "v3", Type: field.TypeString, Nullable: true, Size: 100},
+		{Name: "v4", Type: field.TypeString, Nullable: true, Size: 100},
+		{Name: "v5", Type: field.TypeString, Nullable: true, Size: 100},
+	}
+	// CasbinRulesTable holds the schema information for the "casbin_rules" table.
+	CasbinRulesTable = &schema.Table{
+		Name:       "casbin_rules",
+		Columns:    CasbinRulesColumns,
+		PrimaryKey: []*schema.Column{CasbinRulesColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "casbinrule_ptype",
+				Unique:  false,
+				Columns: []*schema.Column{CasbinRulesColumns[1]},
+			},
+			{
+				Name:    "casbinrule_v0",
+				Unique:  false,
+				Columns: []*schema.Column{CasbinRulesColumns[2]},
+			},
+			{
+				Name:    "casbinrule_v1",
+				Unique:  false,
+				Columns: []*schema.Column{CasbinRulesColumns[3]},
+			},
+		},
+	}
 	// ConfigitemsColumns holds the columns for the "configitems" table.
 	ConfigitemsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "key", Type: field.TypeString, Unique: true},
 		{Name: "value", Type: field.TypeString},
 		{Name: "is_dynamic", Type: field.TypeBool, Default: false},
+		{Name: "project_id", Type: field.TypeInt64, Nullable: true},
 		{Name: "status", Type: field.TypeEnum, Enums: []string{"active", "inactive"}, Default: "active"},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
@@ -32,7 +67,110 @@ var (
 			{
 				Name:    "configitem_status",
 				Unique:  false,
+				Columns: []*schema.Column{ConfigitemsColumns[5]},
+			},
+			{
+				Name:    "configitem_project_id",
+				Unique:  false,
 				Columns: []*schema.Column{ConfigitemsColumns[4]},
+			},
+			{
+				Name:    "configitem_project_id_key",
+				Unique:  false,
+				Columns: []*schema.Column{ConfigitemsColumns[4], ConfigitemsColumns[1]},
+			},
+		},
+	}
+	// ProjectsColumns holds the columns for the "projects" table.
+	ProjectsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "uuid", Type: field.TypeString, Unique: true, Size: 36},
+		{Name: "name", Type: field.TypeString, Size: 100},
+		{Name: "description", Type: field.TypeString, Nullable: true, Size: 500},
+		{Name: "status", Type: field.TypeInt8, Default: 1},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "owner_id", Type: field.TypeInt64},
+	}
+	// ProjectsTable holds the schema information for the "projects" table.
+	ProjectsTable = &schema.Table{
+		Name:       "projects",
+		Columns:    ProjectsColumns,
+		PrimaryKey: []*schema.Column{ProjectsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "projects_users_owned_projects",
+				Columns:    []*schema.Column{ProjectsColumns[7]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "project_uuid",
+				Unique:  true,
+				Columns: []*schema.Column{ProjectsColumns[1]},
+			},
+			{
+				Name:    "project_owner_id",
+				Unique:  false,
+				Columns: []*schema.Column{ProjectsColumns[7]},
+			},
+			{
+				Name:    "project_status",
+				Unique:  false,
+				Columns: []*schema.Column{ProjectsColumns[4]},
+			},
+			{
+				Name:    "project_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{ProjectsColumns[5]},
+			},
+		},
+	}
+	// ProjectMembersColumns holds the columns for the "project_members" table.
+	ProjectMembersColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "role", Type: field.TypeString, Size: 20},
+		{Name: "joined_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "project_id", Type: field.TypeInt64},
+		{Name: "user_id", Type: field.TypeInt64},
+	}
+	// ProjectMembersTable holds the schema information for the "project_members" table.
+	ProjectMembersTable = &schema.Table{
+		Name:       "project_members",
+		Columns:    ProjectMembersColumns,
+		PrimaryKey: []*schema.Column{ProjectMembersColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "project_members_projects_members",
+				Columns:    []*schema.Column{ProjectMembersColumns[4]},
+				RefColumns: []*schema.Column{ProjectsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "project_members_users_project_memberships",
+				Columns:    []*schema.Column{ProjectMembersColumns[5]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "projectmember_project_id_user_id",
+				Unique:  true,
+				Columns: []*schema.Column{ProjectMembersColumns[4], ProjectMembersColumns[5]},
+			},
+			{
+				Name:    "projectmember_user_id",
+				Unique:  false,
+				Columns: []*schema.Column{ProjectMembersColumns[5]},
+			},
+			{
+				Name:    "projectmember_role",
+				Unique:  false,
+				Columns: []*schema.Column{ProjectMembersColumns[1]},
 			},
 		},
 	}
@@ -41,7 +179,7 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "name", Type: field.TypeString},
 		{Name: "ip", Type: field.TypeString, Unique: true},
-		{Name: "users_servers", Type: field.TypeInt},
+		{Name: "user_servers", Type: field.TypeInt64},
 	}
 	// ServersTable holds the schema information for the "servers" table.
 	ServersTable = &schema.Table{
@@ -59,24 +197,66 @@ var (
 	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "name", Type: field.TypeString},
-		{Name: "email", Type: field.TypeString, Unique: true},
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "uuid", Type: field.TypeUUID, Unique: true},
+		{Name: "username", Type: field.TypeString, Unique: true, Nullable: true, Size: 64},
+		{Name: "email", Type: field.TypeString, Unique: true, Size: 255},
+		{Name: "password_hash", Type: field.TypeString, Size: 255},
+		{Name: "nickname", Type: field.TypeString, Nullable: true, Size: 64},
+		{Name: "avatar", Type: field.TypeString, Nullable: true, Size: 255},
+		{Name: "phone", Type: field.TypeString, Nullable: true, Size: 20},
+		{Name: "gender", Type: field.TypeInt8, Default: 0},
+		{Name: "signature", Type: field.TypeString, Nullable: true, Size: 255},
+		{Name: "status", Type: field.TypeInt8, Default: 1},
+		{Name: "last_login_at", Type: field.TypeTime, Nullable: true},
+		{Name: "last_login_ip", Type: field.TypeString, Nullable: true, Size: 45},
+		{Name: "timezone", Type: field.TypeString, Size: 64, Default: "UTC"},
+		{Name: "language", Type: field.TypeString, Size: 10, Default: "zh-CN"},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
 	}
 	// UsersTable holds the schema information for the "users" table.
 	UsersTable = &schema.Table{
 		Name:       "users",
 		Columns:    UsersColumns,
 		PrimaryKey: []*schema.Column{UsersColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "user_email",
+				Unique:  true,
+				Columns: []*schema.Column{UsersColumns[3]},
+			},
+			{
+				Name:    "user_username",
+				Unique:  true,
+				Columns: []*schema.Column{UsersColumns[2]},
+			},
+			{
+				Name:    "user_status",
+				Unique:  false,
+				Columns: []*schema.Column{UsersColumns[10]},
+			},
+			{
+				Name:    "user_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{UsersColumns[15]},
+			},
+		},
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		CasbinRulesTable,
 		ConfigitemsTable,
+		ProjectsTable,
+		ProjectMembersTable,
 		ServersTable,
 		UsersTable,
 	}
 )
 
 func init() {
+	ProjectsTable.ForeignKeys[0].RefTable = UsersTable
+	ProjectMembersTable.ForeignKeys[0].RefTable = ProjectsTable
+	ProjectMembersTable.ForeignKeys[1].RefTable = UsersTable
 	ServersTable.ForeignKeys[0].RefTable = UsersTable
 }

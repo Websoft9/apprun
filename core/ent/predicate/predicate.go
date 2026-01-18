@@ -6,11 +6,20 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
+// CasbinRule is the predicate function for casbinrule builders.
+type CasbinRule func(*sql.Selector)
+
 // Configitem is the predicate function for configitem builders.
 type Configitem func(*sql.Selector)
+
+// Project is the predicate function for project builders.
+type Project func(*sql.Selector)
+
+// ProjectMember is the predicate function for projectmember builders.
+type ProjectMember func(*sql.Selector)
 
 // Servers is the predicate function for servers builders.
 type Servers func(*sql.Selector)
 
-// Users is the predicate function for users builders.
-type Users func(*sql.Selector)
+// User is the predicate function for user builders.
+type User func(*sql.Selector)

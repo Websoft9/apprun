@@ -8,13 +8,14 @@ import (
 )
 
 // I18nDemoHandler demonstrates i18n usage with different messages
-// @Summary      i18n Demo
-// @Description  Demonstrates internationalization with context-based translation
-// @Tags         demo
-// @Produce      json
-// @Param        lang  query  string  false  "Language code (en-US, zh-CN)"
-// @Success      200  {object}  response.Response{data=map[string]string}
-// @Router       /api/demo/i18n [get]
+//
+//	@Summary		i18n Demo
+//	@Description	Demonstrates internationalization with context-based translation
+//	@Tags			demo
+//	@Produce		json
+//	@Param			lang	query		string	false	"Language code (en-US, zh-CN)"
+//	@Success		200		{object}	response.Response{data=map[string]string}
+//	@Router			/api/demo/i18n [get]
 func I18nDemoHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

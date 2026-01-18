@@ -21,6 +21,19 @@ The following custom agents are defined in `.github/chatmodes/`:
 
 Each agent is specialized for specific tasks and follows BMad Method workflows defined in `.bmad/bmm/workflows/`.
 
+## Agent-activation
+
+<agent-activation CRITICAL="TRUE">
+1. LOAD the FULL agent file from @.bmad/bmm/agents/architect.md
+2. READ its entire contents
+3. Execute ALL activation steps
+
+4. **Dynamic Agent Loading**:
+   - If user mentions "@analyst", load @.bmad/bmm/agents/analyst.md
+   - If user mentions "@dev", load @.bmad/bmm/agents/dev.md
+   - Default to architect if no specific agent mentioned
+</agent-activation>
+
 ## How to Use Agents in GitHub Copilot Chat
 
 1. Open GitHub Copilot Chat panel (Ctrl+Alt+I or Cmd+Alt+I)

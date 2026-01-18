@@ -60,6 +60,10 @@ func ToHTTPStatus(err error) int {
 		return http.StatusForbidden // 403
 
 	case apperrors.CategoryBusiness:
+		// Check for CONFLICT in code
+		if strings.Contains(appErr.Code, "CONFLICT") {
+			return http.StatusConflict // 409
+		}
 		return http.StatusUnprocessableEntity // 422
 
 	case apperrors.CategorySystem:

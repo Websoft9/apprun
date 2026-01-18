@@ -22,11 +22,11 @@ const (
 	Table = "servers"
 	// OwnerTable is the table that holds the owner relation/edge.
 	OwnerTable = "servers"
-	// OwnerInverseTable is the table name for the Users entity.
-	// It exists in this package in order to avoid circular dependency with the "users" package.
+	// OwnerInverseTable is the table name for the User entity.
+	// It exists in this package in order to avoid circular dependency with the "user" package.
 	OwnerInverseTable = "users"
 	// OwnerColumn is the table column denoting the owner relation/edge.
-	OwnerColumn = "users_servers"
+	OwnerColumn = "user_servers"
 )
 
 // Columns holds all SQL columns for servers fields.
@@ -39,7 +39,7 @@ var Columns = []string{
 // ForeignKeys holds the SQL foreign-keys that are owned by the "servers"
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
-	"users_servers",
+	"user_servers",
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).

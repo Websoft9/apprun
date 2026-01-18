@@ -56,12 +56,12 @@
 | **ORM** | Ent | latest | 类型安全的 ORM + 代码生成 |
 | **Schema** | Atlas | latest | 声明式 Schema 管理和迁移 |
 | **路由** | Chi | v5 | HTTP 路由 + 中间件 |
-| **认证** | Ory Kratos | latest | 生产级认证服务 |
+| **认证** | bcrypt + JWT | - | 密码哈希 + Token 认证 (Go Native) |
+| **授权** | Casbin | v2 | RBAC 策略引擎 |
 | **工作流** | Waterflow | latest | 基于 Temporal 的工作流引擎 |
 | **WebSocket** | coder/websocket | latest | 实时推送 |
 | **VFS** | spf13/afero | latest | 虚拟文件系统 (本地 + S3) |
 | **配置** | Viper | v1 | 配置管理 + Watch |
-| **授权** | Casbin | v2 | RBAC 策略引擎 |
 | **监控** | Prometheus | latest | 指标采集 |
 | **可视化** | Grafana | latest | 监控面板 |
 | **容器** | Docker | 20.10+ | 容器化部署 |
@@ -80,27 +80,49 @@
 
 ### 3.1 认证模块 (Auth)
 
-**集成方式**: Ory Kratos + 共享数据库
+**实现方式**: Go Native (bcrypt + JWT)
 
 ```go
-// 共享数据库表 (只读)
-- identities       // 用户身份信息
-- identity_credentials  // 登录凭证
-- sessions         // 会话管理
+// 核心包依赖
+- golang.org/x/crypto/bcrypt    // 密码哈希
+- github.com/golang-jwt/jwt/v5   // JWT Token
+- github.com/gorilla/sessions    // Session 管理 (可选)
 
 // apprun 自有表
-- users            // 用户扩展信息
+- users            // 用户信息 (id, email, password_hash, name)
 - user_projects    // 用户项目关系
 ```
 
 **认证流程**:
-1. 用户通过 Kratos 登录 → 生成 Session
-2. apprun 读取 Kratos Session 验证身份
-3. apprun 基于 `identity_id` 查询 RBAC 权限
+1. 用户注册 → bcrypt 密码哈希 → 存储到 users 表
+2. 用户登录 → 验证密码 → 签发 JWT Token (Access + Refresh)
+3. API 请求 → 验证 JWT → 提取 user_id → 查询 RBAC 权限
+
+**关键实现**:
+```go
+// 密码哈希
+hash, _ := bcrypt.GenerateFromPassword([]byte(password), 12)
+
+// 密码验证
+err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+
+// JWT 签发
+token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
+    UserID: user.ID,
+    Email:  user.Email,
+    RegisteredClaims: jwt.RegisteredClaims{
+        ExpiresAt: jwt.NewNumericDate(time.Now().Add(1 * time.Hour)),
+        IssuedAt:  jwt.NewNumericDate(time.Now()),
+    },
+})
+tokenString, _ := token.SignedString(jwtSecret)
+```
 
 **关键接口**:
-- `GET /auth/whoami` - 获取当前用户信息
-- `POST /auth/logout` - 退出登录
+- `POST /api/v1/auth/register` - 用户注册
+- `POST /api/v1/auth/login` - 用户登录（返回 JWT）
+- `POST /api/v1/auth/refresh` - 刷新 Token
+- `GET /api/v1/auth/me` - 获取当前用户信息
 
 ### 3.2 授权模块 (RBAC)
 

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"time"
 
+	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 )
@@ -18,6 +19,7 @@ type ConfigitemCreate struct {
 	config
 	mutation *ConfigitemMutation
 	hooks    []Hook
+	conflict []sql.ConflictOption
 }
 
 // SetKey sets the "key" field.
@@ -42,6 +44,20 @@ func (_c *ConfigitemCreate) SetIsDynamic(v bool) *ConfigitemCreate {
 func (_c *ConfigitemCreate) SetNillableIsDynamic(v *bool) *ConfigitemCreate {
 	if v != nil {
 		_c.SetIsDynamic(*v)
+	}
+	return _c
+}
+
+// SetProjectID sets the "project_id" field.
+func (_c *ConfigitemCreate) SetProjectID(v int64) *ConfigitemCreate {
+	_c.mutation.SetProjectID(v)
+	return _c
+}
+
+// SetNillableProjectID sets the "project_id" field if the given value is not nil.
+func (_c *ConfigitemCreate) SetNillableProjectID(v *int64) *ConfigitemCreate {
+	if v != nil {
+		_c.SetProjectID(*v)
 	}
 	return _c
 }
@@ -197,6 +213,7 @@ func (_c *ConfigitemCreate) createSpec() (*Configitem, *sqlgraph.CreateSpec) {
 		_node = &Configitem{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(configitem.Table, sqlgraph.NewFieldSpec(configitem.FieldID, field.TypeInt))
 	)
+	_spec.OnConflict = _c.conflict
 	if value, ok := _c.mutation.Key(); ok {
 		_spec.SetField(configitem.FieldKey, field.TypeString, value)
 		_node.Key = value
@@ -208,6 +225,10 @@ func (_c *ConfigitemCreate) createSpec() (*Configitem, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.IsDynamic(); ok {
 		_spec.SetField(configitem.FieldIsDynamic, field.TypeBool, value)
 		_node.IsDynamic = value
+	}
+	if value, ok := _c.mutation.ProjectID(); ok {
+		_spec.SetField(configitem.FieldProjectID, field.TypeInt64, value)
+		_node.ProjectID = value
 	}
 	if value, ok := _c.mutation.Status(); ok {
 		_spec.SetField(configitem.FieldStatus, field.TypeEnum, value)
@@ -224,11 +245,321 @@ func (_c *ConfigitemCreate) createSpec() (*Configitem, *sqlgraph.CreateSpec) {
 	return _node, _spec
 }
 
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.Configitem.Create().
+//		SetKey(v).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.ConfigitemUpsert) {
+//			SetKey(v+v).
+//		}).
+//		Exec(ctx)
+func (_c *ConfigitemCreate) OnConflict(opts ...sql.ConflictOption) *ConfigitemUpsertOne {
+	_c.conflict = opts
+	return &ConfigitemUpsertOne{
+		create: _c,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.Configitem.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (_c *ConfigitemCreate) OnConflictColumns(columns ...string) *ConfigitemUpsertOne {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
+	return &ConfigitemUpsertOne{
+		create: _c,
+	}
+}
+
+type (
+	// ConfigitemUpsertOne is the builder for "upsert"-ing
+	//  one Configitem node.
+	ConfigitemUpsertOne struct {
+		create *ConfigitemCreate
+	}
+
+	// ConfigitemUpsert is the "OnConflict" setter.
+	ConfigitemUpsert struct {
+		*sql.UpdateSet
+	}
+)
+
+// SetKey sets the "key" field.
+func (u *ConfigitemUpsert) SetKey(v string) *ConfigitemUpsert {
+	u.Set(configitem.FieldKey, v)
+	return u
+}
+
+// UpdateKey sets the "key" field to the value that was provided on create.
+func (u *ConfigitemUpsert) UpdateKey() *ConfigitemUpsert {
+	u.SetExcluded(configitem.FieldKey)
+	return u
+}
+
+// SetValue sets the "value" field.
+func (u *ConfigitemUpsert) SetValue(v string) *ConfigitemUpsert {
+	u.Set(configitem.FieldValue, v)
+	return u
+}
+
+// UpdateValue sets the "value" field to the value that was provided on create.
+func (u *ConfigitemUpsert) UpdateValue() *ConfigitemUpsert {
+	u.SetExcluded(configitem.FieldValue)
+	return u
+}
+
+// SetIsDynamic sets the "is_dynamic" field.
+func (u *ConfigitemUpsert) SetIsDynamic(v bool) *ConfigitemUpsert {
+	u.Set(configitem.FieldIsDynamic, v)
+	return u
+}
+
+// UpdateIsDynamic sets the "is_dynamic" field to the value that was provided on create.
+func (u *ConfigitemUpsert) UpdateIsDynamic() *ConfigitemUpsert {
+	u.SetExcluded(configitem.FieldIsDynamic)
+	return u
+}
+
+// SetProjectID sets the "project_id" field.
+func (u *ConfigitemUpsert) SetProjectID(v int64) *ConfigitemUpsert {
+	u.Set(configitem.FieldProjectID, v)
+	return u
+}
+
+// UpdateProjectID sets the "project_id" field to the value that was provided on create.
+func (u *ConfigitemUpsert) UpdateProjectID() *ConfigitemUpsert {
+	u.SetExcluded(configitem.FieldProjectID)
+	return u
+}
+
+// AddProjectID adds v to the "project_id" field.
+func (u *ConfigitemUpsert) AddProjectID(v int64) *ConfigitemUpsert {
+	u.Add(configitem.FieldProjectID, v)
+	return u
+}
+
+// ClearProjectID clears the value of the "project_id" field.
+func (u *ConfigitemUpsert) ClearProjectID() *ConfigitemUpsert {
+	u.SetNull(configitem.FieldProjectID)
+	return u
+}
+
+// SetStatus sets the "status" field.
+func (u *ConfigitemUpsert) SetStatus(v configitem.Status) *ConfigitemUpsert {
+	u.Set(configitem.FieldStatus, v)
+	return u
+}
+
+// UpdateStatus sets the "status" field to the value that was provided on create.
+func (u *ConfigitemUpsert) UpdateStatus() *ConfigitemUpsert {
+	u.SetExcluded(configitem.FieldStatus)
+	return u
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (u *ConfigitemUpsert) SetUpdatedAt(v time.Time) *ConfigitemUpsert {
+	u.Set(configitem.FieldUpdatedAt, v)
+	return u
+}
+
+// UpdateUpdatedAt sets the "updated_at" field to the value that was provided on create.
+func (u *ConfigitemUpsert) UpdateUpdatedAt() *ConfigitemUpsert {
+	u.SetExcluded(configitem.FieldUpdatedAt)
+	return u
+}
+
+// UpdateNewValues updates the mutable fields using the new values that were set on create.
+// Using this option is equivalent to using:
+//
+//	client.Configitem.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//		).
+//		Exec(ctx)
+func (u *ConfigitemUpsertOne) UpdateNewValues() *ConfigitemUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		if _, exists := u.create.mutation.CreatedAt(); exists {
+			s.SetIgnore(configitem.FieldCreatedAt)
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.Configitem.Create().
+//	    OnConflict(sql.ResolveWithIgnore()).
+//	    Exec(ctx)
+func (u *ConfigitemUpsertOne) Ignore() *ConfigitemUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *ConfigitemUpsertOne) DoNothing() *ConfigitemUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the ConfigitemCreate.OnConflict
+// documentation for more info.
+func (u *ConfigitemUpsertOne) Update(set func(*ConfigitemUpsert)) *ConfigitemUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&ConfigitemUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetKey sets the "key" field.
+func (u *ConfigitemUpsertOne) SetKey(v string) *ConfigitemUpsertOne {
+	return u.Update(func(s *ConfigitemUpsert) {
+		s.SetKey(v)
+	})
+}
+
+// UpdateKey sets the "key" field to the value that was provided on create.
+func (u *ConfigitemUpsertOne) UpdateKey() *ConfigitemUpsertOne {
+	return u.Update(func(s *ConfigitemUpsert) {
+		s.UpdateKey()
+	})
+}
+
+// SetValue sets the "value" field.
+func (u *ConfigitemUpsertOne) SetValue(v string) *ConfigitemUpsertOne {
+	return u.Update(func(s *ConfigitemUpsert) {
+		s.SetValue(v)
+	})
+}
+
+// UpdateValue sets the "value" field to the value that was provided on create.
+func (u *ConfigitemUpsertOne) UpdateValue() *ConfigitemUpsertOne {
+	return u.Update(func(s *ConfigitemUpsert) {
+		s.UpdateValue()
+	})
+}
+
+// SetIsDynamic sets the "is_dynamic" field.
+func (u *ConfigitemUpsertOne) SetIsDynamic(v bool) *ConfigitemUpsertOne {
+	return u.Update(func(s *ConfigitemUpsert) {
+		s.SetIsDynamic(v)
+	})
+}
+
+// UpdateIsDynamic sets the "is_dynamic" field to the value that was provided on create.
+func (u *ConfigitemUpsertOne) UpdateIsDynamic() *ConfigitemUpsertOne {
+	return u.Update(func(s *ConfigitemUpsert) {
+		s.UpdateIsDynamic()
+	})
+}
+
+// SetProjectID sets the "project_id" field.
+func (u *ConfigitemUpsertOne) SetProjectID(v int64) *ConfigitemUpsertOne {
+	return u.Update(func(s *ConfigitemUpsert) {
+		s.SetProjectID(v)
+	})
+}
+
+// AddProjectID adds v to the "project_id" field.
+func (u *ConfigitemUpsertOne) AddProjectID(v int64) *ConfigitemUpsertOne {
+	return u.Update(func(s *ConfigitemUpsert) {
+		s.AddProjectID(v)
+	})
+}
+
+// UpdateProjectID sets the "project_id" field to the value that was provided on create.
+func (u *ConfigitemUpsertOne) UpdateProjectID() *ConfigitemUpsertOne {
+	return u.Update(func(s *ConfigitemUpsert) {
+		s.UpdateProjectID()
+	})
+}
+
+// ClearProjectID clears the value of the "project_id" field.
+func (u *ConfigitemUpsertOne) ClearProjectID() *ConfigitemUpsertOne {
+	return u.Update(func(s *ConfigitemUpsert) {
+		s.ClearProjectID()
+	})
+}
+
+// SetStatus sets the "status" field.
+func (u *ConfigitemUpsertOne) SetStatus(v configitem.Status) *ConfigitemUpsertOne {
+	return u.Update(func(s *ConfigitemUpsert) {
+		s.SetStatus(v)
+	})
+}
+
+// UpdateStatus sets the "status" field to the value that was provided on create.
+func (u *ConfigitemUpsertOne) UpdateStatus() *ConfigitemUpsertOne {
+	return u.Update(func(s *ConfigitemUpsert) {
+		s.UpdateStatus()
+	})
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (u *ConfigitemUpsertOne) SetUpdatedAt(v time.Time) *ConfigitemUpsertOne {
+	return u.Update(func(s *ConfigitemUpsert) {
+		s.SetUpdatedAt(v)
+	})
+}
+
+// UpdateUpdatedAt sets the "updated_at" field to the value that was provided on create.
+func (u *ConfigitemUpsertOne) UpdateUpdatedAt() *ConfigitemUpsertOne {
+	return u.Update(func(s *ConfigitemUpsert) {
+		s.UpdateUpdatedAt()
+	})
+}
+
+// Exec executes the query.
+func (u *ConfigitemUpsertOne) Exec(ctx context.Context) error {
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for ConfigitemCreate.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *ConfigitemUpsertOne) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// Exec executes the UPSERT query and returns the inserted/updated ID.
+func (u *ConfigitemUpsertOne) ID(ctx context.Context) (id int, err error) {
+	node, err := u.create.Save(ctx)
+	if err != nil {
+		return id, err
+	}
+	return node.ID, nil
+}
+
+// IDX is like ID, but panics if an error occurs.
+func (u *ConfigitemUpsertOne) IDX(ctx context.Context) int {
+	id, err := u.ID(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return id
+}
+
 // ConfigitemCreateBulk is the builder for creating many Configitem entities in bulk.
 type ConfigitemCreateBulk struct {
 	config
 	err      error
 	builders []*ConfigitemCreate
+	conflict []sql.ConflictOption
 }
 
 // Save creates the Configitem entities in the database.
@@ -258,6 +589,7 @@ func (_c *ConfigitemCreateBulk) Save(ctx context.Context) ([]*Configitem, error)
 					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
+					spec.OnConflict = _c.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
 					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
@@ -308,6 +640,215 @@ func (_c *ConfigitemCreateBulk) Exec(ctx context.Context) error {
 // ExecX is like Exec, but panics if an error occurs.
 func (_c *ConfigitemCreateBulk) ExecX(ctx context.Context) {
 	if err := _c.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.Configitem.CreateBulk(builders...).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.ConfigitemUpsert) {
+//			SetKey(v+v).
+//		}).
+//		Exec(ctx)
+func (_c *ConfigitemCreateBulk) OnConflict(opts ...sql.ConflictOption) *ConfigitemUpsertBulk {
+	_c.conflict = opts
+	return &ConfigitemUpsertBulk{
+		create: _c,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.Configitem.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (_c *ConfigitemCreateBulk) OnConflictColumns(columns ...string) *ConfigitemUpsertBulk {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
+	return &ConfigitemUpsertBulk{
+		create: _c,
+	}
+}
+
+// ConfigitemUpsertBulk is the builder for "upsert"-ing
+// a bulk of Configitem nodes.
+type ConfigitemUpsertBulk struct {
+	create *ConfigitemCreateBulk
+}
+
+// UpdateNewValues updates the mutable fields using the new values that
+// were set on create. Using this option is equivalent to using:
+//
+//	client.Configitem.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//		).
+//		Exec(ctx)
+func (u *ConfigitemUpsertBulk) UpdateNewValues() *ConfigitemUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		for _, b := range u.create.builders {
+			if _, exists := b.mutation.CreatedAt(); exists {
+				s.SetIgnore(configitem.FieldCreatedAt)
+			}
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.Configitem.Create().
+//		OnConflict(sql.ResolveWithIgnore()).
+//		Exec(ctx)
+func (u *ConfigitemUpsertBulk) Ignore() *ConfigitemUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *ConfigitemUpsertBulk) DoNothing() *ConfigitemUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the ConfigitemCreateBulk.OnConflict
+// documentation for more info.
+func (u *ConfigitemUpsertBulk) Update(set func(*ConfigitemUpsert)) *ConfigitemUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&ConfigitemUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetKey sets the "key" field.
+func (u *ConfigitemUpsertBulk) SetKey(v string) *ConfigitemUpsertBulk {
+	return u.Update(func(s *ConfigitemUpsert) {
+		s.SetKey(v)
+	})
+}
+
+// UpdateKey sets the "key" field to the value that was provided on create.
+func (u *ConfigitemUpsertBulk) UpdateKey() *ConfigitemUpsertBulk {
+	return u.Update(func(s *ConfigitemUpsert) {
+		s.UpdateKey()
+	})
+}
+
+// SetValue sets the "value" field.
+func (u *ConfigitemUpsertBulk) SetValue(v string) *ConfigitemUpsertBulk {
+	return u.Update(func(s *ConfigitemUpsert) {
+		s.SetValue(v)
+	})
+}
+
+// UpdateValue sets the "value" field to the value that was provided on create.
+func (u *ConfigitemUpsertBulk) UpdateValue() *ConfigitemUpsertBulk {
+	return u.Update(func(s *ConfigitemUpsert) {
+		s.UpdateValue()
+	})
+}
+
+// SetIsDynamic sets the "is_dynamic" field.
+func (u *ConfigitemUpsertBulk) SetIsDynamic(v bool) *ConfigitemUpsertBulk {
+	return u.Update(func(s *ConfigitemUpsert) {
+		s.SetIsDynamic(v)
+	})
+}
+
+// UpdateIsDynamic sets the "is_dynamic" field to the value that was provided on create.
+func (u *ConfigitemUpsertBulk) UpdateIsDynamic() *ConfigitemUpsertBulk {
+	return u.Update(func(s *ConfigitemUpsert) {
+		s.UpdateIsDynamic()
+	})
+}
+
+// SetProjectID sets the "project_id" field.
+func (u *ConfigitemUpsertBulk) SetProjectID(v int64) *ConfigitemUpsertBulk {
+	return u.Update(func(s *ConfigitemUpsert) {
+		s.SetProjectID(v)
+	})
+}
+
+// AddProjectID adds v to the "project_id" field.
+func (u *ConfigitemUpsertBulk) AddProjectID(v int64) *ConfigitemUpsertBulk {
+	return u.Update(func(s *ConfigitemUpsert) {
+		s.AddProjectID(v)
+	})
+}
+
+// UpdateProjectID sets the "project_id" field to the value that was provided on create.
+func (u *ConfigitemUpsertBulk) UpdateProjectID() *ConfigitemUpsertBulk {
+	return u.Update(func(s *ConfigitemUpsert) {
+		s.UpdateProjectID()
+	})
+}
+
+// ClearProjectID clears the value of the "project_id" field.
+func (u *ConfigitemUpsertBulk) ClearProjectID() *ConfigitemUpsertBulk {
+	return u.Update(func(s *ConfigitemUpsert) {
+		s.ClearProjectID()
+	})
+}
+
+// SetStatus sets the "status" field.
+func (u *ConfigitemUpsertBulk) SetStatus(v configitem.Status) *ConfigitemUpsertBulk {
+	return u.Update(func(s *ConfigitemUpsert) {
+		s.SetStatus(v)
+	})
+}
+
+// UpdateStatus sets the "status" field to the value that was provided on create.
+func (u *ConfigitemUpsertBulk) UpdateStatus() *ConfigitemUpsertBulk {
+	return u.Update(func(s *ConfigitemUpsert) {
+		s.UpdateStatus()
+	})
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (u *ConfigitemUpsertBulk) SetUpdatedAt(v time.Time) *ConfigitemUpsertBulk {
+	return u.Update(func(s *ConfigitemUpsert) {
+		s.SetUpdatedAt(v)
+	})
+}
+
+// UpdateUpdatedAt sets the "updated_at" field to the value that was provided on create.
+func (u *ConfigitemUpsertBulk) UpdateUpdatedAt() *ConfigitemUpsertBulk {
+	return u.Update(func(s *ConfigitemUpsert) {
+		s.UpdateUpdatedAt()
+	})
+}
+
+// Exec executes the query.
+func (u *ConfigitemUpsertBulk) Exec(ctx context.Context) error {
+	if u.create.err != nil {
+		return u.create.err
+	}
+	for i, b := range u.create.builders {
+		if len(b.conflict) != 0 {
+			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the ConfigitemCreateBulk instead", i)
+		}
+	}
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for ConfigitemCreateBulk.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *ConfigitemUpsertBulk) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

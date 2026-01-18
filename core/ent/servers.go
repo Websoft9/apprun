@@ -4,7 +4,7 @@ package ent
 
 import (
 	"apprun/ent/servers"
-	"apprun/ent/users"
+	"apprun/ent/user"
 	"fmt"
 	"strings"
 
@@ -23,15 +23,15 @@ type Servers struct {
 	IP string `json:"ip,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ServersQuery when eager-loading is set.
-	Edges         ServersEdges `json:"edges"`
-	users_servers *int
-	selectValues  sql.SelectValues
+	Edges        ServersEdges `json:"edges"`
+	user_servers *int64
+	selectValues sql.SelectValues
 }
 
 // ServersEdges holds the relations/edges for other nodes in the graph.
 type ServersEdges struct {
 	// Owner holds the value of the owner edge.
-	Owner *Users `json:"owner,omitempty"`
+	Owner *User `json:"owner,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [1]bool
@@ -39,11 +39,11 @@ type ServersEdges struct {
 
 // OwnerOrErr returns the Owner value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e ServersEdges) OwnerOrErr() (*Users, error) {
+func (e ServersEdges) OwnerOrErr() (*User, error) {
 	if e.Owner != nil {
 		return e.Owner, nil
 	} else if e.loadedTypes[0] {
-		return nil, &NotFoundError{label: users.Label}
+		return nil, &NotFoundError{label: user.Label}
 	}
 	return nil, &NotLoadedError{edge: "owner"}
 }
@@ -57,7 +57,7 @@ func (*Servers) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case servers.FieldName, servers.FieldIP:
 			values[i] = new(sql.NullString)
-		case servers.ForeignKeys[0]: // users_servers
+		case servers.ForeignKeys[0]: // user_servers
 			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -94,10 +94,10 @@ func (_m *Servers) assignValues(columns []string, values []any) error {
 			}
 		case servers.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for edge-field users_servers", value)
+				return fmt.Errorf("unexpected type %T for edge-field user_servers", value)
 			} else if value.Valid {
-				_m.users_servers = new(int)
-				*_m.users_servers = int(value.Int64)
+				_m.user_servers = new(int64)
+				*_m.user_servers = int64(value.Int64)
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -113,7 +113,7 @@ func (_m *Servers) Value(name string) (ent.Value, error) {
 }
 
 // QueryOwner queries the "owner" edge of the Servers entity.
-func (_m *Servers) QueryOwner() *UsersQuery {
+func (_m *Servers) QueryOwner() *UserQuery {
 	return NewServersClient(_m.config).QueryOwner(_m)
 }
 

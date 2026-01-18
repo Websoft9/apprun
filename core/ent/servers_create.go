@@ -4,11 +4,12 @@ package ent
 
 import (
 	"apprun/ent/servers"
-	"apprun/ent/users"
+	"apprun/ent/user"
 	"context"
 	"errors"
 	"fmt"
 
+	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 )
@@ -18,6 +19,7 @@ type ServersCreate struct {
 	config
 	mutation *ServersMutation
 	hooks    []Hook
+	conflict []sql.ConflictOption
 }
 
 // SetName sets the "name" field.
@@ -38,14 +40,14 @@ func (_c *ServersCreate) SetID(v int) *ServersCreate {
 	return _c
 }
 
-// SetOwnerID sets the "owner" edge to the Users entity by ID.
-func (_c *ServersCreate) SetOwnerID(id int) *ServersCreate {
+// SetOwnerID sets the "owner" edge to the User entity by ID.
+func (_c *ServersCreate) SetOwnerID(id int64) *ServersCreate {
 	_c.mutation.SetOwnerID(id)
 	return _c
 }
 
-// SetOwner sets the "owner" edge to the Users entity.
-func (_c *ServersCreate) SetOwner(v *Users) *ServersCreate {
+// SetOwner sets the "owner" edge to the User entity.
+func (_c *ServersCreate) SetOwner(v *User) *ServersCreate {
 	return _c.SetOwnerID(v.ID)
 }
 
@@ -125,6 +127,7 @@ func (_c *ServersCreate) createSpec() (*Servers, *sqlgraph.CreateSpec) {
 		_node = &Servers{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(servers.Table, sqlgraph.NewFieldSpec(servers.FieldID, field.TypeInt))
 	)
+	_spec.OnConflict = _c.conflict
 	if id, ok := _c.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = id
@@ -145,16 +148,198 @@ func (_c *ServersCreate) createSpec() (*Servers, *sqlgraph.CreateSpec) {
 			Columns: []string{servers.OwnerColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(users.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt64),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.users_servers = &nodes[0]
+		_node.user_servers = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
+}
+
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.Servers.Create().
+//		SetName(v).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.ServersUpsert) {
+//			SetName(v+v).
+//		}).
+//		Exec(ctx)
+func (_c *ServersCreate) OnConflict(opts ...sql.ConflictOption) *ServersUpsertOne {
+	_c.conflict = opts
+	return &ServersUpsertOne{
+		create: _c,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.Servers.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (_c *ServersCreate) OnConflictColumns(columns ...string) *ServersUpsertOne {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
+	return &ServersUpsertOne{
+		create: _c,
+	}
+}
+
+type (
+	// ServersUpsertOne is the builder for "upsert"-ing
+	//  one Servers node.
+	ServersUpsertOne struct {
+		create *ServersCreate
+	}
+
+	// ServersUpsert is the "OnConflict" setter.
+	ServersUpsert struct {
+		*sql.UpdateSet
+	}
+)
+
+// SetName sets the "name" field.
+func (u *ServersUpsert) SetName(v string) *ServersUpsert {
+	u.Set(servers.FieldName, v)
+	return u
+}
+
+// UpdateName sets the "name" field to the value that was provided on create.
+func (u *ServersUpsert) UpdateName() *ServersUpsert {
+	u.SetExcluded(servers.FieldName)
+	return u
+}
+
+// SetIP sets the "ip" field.
+func (u *ServersUpsert) SetIP(v string) *ServersUpsert {
+	u.Set(servers.FieldIP, v)
+	return u
+}
+
+// UpdateIP sets the "ip" field to the value that was provided on create.
+func (u *ServersUpsert) UpdateIP() *ServersUpsert {
+	u.SetExcluded(servers.FieldIP)
+	return u
+}
+
+// UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
+// Using this option is equivalent to using:
+//
+//	client.Servers.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(servers.FieldID)
+//			}),
+//		).
+//		Exec(ctx)
+func (u *ServersUpsertOne) UpdateNewValues() *ServersUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		if _, exists := u.create.mutation.ID(); exists {
+			s.SetIgnore(servers.FieldID)
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.Servers.Create().
+//	    OnConflict(sql.ResolveWithIgnore()).
+//	    Exec(ctx)
+func (u *ServersUpsertOne) Ignore() *ServersUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *ServersUpsertOne) DoNothing() *ServersUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the ServersCreate.OnConflict
+// documentation for more info.
+func (u *ServersUpsertOne) Update(set func(*ServersUpsert)) *ServersUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&ServersUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetName sets the "name" field.
+func (u *ServersUpsertOne) SetName(v string) *ServersUpsertOne {
+	return u.Update(func(s *ServersUpsert) {
+		s.SetName(v)
+	})
+}
+
+// UpdateName sets the "name" field to the value that was provided on create.
+func (u *ServersUpsertOne) UpdateName() *ServersUpsertOne {
+	return u.Update(func(s *ServersUpsert) {
+		s.UpdateName()
+	})
+}
+
+// SetIP sets the "ip" field.
+func (u *ServersUpsertOne) SetIP(v string) *ServersUpsertOne {
+	return u.Update(func(s *ServersUpsert) {
+		s.SetIP(v)
+	})
+}
+
+// UpdateIP sets the "ip" field to the value that was provided on create.
+func (u *ServersUpsertOne) UpdateIP() *ServersUpsertOne {
+	return u.Update(func(s *ServersUpsert) {
+		s.UpdateIP()
+	})
+}
+
+// Exec executes the query.
+func (u *ServersUpsertOne) Exec(ctx context.Context) error {
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for ServersCreate.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *ServersUpsertOne) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// Exec executes the UPSERT query and returns the inserted/updated ID.
+func (u *ServersUpsertOne) ID(ctx context.Context) (id int, err error) {
+	node, err := u.create.Save(ctx)
+	if err != nil {
+		return id, err
+	}
+	return node.ID, nil
+}
+
+// IDX is like ID, but panics if an error occurs.
+func (u *ServersUpsertOne) IDX(ctx context.Context) int {
+	id, err := u.ID(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return id
 }
 
 // ServersCreateBulk is the builder for creating many Servers entities in bulk.
@@ -162,6 +347,7 @@ type ServersCreateBulk struct {
 	config
 	err      error
 	builders []*ServersCreate
+	conflict []sql.ConflictOption
 }
 
 // Save creates the Servers entities in the database.
@@ -190,6 +376,7 @@ func (_c *ServersCreateBulk) Save(ctx context.Context) ([]*Servers, error) {
 					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
+					spec.OnConflict = _c.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
 					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
@@ -240,6 +427,148 @@ func (_c *ServersCreateBulk) Exec(ctx context.Context) error {
 // ExecX is like Exec, but panics if an error occurs.
 func (_c *ServersCreateBulk) ExecX(ctx context.Context) {
 	if err := _c.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.Servers.CreateBulk(builders...).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.ServersUpsert) {
+//			SetName(v+v).
+//		}).
+//		Exec(ctx)
+func (_c *ServersCreateBulk) OnConflict(opts ...sql.ConflictOption) *ServersUpsertBulk {
+	_c.conflict = opts
+	return &ServersUpsertBulk{
+		create: _c,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.Servers.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (_c *ServersCreateBulk) OnConflictColumns(columns ...string) *ServersUpsertBulk {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
+	return &ServersUpsertBulk{
+		create: _c,
+	}
+}
+
+// ServersUpsertBulk is the builder for "upsert"-ing
+// a bulk of Servers nodes.
+type ServersUpsertBulk struct {
+	create *ServersCreateBulk
+}
+
+// UpdateNewValues updates the mutable fields using the new values that
+// were set on create. Using this option is equivalent to using:
+//
+//	client.Servers.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(servers.FieldID)
+//			}),
+//		).
+//		Exec(ctx)
+func (u *ServersUpsertBulk) UpdateNewValues() *ServersUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		for _, b := range u.create.builders {
+			if _, exists := b.mutation.ID(); exists {
+				s.SetIgnore(servers.FieldID)
+			}
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.Servers.Create().
+//		OnConflict(sql.ResolveWithIgnore()).
+//		Exec(ctx)
+func (u *ServersUpsertBulk) Ignore() *ServersUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *ServersUpsertBulk) DoNothing() *ServersUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the ServersCreateBulk.OnConflict
+// documentation for more info.
+func (u *ServersUpsertBulk) Update(set func(*ServersUpsert)) *ServersUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&ServersUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetName sets the "name" field.
+func (u *ServersUpsertBulk) SetName(v string) *ServersUpsertBulk {
+	return u.Update(func(s *ServersUpsert) {
+		s.SetName(v)
+	})
+}
+
+// UpdateName sets the "name" field to the value that was provided on create.
+func (u *ServersUpsertBulk) UpdateName() *ServersUpsertBulk {
+	return u.Update(func(s *ServersUpsert) {
+		s.UpdateName()
+	})
+}
+
+// SetIP sets the "ip" field.
+func (u *ServersUpsertBulk) SetIP(v string) *ServersUpsertBulk {
+	return u.Update(func(s *ServersUpsert) {
+		s.SetIP(v)
+	})
+}
+
+// UpdateIP sets the "ip" field to the value that was provided on create.
+func (u *ServersUpsertBulk) UpdateIP() *ServersUpsertBulk {
+	return u.Update(func(s *ServersUpsert) {
+		s.UpdateIP()
+	})
+}
+
+// Exec executes the query.
+func (u *ServersUpsertBulk) Exec(ctx context.Context) error {
+	if u.create.err != nil {
+		return u.create.err
+	}
+	for i, b := range u.create.builders {
+		if len(b.conflict) != 0 {
+			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the ServersCreateBulk instead", i)
+		}
+	}
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for ServersCreateBulk.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *ServersUpsertBulk) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

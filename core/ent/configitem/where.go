@@ -69,6 +69,11 @@ func IsDynamic(v bool) predicate.Configitem {
 	return predicate.Configitem(sql.FieldEQ(FieldIsDynamic, v))
 }
 
+// ProjectID applies equality check predicate on the "project_id" field. It's identical to ProjectIDEQ.
+func ProjectID(v int64) predicate.Configitem {
+	return predicate.Configitem(sql.FieldEQ(FieldProjectID, v))
+}
+
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
 func CreatedAt(v time.Time) predicate.Configitem {
 	return predicate.Configitem(sql.FieldEQ(FieldCreatedAt, v))
@@ -217,6 +222,56 @@ func IsDynamicEQ(v bool) predicate.Configitem {
 // IsDynamicNEQ applies the NEQ predicate on the "is_dynamic" field.
 func IsDynamicNEQ(v bool) predicate.Configitem {
 	return predicate.Configitem(sql.FieldNEQ(FieldIsDynamic, v))
+}
+
+// ProjectIDEQ applies the EQ predicate on the "project_id" field.
+func ProjectIDEQ(v int64) predicate.Configitem {
+	return predicate.Configitem(sql.FieldEQ(FieldProjectID, v))
+}
+
+// ProjectIDNEQ applies the NEQ predicate on the "project_id" field.
+func ProjectIDNEQ(v int64) predicate.Configitem {
+	return predicate.Configitem(sql.FieldNEQ(FieldProjectID, v))
+}
+
+// ProjectIDIn applies the In predicate on the "project_id" field.
+func ProjectIDIn(vs ...int64) predicate.Configitem {
+	return predicate.Configitem(sql.FieldIn(FieldProjectID, vs...))
+}
+
+// ProjectIDNotIn applies the NotIn predicate on the "project_id" field.
+func ProjectIDNotIn(vs ...int64) predicate.Configitem {
+	return predicate.Configitem(sql.FieldNotIn(FieldProjectID, vs...))
+}
+
+// ProjectIDGT applies the GT predicate on the "project_id" field.
+func ProjectIDGT(v int64) predicate.Configitem {
+	return predicate.Configitem(sql.FieldGT(FieldProjectID, v))
+}
+
+// ProjectIDGTE applies the GTE predicate on the "project_id" field.
+func ProjectIDGTE(v int64) predicate.Configitem {
+	return predicate.Configitem(sql.FieldGTE(FieldProjectID, v))
+}
+
+// ProjectIDLT applies the LT predicate on the "project_id" field.
+func ProjectIDLT(v int64) predicate.Configitem {
+	return predicate.Configitem(sql.FieldLT(FieldProjectID, v))
+}
+
+// ProjectIDLTE applies the LTE predicate on the "project_id" field.
+func ProjectIDLTE(v int64) predicate.Configitem {
+	return predicate.Configitem(sql.FieldLTE(FieldProjectID, v))
+}
+
+// ProjectIDIsNil applies the IsNil predicate on the "project_id" field.
+func ProjectIDIsNil() predicate.Configitem {
+	return predicate.Configitem(sql.FieldIsNull(FieldProjectID))
+}
+
+// ProjectIDNotNil applies the NotNil predicate on the "project_id" field.
+func ProjectIDNotNil() predicate.Configitem {
+	return predicate.Configitem(sql.FieldNotNull(FieldProjectID))
 }
 
 // StatusEQ applies the EQ predicate on the "status" field.

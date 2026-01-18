@@ -1,5 +1,8 @@
 # Translation file
-# Last updated: 2026-01-07 11:31:42
+# Last updated: 2026-01-16 16:24:07
+
+[auth]
+  other = ""
 
 [common]
   other = ""

@@ -27,6 +27,7 @@ Standards (Technical Guidelines)
 |-----------|---------|-------|-------|
 | **[analysis/](./analysis/)** | Product discovery & research | Business requirements gathering | Product Manager |
 | **[architecture/](./architecture/)** | System design & tech decisions | Architecture diagrams, ADRs | Architect |
+| **[epics/](./epics/)** | **Epic definitions (Single Source of Truth)** | Business-level feature breakdown | Product Manager + Architect |
 | **[standards/](./standards/)** | Technical specifications | Coding rules, API design, testing | Architect + Dev Lead |
 | **[sprint-artifacts/](./sprint-artifacts/)** | Sprint planning & tracking | Stories, tasks, retrospectives | Scrum Master + Team |
 | **[poc/](./poc/)** | Proof of concepts | Validation & experiments | Tech Lead |
@@ -36,9 +37,13 @@ Standards (Technical Guidelines)
 ## 🔄 Workflow Relationship
 
 ### **1. PRD → Epics → Stories**
-- **PRD** defines "what to build" (product vision)
-- **Epics** break down PRD into business features
-- **Stories** decompose Epics into implementable tasks
+- **[PRD](./prd.md)** defines "what to build" (product vision and functional requirements)
+- **[Epics](./epics/)** break down PRD into user-value-focused business features
+  - 📌 **Single Source of Truth**: Each epic has its own file in `epics/` folder
+  - Example: `epics/1-infrastructure-epic.md`, `epics/5-auth-epic.md`
+- **[Stories](./sprint-artifacts/)** decompose Epics into implementable tasks
+  - Located in `sprint-artifacts/sprint-N/` folders
+  - Example: `sprint-artifacts/sprint-0/1-1-docker-environment.md`
 
 ### **2. Stories → Sprints**
 - **Sprints** group Stories into 2-week iterations

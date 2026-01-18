@@ -5,7 +5,7 @@ package ent
 import (
 	"apprun/ent/predicate"
 	"apprun/ent/servers"
-	"apprun/ent/users"
+	"apprun/ent/user"
 	"context"
 	"fmt"
 	"math"
@@ -23,7 +23,7 @@ type ServersQuery struct {
 	order      []servers.OrderOption
 	inters     []Interceptor
 	predicates []predicate.Servers
-	withOwner  *UsersQuery
+	withOwner  *UserQuery
 	withFKs    bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -62,8 +62,8 @@ func (_q *ServersQuery) Order(o ...servers.OrderOption) *ServersQuery {
 }
 
 // QueryOwner chains the current query on the "owner" edge.
-func (_q *ServersQuery) QueryOwner() *UsersQuery {
-	query := (&UsersClient{config: _q.config}).Query()
+func (_q *ServersQuery) QueryOwner() *UserQuery {
+	query := (&UserClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -74,7 +74,7 @@ func (_q *ServersQuery) QueryOwner() *UsersQuery {
 		}
 		step := sqlgraph.NewStep(
 			sqlgraph.From(servers.Table, servers.FieldID, selector),
-			sqlgraph.To(users.Table, users.FieldID),
+			sqlgraph.To(user.Table, user.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, servers.OwnerTable, servers.OwnerColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
@@ -284,8 +284,8 @@ func (_q *ServersQuery) Clone() *ServersQuery {
 
 // WithOwner tells the query-builder to eager-load the nodes that are connected to
 // the "owner" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *ServersQuery) WithOwner(opts ...func(*UsersQuery)) *ServersQuery {
-	query := (&UsersClient{config: _q.config}).Query()
+func (_q *ServersQuery) WithOwner(opts ...func(*UserQuery)) *ServersQuery {
+	query := (&UserClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -402,21 +402,21 @@ func (_q *ServersQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Serv
 	}
 	if query := _q.withOwner; query != nil {
 		if err := _q.loadOwner(ctx, query, nodes, nil,
-			func(n *Servers, e *Users) { n.Edges.Owner = e }); err != nil {
+			func(n *Servers, e *User) { n.Edges.Owner = e }); err != nil {
 			return nil, err
 		}
 	}
 	return nodes, nil
 }
 
-func (_q *ServersQuery) loadOwner(ctx context.Context, query *UsersQuery, nodes []*Servers, init func(*Servers), assign func(*Servers, *Users)) error {
-	ids := make([]int, 0, len(nodes))
-	nodeids := make(map[int][]*Servers)
+func (_q *ServersQuery) loadOwner(ctx context.Context, query *UserQuery, nodes []*Servers, init func(*Servers), assign func(*Servers, *User)) error {
+	ids := make([]int64, 0, len(nodes))
+	nodeids := make(map[int64][]*Servers)
 	for i := range nodes {
-		if nodes[i].users_servers == nil {
+		if nodes[i].user_servers == nil {
 			continue
 		}
-		fk := *nodes[i].users_servers
+		fk := *nodes[i].user_servers
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -425,7 +425,7 @@ func (_q *ServersQuery) loadOwner(ctx context.Context, query *UsersQuery, nodes 
 	if len(ids) == 0 {
 		return nil
 	}
-	query.Where(users.IDIn(ids...))
+	query.Where(user.IDIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
@@ -433,7 +433,7 @@ func (_q *ServersQuery) loadOwner(ctx context.Context, query *UsersQuery, nodes 
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "users_servers" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "user_servers" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)

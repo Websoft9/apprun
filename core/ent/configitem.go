@@ -23,6 +23,8 @@ type Configitem struct {
 	Value string `json:"value,omitempty"`
 	// 是否为动态配置（db:true）
 	IsDynamic bool `json:"is_dynamic,omitempty"`
+	// 所属项目ID，用于多租户隔离（0或null表示全局配置）
+	ProjectID int64 `json:"project_id,omitempty"`
 	// 配置项状态，支持软删除
 	Status configitem.Status `json:"status,omitempty"`
 	// 创建时间
@@ -39,7 +41,7 @@ func (*Configitem) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case configitem.FieldIsDynamic:
 			values[i] = new(sql.NullBool)
-		case configitem.FieldID:
+		case configitem.FieldID, configitem.FieldProjectID:
 			values[i] = new(sql.NullInt64)
 		case configitem.FieldKey, configitem.FieldValue, configitem.FieldStatus:
 			values[i] = new(sql.NullString)
@@ -83,6 +85,12 @@ func (_m *Configitem) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field is_dynamic", values[i])
 			} else if value.Valid {
 				_m.IsDynamic = value.Bool
+			}
+		case configitem.FieldProjectID:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field project_id", values[i])
+			} else if value.Valid {
+				_m.ProjectID = value.Int64
 			}
 		case configitem.FieldStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -146,6 +154,9 @@ func (_m *Configitem) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("is_dynamic=")
 	builder.WriteString(fmt.Sprintf("%v", _m.IsDynamic))
+	builder.WriteString(", ")
+	builder.WriteString("project_id=")
+	builder.WriteString(fmt.Sprintf("%v", _m.ProjectID))
 	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Status))

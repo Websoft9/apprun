@@ -67,6 +67,23 @@ core/
 - Go 1.24+ 
 - Docker & Docker Compose
 - Make (可选)
+- **Atlas CLI** (必需) - 用于数据库迁移
+
+#### 安装 Atlas CLI
+
+```bash
+# Linux / macOS
+curl -sSf https://atlasgo.sh | sh
+
+# 或使用 Homebrew (macOS)
+brew install ariga/tap/atlas
+
+# 验证安装
+atlas version
+```
+
+> **重要**: apprun 的数据库迁移系统基于 Atlas 工具链，需要安装 atlas CLI 二进制文件。
+> 详见：https://atlasgo.io/getting-started
 
 ### 1. 克隆项目
 

@@ -56,23 +56,6 @@ const (
 	LevelError Level = "error"
 )
 
-// Config holds logger configuration
-// Follows internal/config/types.go standards for consistency
-type Config struct {
-	Level  Level        `yaml:"level" default:"info" db:"true" validate:"oneof=debug info warn error"`
-	Output OutputConfig `yaml:"output"`
-}
-
-// OutputConfig defines output targets
-type OutputConfig struct {
-	// Targets specifies where logs should be written
-	// Supported formats:
-	// - "stdout": standard output
-	// - "stderr": standard error
-	// - "file:/path/to/file.log": file path
-	Targets []string `yaml:"targets" default:"stdout" db:"true" validate:"min=1,dive,oneof=stdout stderr file"`
-}
-
 // Global logger instance
 var defaultLogger Logger = &NopLogger{}
 

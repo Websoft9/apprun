@@ -206,7 +206,7 @@ func HasOwner() predicate.Servers {
 }
 
 // HasOwnerWith applies the HasEdge predicate on the "owner" edge with a given conditions (other predicates).
-func HasOwnerWith(preds ...predicate.Users) predicate.Servers {
+func HasOwnerWith(preds ...predicate.User) predicate.Servers {
 	return predicate.Servers(func(s *sql.Selector) {
 		step := newOwnerStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {

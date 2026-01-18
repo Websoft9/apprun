@@ -1,113 +1,172 @@
 # Contributing to apprun
 
-Thank you for your interest in contributing to **apprun**! This project follows the **BMad Method** for AI-assisted development.
+**BMad Method**: AI-assisted development with specialized agents.
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Quick Start
 
 ### Prerequisites
-- Go 1.21+
-- Git
+- Go 1.25.5+
+- golangci-lint v2.7.2+
+- PostgreSQL 14+
+- Redis 7+ (optional, for caching)
+- Govulncheck 
+- [Atlas 1.0+](https://atlasgo.io/getting-started)
+- Docker & Docker Compose
 - GitHub account
-- **AI Coding Agent** (GitHub Copilot, Cursor, or similar)
+- AI Coding Agent (GitHub Copilot, Cursor, or similar)
 
----
-
-## 📋 BMad Method Workflow
-
-We use the **BMad Method** for AI-assisted development. Follow these steps:
-
-### 1. **Understand the Documentation**
+### Setup
 ```bash
-# Read project standards
-docs/standards/README.md      # Technical standards index
-docs/standards/coding-standards.md
-docs/standards/api-design.md
-```
+# Clone repository
+git clone https://github.com/Websoft9/apprun.git
+cd apprun
 
-### 2. **Find a Task**
-- Check [Sprint Artifacts](./docs/sprint-artifacts/) for current sprint stories
-- Look for issues tagged `good-first-issue` or `help-wanted`
-- Review [Sprint-0 Stories](./docs/sprint-artifacts/sprint-0/stories.md)
-
-### 3. **AI Coding with BMad Method**
-
-#### **Step 1: Load Context into AI Agent**
-```bash
-# Share relevant documentation with your AI agent
-@workspace /docs/standards/coding-standards.md
-@workspace /docs/standards/api-design.md
-@workspace /docs/sprint-artifacts/sprint-0/stories.md
-```
-
-#### **Step 2: Use AI Agent for Implementation**
-- **Ask specific questions**: "How should I implement response package according to standards?"
-- **Request code generation**: "Generate handler following api-design.md Section 4"
-- **Verify compliance**: "Does this code follow coding-standards.md Section 10?"
-
-#### **Step 3: Iterate with AI Guidance**
-- AI reviews code against project standards
-- AI suggests improvements based on BMad documentation
-- AI helps write tests following testing-standards.md
-
-### 4. **Development Process**
-```bash
-# Create feature branch
-git checkout -b feature/story-1-response-package
-
-# Implement with AI assistance
-# - Follow docs/standards/coding-standards.md
-# - Reference story acceptance criteria
-# - Write tests (coverage > 80%)
+# Start development environment
+make dev-start
 
 # Run tests
 make test
-
-# Run linter
-make lint
-
-# Commit with conventional format
-git commit -m "feat(response): implement unified response package
-
-- Add Success/Error/List functions
-- Follow api-design.md response format
-- Unit tests with 90% coverage
-
-Ref: Sprint-0 Story 1"
 ```
 
-### 5. **Submit Pull Request**
-- Title: `[Story-X] Brief description`
-- Description: Reference story, include checklist
+---
+
+## 📋 Development Workflow
+
+### 1. Find a Task
+- Check [`docs/sprint-artifacts/sprint-status.yaml`](docs/sprint-artifacts/sprint-status.yaml)
+- Look for issues tagged `good-first-issue` or `help-wanted`
+- Generate story index: `make story-index`
+
+### 2. Create Branch
+```bash
+git checkout -b feature/story-XX-description
+```
+
+### 3. AI-Assisted Development
+
+**Load context into your AI agent**:
+```bash
+@workspace /docs/standards/coding-standards.md
+@workspace /docs/standards/api-design.md
+```
+
+**Ask AI**:
+- "Implement X following coding-standards.md"
+- "Does this code follow api-design.md Section 3?"
+- "Generate tests with >80% coverage"
+
+### 4. Development Commands
+```bash
+make build-fast    # Quick build
+make test          # Run tests
+make lint          # Run linters
+make check         # Lint + test + security
+```
+
+### 5. Commit
+```bash
+git commit -m "feat(module): brief description
+
+- Detail 1
+- Detail 2
+
+Ref: Sprint-X Story-XX"
+```
+
+**Commit format**: See [devops-process.md](./docs/standards/devops-process.md#22-commit-message-规范)
+
+### 6. Submit Pull Request
+- Title: `[Story-XX] Brief description`
+- Reference story in description
 - Link to relevant documentation
-- Request AI-assisted code review
+- Pass CI checks
 
 ---
 
-## 🤖 AI Coding Best Practices
+## 🤖 BMad Method Essentials
 
-1. **Always load project standards first** - AI agents perform better with context
-2. **Reference specific sections** - Point AI to exact standards (e.g., "Section 10.4")
-3. **Validate with AI** - Ask AI to check compliance before committing
-4. **Use AI for test generation** - AI can generate comprehensive test cases
+### BMad Agents
+- **architect**: System design decisions
+- **dev**: Code implementation
+- **tea**: Testing & automation
+- **pm**: Requirements & planning
+
+**Activate**: In GitHub Copilot Chat, select agent from mode dropdown.
+
+### Key Principles
+- **Documentation First**: Always reference [`docs/standards`](docs/standards ) before coding
+- **AI-Assisted**: Load project standards into AI agent
+- **Test-Driven**: Coverage > 80%
+- **Review Checklist**: Use [Code Review Checklist](./docs/standards/devops-process.md#33-code-review-清单)
+
+---
+
+## 📚 Essential Documentation
+
+| Document | Purpose |
+|----------|---------|
+| [coding-standards.md](./docs/standards/coding-standards.md) | Code style & patterns |
+| [api-design.md](./docs/standards/api-design.md) | API decisions & formats |
+| [devops-process.md](./docs/standards/devops-process.md) | Commit format & reviews |
+| [Story 05a](./docs/sprint-artifacts/sprint-0/story-05a-database-migration.md) | Database migration details |
+| [sprint-artifacts/](./docs/sprint-artifacts/) | Current sprint stories |
 
 ---
 
-## 📚 Key Documentation
+## 🛠️ Common Tasks
 
-- [Development Process](./docs/standards/devops-process.md)
-- [Code Review Checklist](./docs/standards/devops-process.md#33-code-review-清单)
-- [Commit Message Format](./docs/standards/devops-process.md#22-commit-message-规范)
+### Add New API Endpoint
+1. Define in Ent schema (`core/ent/schema/`)
+2. Generate migration: `make migrate-diff NAME=add_xxx`
+3. Apply migration: `make migrate-apply`
+4. Implement handler with Swagger annotations
+5. Run `make swagger` to update docs
+6. Test and commit
+
+### Database Schema Changes
+
+**Prerequisites**:
+```bash
+# Ensure Docker and database are running
+docker ps | grep postgres
+```
+
+**Workflow**:
+```bash
+# 1. Modify Ent schema
+vim core/ent/schema/user.go
+# Example: field.String("phone").Optional()
+
+# 2. Generate migration
+make migrate-diff NAME=add_user_phone
+
+# 3. Review generated SQL
+cat core/migrations/00X_add_user_phone.sql
+
+# 4. Apply migration
+make migrate-apply
+
+# 5. Verify status
+make migrate-status
+```
+
+**Common scenarios**:
+- Add field: Modify schema → `migrate-diff` → `migrate-apply`
+- Create table: New schema file → `migrate-diff` → `migrate-apply`
+- Rollback: Check Story 05a for rollback procedures
 
 ---
 
-## 🙋 Need Help?
+## 🙋 Help & Support
 
-- Open a [Discussion](https://github.com/Websoft9/apprun/discussions)
-- Join our community chat
-- Tag maintainers in issues
+- **Issues**: Tag `help-wanted` or `good-first-issue`
+- **Discussions**: [GitHub Discussions](https://github.com/Websoft9/apprun/discussions)
+- **Documentation**: Start with [`docs/standards/README.md`](docs/standards/README.md)
 
 ---
+
+**For project owners/maintainers**: See [OWNER.md](./OWNER.md)
 
 **Thank you for contributing!** 🎉

@@ -34,16 +34,17 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 }
 
 // GetConfig 获取配置值（查询单个配置项）
-// @Summary      Get configuration item
-// @Description  Query a single configuration item by key, returns value, source and dynamic flag
-// @Tags         config
-// @Accept       json
-// @Produce      json
-// @Param        key  query  string  true  "Configuration key, e.g. app.name"
-// @Success      200  {object}  GetConfigResponse  "Configuration retrieved successfully"
-// @Failure      400  {object}  response.Response  "Missing key parameter"
-// @Failure      404  {object}  response.Response  "Configuration not found"
-// @Router       /config [get]
+//
+//	@Summary		Get configuration item
+//	@Description	Query a single configuration item by key, returns value, source and dynamic flag
+//	@Tags			config
+//	@Accept			json
+//	@Produce		json
+//	@Param			key	query		string				true	"Configuration key, e.g. app.name"
+//	@Success		200	{object}	GetConfigResponse	"Configuration retrieved successfully"
+//	@Failure		400	{object}	response.Response	"Missing key parameter"
+//	@Failure		404	{object}	response.Response	"Configuration not found"
+//	@Router			/api/config [get]
 func (h *Handler) GetConfig(w http.ResponseWriter, r *http.Request) {
 	key := r.URL.Query().Get("key")
 	if key == "" {
@@ -72,17 +73,18 @@ func (h *Handler) GetConfig(w http.ResponseWriter, r *http.Request) {
 }
 
 // UpdateConfig 更新动态配置项
-// @Summary      Update configuration item
-// @Description  Update a single dynamic configuration item (only for db:true configs).
-// @Description  Static configurations (db:false) cannot be updated via API.
-// @Description  Changes are persisted to database and take effect immediately.
-// @Tags         config
-// @Accept       json
-// @Produce      json
-// @Param        request  body  UpdateConfigRequest  true  "Configuration update request"  example({"key":"poc.enabled","value":"true"})
-// @Success      200  {object}  UpdateConfigResponse  "Configuration updated successfully"
-// @Failure      400  {object}  response.Response     "Invalid request or config not allowed to store in database"
-// @Router       /config [put]
+//
+//	@Summary		Update configuration item
+//	@Description	Update a single dynamic configuration item (only for db:true configs).
+//	@Description	Static configurations (db:false) cannot be updated via API.
+//	@Description	Changes are persisted to database and take effect immediately.
+//	@Tags			config
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		UpdateConfigRequest		true	"Configuration update request"	example({"key":"poc.enabled","value":"true"})
+//	@Success		200		{object}	UpdateConfigResponse	"Configuration updated successfully"
+//	@Failure		400		{object}	response.Response		"Invalid request or config not allowed to store in database"
+//	@Router			/api/config [put]
 func (h *Handler) UpdateConfig(w http.ResponseWriter, r *http.Request) {
 	var req UpdateConfigRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -112,16 +114,17 @@ func (h *Handler) UpdateConfig(w http.ResponseWriter, r *http.Request) {
 }
 
 // ListConfigs 列出所有动态配置项
-// @Summary      List dynamic configurations
-// @Description  Returns all dynamic configuration items stored in database.
-// @Description  This does not include static configurations from files.
-// @Description  Use this to see which configs have been overridden dynamically.
-// @Tags         config
-// @Accept       json
-// @Produce      json
-// @Success      200  {object}  ListConfigsResponse  "Configuration list"
-// @Failure      500  {object}  response.Response    "Internal server error"
-// @Router       /config/list [get]
+//
+//	@Summary		List dynamic configurations
+//	@Description	Returns all dynamic configuration items stored in database.
+//	@Description	This does not include static configurations from files.
+//	@Description	Use this to see which configs have been overridden dynamically.
+//	@Tags			config
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	ListConfigsResponse	"Configuration list"
+//	@Failure		500	{object}	response.Response	"Internal server error"
+//	@Router			/api/config/list [get]
 func (h *Handler) ListConfigs(w http.ResponseWriter, r *http.Request) {
 	configs, err := h.service.ListDynamicConfigs(r.Context())
 	if err != nil {
@@ -138,17 +141,18 @@ func (h *Handler) ListConfigs(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeleteConfig 删除动态配置项
-// @Summary      Delete configuration item
-// @Description  Delete a dynamic configuration item from database (config will fallback to file or default value).
-// @Description  Only dynamic configurations (db:true) can be deleted.
-// @Description  After deletion, the config will use the value from config files or built-in defaults.
-// @Tags         config
-// @Accept       json
-// @Produce      json
-// @Param        key  query  string  true  "Configuration key"  example(poc.enabled)
-// @Success      200  {object}  map[string]interface{}  "Deletion successful"
-// @Failure      400  {object}  response.Response       "Missing key parameter or deletion failed"
-// @Router       /config [delete]
+//
+//	@Summary		Delete configuration item
+//	@Description	Delete a dynamic configuration item from database (config will fallback to file or default value).
+//	@Description	Only dynamic configurations (db:true) can be deleted.
+//	@Description	After deletion, the config will use the value from config files or built-in defaults.
+//	@Tags			config
+//	@Accept			json
+//	@Produce		json
+//	@Param			key	query		string					true	"Configuration key"	example(poc.enabled)
+//	@Success		200	{object}	map[string]interface{}	"Deletion successful"
+//	@Failure		400	{object}	response.Response		"Missing key parameter or deletion failed"
+//	@Router			/api/config [delete]
 func (h *Handler) DeleteConfig(w http.ResponseWriter, r *http.Request) {
 	key := r.URL.Query().Get("key")
 	if key == "" {
@@ -167,15 +171,16 @@ func (h *Handler) DeleteConfig(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetAllowedKeys 获取所有允许动态配置的键（db:true）
-// @Summary      Get allowed configuration keys
-// @Description  Returns all configuration keys marked as db:true (can be modified dynamically via API).
-// @Description  Use this endpoint to discover which configs can be updated through the API.
-// @Description  Configs not in this list cannot be modified dynamically.
-// @Tags         config
-// @Accept       json
-// @Produce      json
-// @Success      200  {object}  map[string]interface{}  "List of allowed configuration keys"
-// @Router       /config/allowed [get]
+//
+//	@Summary		Get allowed configuration keys
+//	@Description	Returns all configuration keys marked as db:true (can be modified dynamically via API).
+//	@Description	Use this endpoint to discover which configs can be updated through the API.
+//	@Description	Configs not in this list cannot be modified dynamically.
+//	@Tags			config
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	map[string]interface{}	"List of allowed configuration keys"
+//	@Router			/api/config/allowed [get]
 func (h *Handler) GetAllowedKeys(w http.ResponseWriter, r *http.Request) {
 	keys := h.service.GetAllowedDynamicKeys()
 

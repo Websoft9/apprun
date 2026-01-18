@@ -1,0 +1,253 @@
+package jwt
+
+import (
+	"errors"
+	"sync"
+	"time"
+
+	pkgconfig "apprun/pkg/config"
+	pkgjwt "apprun/pkg/jwt"
+
+	"github.com/golang-jwt/jwt/v5"
+)
+
+var (
+	// ErrInvalidToken indicates the token is invalid
+	ErrInvalidToken = errors.New("invalid token")
+	// ErrTokenExpired indicates the token has expired
+	ErrTokenExpired = errors.New("token has expired")
+	// ErrMissingSecret indicates JWT secret is not configured
+	ErrMissingSecret = errors.New("JWT secret is not configured")
+	// ErrInvalidTokenType indicates the token type is incorrect
+	ErrInvalidTokenType = errors.New("invalid token type")
+)
+
+// TokenService handles JWT token operations with configurable backend.
+type TokenService struct {
+	config pkgconfig.Provider
+}
+
+// NewTokenService creates a new token service with the given config provider.
+func NewTokenService(cfg pkgconfig.Provider) *TokenService {
+	return &TokenService{config: cfg}
+}
+
+// GenerateToken generates a JWT token with user claims.
+// Returns the token string, expiration time, and any error.
+func (s *TokenService) GenerateToken(userID int64, userClaims map[string]interface{}) (string, time.Time, error) {
+	secret := s.config.GetString("jwt.secret")
+	if secret == "" {
+		return "", time.Time{}, ErrMissingSecret
+	}
+
+	expiresIn := s.config.GetDuration("jwt.access_token_expiration")
+	if expiresIn == 0 {
+		expiresIn = pkgjwt.DefaultExpiry // Fallback to 24h
+	}
+	expiresAt := time.Now().Add(expiresIn)
+
+	// Type assertions are intentionally unchecked - empty strings on failure
+	//nolint:errcheck // Type assertion failure is acceptable, defaults to empty string
+	username, _ := userClaims["username"].(string)
+	//nolint:errcheck // Type assertion failure is acceptable, defaults to empty string
+	email, _ := userClaims["email"].(string)
+
+	claims := CustomClaims{
+		UserID:    userID,
+		Username:  username,
+		Email:     email,
+		TokenType: "access",
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(expiresAt),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			Issuer:    s.config.GetString("jwt.issuer"),
+			Audience:  jwt.ClaimStrings{s.config.GetString("jwt.audience")},
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString([]byte(secret))
+	return tokenString, expiresAt, err
+}
+
+// ValidateToken validates a JWT token and returns the custom claims.
+func (s *TokenService) ValidateToken(tokenString string) (*CustomClaims, error) {
+	secret := s.config.GetString("jwt.secret")
+	if secret == "" {
+		return nil, ErrMissingSecret
+	}
+
+	token, err := jwt.ParseWithClaims(tokenString, &CustomClaims{}, func(t *jwt.Token) (interface{}, error) {
+		// Verify signing algorithm
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, ErrInvalidToken
+		}
+		return []byte(secret), nil
+	})
+
+	if err != nil {
+		if errors.Is(err, jwt.ErrTokenExpired) {
+			return nil, ErrTokenExpired
+		}
+		return nil, ErrInvalidToken
+	}
+
+	if !token.Valid {
+		return nil, ErrInvalidToken
+	}
+
+	claims, ok := token.Claims.(*CustomClaims)
+	if !ok {
+		return nil, ErrInvalidToken
+	}
+
+	return claims, nil
+}
+
+// GenerateTokenPair generates both access and refresh tokens for a user.
+// Returns accessToken, refreshToken, accessExpiresAt, error.
+func (s *TokenService) GenerateTokenPair(userID int64, userClaims map[string]interface{}) (string, string, time.Time, error) {
+	secret := s.config.GetString("jwt.secret")
+	if secret == "" {
+		return "", "", time.Time{}, ErrMissingSecret
+	}
+
+	// Generate Access Token (short-lived)
+	accessExpiration := s.config.GetDuration("jwt.access_token_expiration")
+	if accessExpiration == 0 {
+		accessExpiration = pkgjwt.DefaultExpiry // Fallback to 24h
+	}
+	accessExpiresAt := time.Now().Add(accessExpiration)
+
+	// Type assertions are intentionally unchecked - empty strings on failure
+	//nolint:errcheck // Type assertion failure is acceptable, defaults to empty string
+	username, _ := userClaims["username"].(string)
+	//nolint:errcheck // Type assertion failure is acceptable, defaults to empty string
+	email, _ := userClaims["email"].(string)
+
+	accessClaims := CustomClaims{
+		UserID:    userID,
+		Username:  username,
+		Email:     email,
+		TokenType: "access",
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(accessExpiresAt),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			Issuer:    s.config.GetString("jwt.issuer"),
+			Audience:  jwt.ClaimStrings{s.config.GetString("jwt.audience")},
+			ID:        pkgjwt.GenerateTokenID(),
+		},
+	}
+
+	accessTokenObj := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
+	accessToken, err := accessTokenObj.SignedString([]byte(secret))
+	if err != nil {
+		return "", "", time.Time{}, err
+	}
+
+	// Generate Refresh Token (long-lived)
+	refreshExpiration := s.config.GetDuration("jwt.refresh_token_expiration")
+	if refreshExpiration == 0 {
+		refreshExpiration = 168 * time.Hour // Fallback to 7 days
+	}
+	refreshExpiresAt := time.Now().Add(refreshExpiration)
+
+	// Type assertions are intentionally unchecked - empty strings on failure
+	//nolint:errcheck // Type assertion failure is acceptable, defaults to empty string
+	usernameRefresh, _ := userClaims["username"].(string)
+	//nolint:errcheck // Type assertion failure is acceptable, defaults to empty string
+	emailRefresh, _ := userClaims["email"].(string)
+
+	refreshClaims := CustomClaims{
+		UserID:    userID,
+		Username:  usernameRefresh,
+		Email:     emailRefresh,
+		TokenType: "refresh",
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(refreshExpiresAt),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			Issuer:    s.config.GetString("jwt.issuer"),
+			Audience:  jwt.ClaimStrings{s.config.GetString("jwt.audience")},
+			ID:        pkgjwt.GenerateTokenID(),
+		},
+	}
+
+	refreshTokenObj := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
+	refreshToken, err := refreshTokenObj.SignedString([]byte(secret))
+	if err != nil {
+		return "", "", time.Time{}, err
+	}
+
+	return accessToken, refreshToken, accessExpiresAt, nil
+}
+
+// ValidateRefreshToken validates a refresh token specifically.
+// Returns error if token is not a refresh token or validation fails.
+func (s *TokenService) ValidateRefreshToken(tokenString string) (*CustomClaims, error) {
+	claims, err := s.ValidateToken(tokenString)
+	if err != nil {
+		return nil, err
+	}
+
+	if claims.TokenType != "refresh" {
+		return nil, ErrInvalidTokenType
+	}
+
+	return claims, nil
+}
+
+// ============================================================================
+// Backward Compatibility - Package-level functions (Deprecated)
+// ============================================================================
+
+var (
+	globalTokenService *TokenService
+	once               sync.Once
+)
+
+// InitGlobalService initializes the global token service with a config provider.
+// This is for backward compatibility with code that uses package-level functions.
+func InitGlobalService(cfg pkgconfig.Provider) {
+	once.Do(func() {
+		globalTokenService = NewTokenService(cfg)
+	})
+}
+
+// getOrInitGlobalService returns the global token service, initializing it if necessary.
+func getOrInitGlobalService() *TokenService {
+	once.Do(func() {
+		if globalTokenService == nil {
+			// Fallback to Viper for backward compatibility
+			globalTokenService = NewTokenService(pkgconfig.NewViperProvider(nil))
+		}
+	})
+	return globalTokenService
+}
+
+// GenerateToken is a backward-compatible package-level function.
+//
+// Deprecated: Use TokenService.GenerateToken instead.
+func GenerateToken(userID int64, userClaims map[string]interface{}) (string, time.Time, error) {
+	return getOrInitGlobalService().GenerateToken(userID, userClaims)
+}
+
+// ValidateToken is a backward-compatible package-level function.
+//
+// Deprecated: Use TokenService.ValidateToken instead.
+func ValidateToken(tokenString string) (*CustomClaims, error) {
+	return getOrInitGlobalService().ValidateToken(tokenString)
+}
+
+// GenerateTokenPair is a backward-compatible package-level function.
+//
+// Deprecated: Use TokenService.GenerateTokenPair instead.
+func GenerateTokenPair(userID int64, userClaims map[string]interface{}) (string, string, time.Time, error) {
+	return getOrInitGlobalService().GenerateTokenPair(userID, userClaims)
+}
+
+// ValidateRefreshToken is a backward-compatible package-level function.
+//
+// Deprecated: Use TokenService.ValidateRefreshToken instead.
+func ValidateRefreshToken(tokenString string) (*CustomClaims, error) {
+	return getOrInitGlobalService().ValidateRefreshToken(tokenString)
+}

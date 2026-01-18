@@ -3,17 +3,52 @@
 package ent
 
 import (
+	"apprun/ent/casbinrule"
 	"apprun/ent/configitem"
+	"apprun/ent/project"
+	"apprun/ent/projectmember"
 	"apprun/ent/schema"
 	"apprun/ent/servers"
-	"apprun/ent/users"
+	"apprun/ent/user"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // The init function reads all schema descriptors with runtime code
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	casbinruleFields := schema.CasbinRule{}.Fields()
+	_ = casbinruleFields
+	// casbinruleDescPtype is the schema descriptor for ptype field.
+	casbinruleDescPtype := casbinruleFields[1].Descriptor()
+	// casbinrule.PtypeValidator is a validator for the "ptype" field. It is called by the builders before save.
+	casbinrule.PtypeValidator = casbinruleDescPtype.Validators[0].(func(string) error)
+	// casbinruleDescV0 is the schema descriptor for v0 field.
+	casbinruleDescV0 := casbinruleFields[2].Descriptor()
+	// casbinrule.V0Validator is a validator for the "v0" field. It is called by the builders before save.
+	casbinrule.V0Validator = casbinruleDescV0.Validators[0].(func(string) error)
+	// casbinruleDescV1 is the schema descriptor for v1 field.
+	casbinruleDescV1 := casbinruleFields[3].Descriptor()
+	// casbinrule.V1Validator is a validator for the "v1" field. It is called by the builders before save.
+	casbinrule.V1Validator = casbinruleDescV1.Validators[0].(func(string) error)
+	// casbinruleDescV2 is the schema descriptor for v2 field.
+	casbinruleDescV2 := casbinruleFields[4].Descriptor()
+	// casbinrule.V2Validator is a validator for the "v2" field. It is called by the builders before save.
+	casbinrule.V2Validator = casbinruleDescV2.Validators[0].(func(string) error)
+	// casbinruleDescV3 is the schema descriptor for v3 field.
+	casbinruleDescV3 := casbinruleFields[5].Descriptor()
+	// casbinrule.V3Validator is a validator for the "v3" field. It is called by the builders before save.
+	casbinrule.V3Validator = casbinruleDescV3.Validators[0].(func(string) error)
+	// casbinruleDescV4 is the schema descriptor for v4 field.
+	casbinruleDescV4 := casbinruleFields[6].Descriptor()
+	// casbinrule.V4Validator is a validator for the "v4" field. It is called by the builders before save.
+	casbinrule.V4Validator = casbinruleDescV4.Validators[0].(func(string) error)
+	// casbinruleDescV5 is the schema descriptor for v5 field.
+	casbinruleDescV5 := casbinruleFields[7].Descriptor()
+	// casbinrule.V5Validator is a validator for the "v5" field. It is called by the builders before save.
+	casbinrule.V5Validator = casbinruleDescV5.Validators[0].(func(string) error)
 	configitemFields := schema.Configitem{}.Fields()
 	_ = configitemFields
 	// configitemDescKey is the schema descriptor for key field.
@@ -25,25 +60,193 @@ func init() {
 	// configitem.DefaultIsDynamic holds the default value on creation for the is_dynamic field.
 	configitem.DefaultIsDynamic = configitemDescIsDynamic.Default.(bool)
 	// configitemDescCreatedAt is the schema descriptor for created_at field.
-	configitemDescCreatedAt := configitemFields[4].Descriptor()
+	configitemDescCreatedAt := configitemFields[5].Descriptor()
 	// configitem.DefaultCreatedAt holds the default value on creation for the created_at field.
 	configitem.DefaultCreatedAt = configitemDescCreatedAt.Default.(func() time.Time)
 	// configitemDescUpdatedAt is the schema descriptor for updated_at field.
-	configitemDescUpdatedAt := configitemFields[5].Descriptor()
+	configitemDescUpdatedAt := configitemFields[6].Descriptor()
 	// configitem.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	configitem.DefaultUpdatedAt = configitemDescUpdatedAt.Default.(func() time.Time)
 	// configitem.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	configitem.UpdateDefaultUpdatedAt = configitemDescUpdatedAt.UpdateDefault.(func() time.Time)
+	projectFields := schema.Project{}.Fields()
+	_ = projectFields
+	// projectDescUUID is the schema descriptor for uuid field.
+	projectDescUUID := projectFields[1].Descriptor()
+	// project.DefaultUUID holds the default value on creation for the uuid field.
+	project.DefaultUUID = projectDescUUID.Default.(func() string)
+	// project.UUIDValidator is a validator for the "uuid" field. It is called by the builders before save.
+	project.UUIDValidator = projectDescUUID.Validators[0].(func(string) error)
+	// projectDescName is the schema descriptor for name field.
+	projectDescName := projectFields[2].Descriptor()
+	// project.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	project.NameValidator = func() func(string) error {
+		validators := projectDescName.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(name string) error {
+			for _, fn := range fns {
+				if err := fn(name); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// projectDescDescription is the schema descriptor for description field.
+	projectDescDescription := projectFields[3].Descriptor()
+	// project.DescriptionValidator is a validator for the "description" field. It is called by the builders before save.
+	project.DescriptionValidator = projectDescDescription.Validators[0].(func(string) error)
+	// projectDescStatus is the schema descriptor for status field.
+	projectDescStatus := projectFields[5].Descriptor()
+	// project.DefaultStatus holds the default value on creation for the status field.
+	project.DefaultStatus = projectDescStatus.Default.(int8)
+	// projectDescCreatedAt is the schema descriptor for created_at field.
+	projectDescCreatedAt := projectFields[6].Descriptor()
+	// project.DefaultCreatedAt holds the default value on creation for the created_at field.
+	project.DefaultCreatedAt = projectDescCreatedAt.Default.(func() time.Time)
+	// projectDescUpdatedAt is the schema descriptor for updated_at field.
+	projectDescUpdatedAt := projectFields[7].Descriptor()
+	// project.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	project.DefaultUpdatedAt = projectDescUpdatedAt.Default.(func() time.Time)
+	// project.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	project.UpdateDefaultUpdatedAt = projectDescUpdatedAt.UpdateDefault.(func() time.Time)
+	projectmemberFields := schema.ProjectMember{}.Fields()
+	_ = projectmemberFields
+	// projectmemberDescRole is the schema descriptor for role field.
+	projectmemberDescRole := projectmemberFields[3].Descriptor()
+	// projectmember.RoleValidator is a validator for the "role" field. It is called by the builders before save.
+	projectmember.RoleValidator = func() func(string) error {
+		validators := projectmemberDescRole.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(role string) error {
+			for _, fn := range fns {
+				if err := fn(role); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// projectmemberDescJoinedAt is the schema descriptor for joined_at field.
+	projectmemberDescJoinedAt := projectmemberFields[4].Descriptor()
+	// projectmember.DefaultJoinedAt holds the default value on creation for the joined_at field.
+	projectmember.DefaultJoinedAt = projectmemberDescJoinedAt.Default.(func() time.Time)
+	// projectmemberDescUpdatedAt is the schema descriptor for updated_at field.
+	projectmemberDescUpdatedAt := projectmemberFields[5].Descriptor()
+	// projectmember.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	projectmember.DefaultUpdatedAt = projectmemberDescUpdatedAt.Default.(func() time.Time)
+	// projectmember.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	projectmember.UpdateDefaultUpdatedAt = projectmemberDescUpdatedAt.UpdateDefault.(func() time.Time)
 	serversFields := schema.Servers{}.Fields()
 	_ = serversFields
 	// serversDescName is the schema descriptor for name field.
 	serversDescName := serversFields[1].Descriptor()
 	// servers.NameValidator is a validator for the "name" field. It is called by the builders before save.
 	servers.NameValidator = serversDescName.Validators[0].(func(string) error)
-	usersFields := schema.Users{}.Fields()
-	_ = usersFields
-	// usersDescName is the schema descriptor for name field.
-	usersDescName := usersFields[1].Descriptor()
-	// users.NameValidator is a validator for the "name" field. It is called by the builders before save.
-	users.NameValidator = usersDescName.Validators[0].(func(string) error)
+	userFields := schema.User{}.Fields()
+	_ = userFields
+	// userDescUUID is the schema descriptor for uuid field.
+	userDescUUID := userFields[0].Descriptor()
+	// user.DefaultUUID holds the default value on creation for the uuid field.
+	user.DefaultUUID = userDescUUID.Default.(func() uuid.UUID)
+	// userDescUsername is the schema descriptor for username field.
+	userDescUsername := userFields[2].Descriptor()
+	// user.UsernameValidator is a validator for the "username" field. It is called by the builders before save.
+	user.UsernameValidator = userDescUsername.Validators[0].(func(string) error)
+	// userDescEmail is the schema descriptor for email field.
+	userDescEmail := userFields[3].Descriptor()
+	// user.EmailValidator is a validator for the "email" field. It is called by the builders before save.
+	user.EmailValidator = func() func(string) error {
+		validators := userDescEmail.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(email string) error {
+			for _, fn := range fns {
+				if err := fn(email); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// userDescPasswordHash is the schema descriptor for password_hash field.
+	userDescPasswordHash := userFields[4].Descriptor()
+	// user.PasswordHashValidator is a validator for the "password_hash" field. It is called by the builders before save.
+	user.PasswordHashValidator = func() func(string) error {
+		validators := userDescPasswordHash.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(password_hash string) error {
+			for _, fn := range fns {
+				if err := fn(password_hash); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// userDescNickname is the schema descriptor for nickname field.
+	userDescNickname := userFields[5].Descriptor()
+	// user.NicknameValidator is a validator for the "nickname" field. It is called by the builders before save.
+	user.NicknameValidator = userDescNickname.Validators[0].(func(string) error)
+	// userDescAvatar is the schema descriptor for avatar field.
+	userDescAvatar := userFields[6].Descriptor()
+	// user.AvatarValidator is a validator for the "avatar" field. It is called by the builders before save.
+	user.AvatarValidator = userDescAvatar.Validators[0].(func(string) error)
+	// userDescPhone is the schema descriptor for phone field.
+	userDescPhone := userFields[7].Descriptor()
+	// user.PhoneValidator is a validator for the "phone" field. It is called by the builders before save.
+	user.PhoneValidator = userDescPhone.Validators[0].(func(string) error)
+	// userDescGender is the schema descriptor for gender field.
+	userDescGender := userFields[8].Descriptor()
+	// user.DefaultGender holds the default value on creation for the gender field.
+	user.DefaultGender = userDescGender.Default.(int8)
+	// userDescSignature is the schema descriptor for signature field.
+	userDescSignature := userFields[9].Descriptor()
+	// user.SignatureValidator is a validator for the "signature" field. It is called by the builders before save.
+	user.SignatureValidator = userDescSignature.Validators[0].(func(string) error)
+	// userDescStatus is the schema descriptor for status field.
+	userDescStatus := userFields[10].Descriptor()
+	// user.DefaultStatus holds the default value on creation for the status field.
+	user.DefaultStatus = userDescStatus.Default.(int8)
+	// userDescLastLoginIP is the schema descriptor for last_login_ip field.
+	userDescLastLoginIP := userFields[12].Descriptor()
+	// user.LastLoginIPValidator is a validator for the "last_login_ip" field. It is called by the builders before save.
+	user.LastLoginIPValidator = userDescLastLoginIP.Validators[0].(func(string) error)
+	// userDescTimezone is the schema descriptor for timezone field.
+	userDescTimezone := userFields[13].Descriptor()
+	// user.DefaultTimezone holds the default value on creation for the timezone field.
+	user.DefaultTimezone = userDescTimezone.Default.(string)
+	// user.TimezoneValidator is a validator for the "timezone" field. It is called by the builders before save.
+	user.TimezoneValidator = userDescTimezone.Validators[0].(func(string) error)
+	// userDescLanguage is the schema descriptor for language field.
+	userDescLanguage := userFields[14].Descriptor()
+	// user.DefaultLanguage holds the default value on creation for the language field.
+	user.DefaultLanguage = userDescLanguage.Default.(string)
+	// user.LanguageValidator is a validator for the "language" field. It is called by the builders before save.
+	user.LanguageValidator = userDescLanguage.Validators[0].(func(string) error)
+	// userDescCreatedAt is the schema descriptor for created_at field.
+	userDescCreatedAt := userFields[15].Descriptor()
+	// user.DefaultCreatedAt holds the default value on creation for the created_at field.
+	user.DefaultCreatedAt = userDescCreatedAt.Default.(func() time.Time)
+	// userDescUpdatedAt is the schema descriptor for updated_at field.
+	userDescUpdatedAt := userFields[16].Descriptor()
+	// user.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	user.DefaultUpdatedAt = userDescUpdatedAt.Default.(func() time.Time)
+	// user.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	user.UpdateDefaultUpdatedAt = userDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// userDescID is the schema descriptor for id field.
+	userDescID := userFields[1].Descriptor()
+	// user.IDValidator is a validator for the "id" field. It is called by the builders before save.
+	user.IDValidator = userDescID.Validators[0].(func(int64) error)
 }
