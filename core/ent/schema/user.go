@@ -67,6 +67,10 @@ func (User) Fields() []ent.Field {
 			MaxLen(255).
 			Optional().
 			Comment("User signature / bio"),
+		field.Text("bio").
+			MaxLen(500).
+			Optional().
+			Comment("User biography / description"),
 
 		// Account Status
 		field.Int8("status").

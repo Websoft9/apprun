@@ -136,6 +136,20 @@ func (_c *UserCreate) SetNillableSignature(v *string) *UserCreate {
 	return _c
 }
 
+// SetBio sets the "bio" field.
+func (_c *UserCreate) SetBio(v string) *UserCreate {
+	_c.mutation.SetBio(v)
+	return _c
+}
+
+// SetNillableBio sets the "bio" field if the given value is not nil.
+func (_c *UserCreate) SetNillableBio(v *string) *UserCreate {
+	if v != nil {
+		_c.SetBio(*v)
+	}
+	return _c
+}
+
 // SetStatus sets the "status" field.
 func (_c *UserCreate) SetStatus(v int8) *UserCreate {
 	_c.mutation.SetStatus(v)
@@ -399,6 +413,11 @@ func (_c *UserCreate) check() error {
 			return &ValidationError{Name: "signature", err: fmt.Errorf(`ent: validator failed for field "User.signature": %w`, err)}
 		}
 	}
+	if v, ok := _c.mutation.Bio(); ok {
+		if err := user.BioValidator(v); err != nil {
+			return &ValidationError{Name: "bio", err: fmt.Errorf(`ent: validator failed for field "User.bio": %w`, err)}
+		}
+	}
 	if _, ok := _c.mutation.Status(); !ok {
 		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "User.status"`)}
 	}
@@ -502,6 +521,10 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Signature(); ok {
 		_spec.SetField(user.FieldSignature, field.TypeString, value)
 		_node.Signature = value
+	}
+	if value, ok := _c.mutation.Bio(); ok {
+		_spec.SetField(user.FieldBio, field.TypeString, value)
+		_node.Bio = value
 	}
 	if value, ok := _c.mutation.Status(); ok {
 		_spec.SetField(user.FieldStatus, field.TypeInt8, value)
@@ -760,6 +783,24 @@ func (u *UserUpsert) UpdateSignature() *UserUpsert {
 // ClearSignature clears the value of the "signature" field.
 func (u *UserUpsert) ClearSignature() *UserUpsert {
 	u.SetNull(user.FieldSignature)
+	return u
+}
+
+// SetBio sets the "bio" field.
+func (u *UserUpsert) SetBio(v string) *UserUpsert {
+	u.Set(user.FieldBio, v)
+	return u
+}
+
+// UpdateBio sets the "bio" field to the value that was provided on create.
+func (u *UserUpsert) UpdateBio() *UserUpsert {
+	u.SetExcluded(user.FieldBio)
+	return u
+}
+
+// ClearBio clears the value of the "bio" field.
+func (u *UserUpsert) ClearBio() *UserUpsert {
+	u.SetNull(user.FieldBio)
 	return u
 }
 
@@ -1058,6 +1099,27 @@ func (u *UserUpsertOne) UpdateSignature() *UserUpsertOne {
 func (u *UserUpsertOne) ClearSignature() *UserUpsertOne {
 	return u.Update(func(s *UserUpsert) {
 		s.ClearSignature()
+	})
+}
+
+// SetBio sets the "bio" field.
+func (u *UserUpsertOne) SetBio(v string) *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.SetBio(v)
+	})
+}
+
+// UpdateBio sets the "bio" field to the value that was provided on create.
+func (u *UserUpsertOne) UpdateBio() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateBio()
+	})
+}
+
+// ClearBio clears the value of the "bio" field.
+func (u *UserUpsertOne) ClearBio() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.ClearBio()
 	})
 }
 
@@ -1537,6 +1599,27 @@ func (u *UserUpsertBulk) UpdateSignature() *UserUpsertBulk {
 func (u *UserUpsertBulk) ClearSignature() *UserUpsertBulk {
 	return u.Update(func(s *UserUpsert) {
 		s.ClearSignature()
+	})
+}
+
+// SetBio sets the "bio" field.
+func (u *UserUpsertBulk) SetBio(v string) *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.SetBio(v)
+	})
+}
+
+// UpdateBio sets the "bio" field to the value that was provided on create.
+func (u *UserUpsertBulk) UpdateBio() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateBio()
+	})
+}
+
+// ClearBio clears the value of the "bio" field.
+func (u *UserUpsertBulk) ClearBio() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.ClearBio()
 	})
 }
 

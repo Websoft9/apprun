@@ -37,6 +37,8 @@ type User struct {
 	Gender int8 `json:"gender,omitempty"`
 	// User signature / bio
 	Signature string `json:"signature,omitempty"`
+	// User biography / description
+	Bio string `json:"bio,omitempty"`
 	// Account status: 0-Disabled, 1-Active
 	Status int8 `json:"status,omitempty"`
 	// Last login timestamp
@@ -104,7 +106,7 @@ func (*User) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case user.FieldID, user.FieldGender, user.FieldStatus:
 			values[i] = new(sql.NullInt64)
-		case user.FieldUsername, user.FieldEmail, user.FieldPasswordHash, user.FieldNickname, user.FieldAvatar, user.FieldPhone, user.FieldSignature, user.FieldLastLoginIP, user.FieldTimezone, user.FieldLanguage:
+		case user.FieldUsername, user.FieldEmail, user.FieldPasswordHash, user.FieldNickname, user.FieldAvatar, user.FieldPhone, user.FieldSignature, user.FieldBio, user.FieldLastLoginIP, user.FieldTimezone, user.FieldLanguage:
 			values[i] = new(sql.NullString)
 		case user.FieldLastLoginAt, user.FieldCreatedAt, user.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -184,6 +186,12 @@ func (_m *User) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field signature", values[i])
 			} else if value.Valid {
 				_m.Signature = value.String
+			}
+		case user.FieldBio:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field bio", values[i])
+			} else if value.Valid {
+				_m.Bio = value.String
 			}
 		case user.FieldStatus:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -304,6 +312,9 @@ func (_m *User) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("signature=")
 	builder.WriteString(_m.Signature)
+	builder.WriteString(", ")
+	builder.WriteString("bio=")
+	builder.WriteString(_m.Bio)
 	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Status))

@@ -61,14 +61,6 @@ func SetupRoutes(dbClient *ent.Client, configService *configModule.Service) *chi
 
 			// Token refresh endpoint with rate limiting (10 req/hour per IP)
 			r.With(middleware.Throttle(10)).Post("/refresh", authHdl.Refresh)
-
-			// Protected endpoints (require JWT middleware)
-			r.Group(func(r chi.Router) {
-				jwtMiddleware := internalMiddleware.NewJWTMiddleware()
-				r.Use(jwtMiddleware.JWTAuth)
-
-				r.Get("/me", authHdl.Me)
-			})
 		})
 
 		// demo routes
@@ -82,15 +74,18 @@ func SetupRoutes(dbClient *ent.Client, configService *configModule.Service) *chi
 		// Project management routes (Story 5.5 - Project CRUD)
 		RegisterProjectRoutes(r, dbClient)
 
+		// User self-service routes (Story 5.6)
+		RegisterUserRoutes(r, dbClient)
+
 		// feature/config routes (如果提供了配置服务)
 		if configService != nil {
 			configHandler := configModule.NewHandler(configService)
 			configHandler.RegisterRoutes(r)
 		}
-	})
 
-	// Swagger 文档路由（挂载到 /api/docs/）
-	RegisterSwagger(r)
+		// Swagger documentation routes
+		RegisterSwaggerInAPI(r)
+	})
 
 	return r
 }
@@ -178,5 +173,32 @@ func RegisterProjectRoutes(r chi.Router, dbClient *ent.Client) {
 			// Delete project (requires owner role - checked in handler)
 			r.Delete("/", projectHandler.DeleteProject)
 		})
+	})
+}
+
+// RegisterUserRoutes registers user self-service routes (Story 5.6)
+func RegisterUserRoutes(r chi.Router, dbClient *ent.Client) {
+	// Initialize user service dependencies
+	userRepo := authRepository.NewUserRepository(dbClient)
+	userSvc := authService.NewUserService(userRepo)
+	profileHandler := authHandler.NewProfileHandler(userSvc)
+	passwordHandler := authHandler.NewPasswordHandler(userSvc)
+
+	// JWT middleware (required for all user routes)
+	jwtMiddleware := internalMiddleware.NewJWTMiddleware()
+
+	// User self-service routes
+	r.Route("/users/me", func(r chi.Router) {
+		// All routes require authentication
+		r.Use(jwtMiddleware.JWTAuth)
+
+		// Get current user profile
+		r.Get("/", profileHandler.GetProfile)
+
+		// Update current user profile
+		r.Put("/", profileHandler.UpdateProfile)
+
+		// Change password
+		r.Put("/password", passwordHandler.ChangePassword)
 	})
 }

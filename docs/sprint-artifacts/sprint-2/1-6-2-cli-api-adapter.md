@@ -502,7 +502,7 @@ jobs:
 **认证模块**：
 - `POST /api/auth/login` → `apprun auth login`
 - `POST /api/auth/register` → `apprun auth register`
-- `GET /api/auth/me` → `apprun auth whoami`
+- `GET /api/users/me` → `apprun auth whoami`
 - `POST /api/auth/refresh` → `apprun auth refresh`
 
 **配置模块**：

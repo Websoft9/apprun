@@ -6,7 +6,7 @@
 **负责人**: Architect Agent  
 **状态**: Planning  
 **优先级**: P0 (必需)  
-**预估工作量**: 7-8 天 (MVP)
+**预估工作量**: 10.5 天 (MVP)
 
 ---
 
@@ -92,9 +92,9 @@ AppRun 采用 **逻辑多租户** 架构，而非物理隔离。
 | `/api/auth/register` | POST | 用户注册 | Public |
 | `/api/auth/login` | POST | 用户登录 | Public |
 | `/api/auth/refresh` | POST | 刷新 Access Token | Refresh Token |
-| `/api/auth/me` | GET | 获取当前用户信息 | JWT |
+| `/api/users/me` | GET | 获取当前用户信息 | JWT |
 | `/api/auth/logout` | POST | 登出（可选） | JWT |
-| `/api/auth/change-password` | POST | 修改密码 | JWT |
+| `/api/users/me/password` | PUT | 修改密码 | JWT |
 
 #### 示例 1：用户注册
 
@@ -374,14 +374,67 @@ auth:
 - [ ] 定义权限策略
 - [ ] 编写权限测试用例
 
-### Story 5.6: 用户管理接口
+### Story 5.6: 用户自我管理 (User Self-Service)
 **优先级**: P1  
-**工作量**: 0.5 天
+**工作量**: 1 天
 
-- [ ] 实现 `/api/auth/me` 端点
-- [ ] 实现 `/api/auth/change-password` 端点
+- [ ] 实现 `/api/auth/me` 端点（获取当前用户信息）
+- [ ] 实现 `/api/users/me` 端点（查看自己的详细资料）
+- [ ] 实现 `PUT /api/users/me` 端点（修改自己的资料：name, avatar 等）
+- [ ] 实现 `/api/auth/change-password` 端点（修改自己的密码）
 - [ ] 实现 `/api/auth/logout`（可选，客户端删除 Token）
+- [ ] 输入验证（防止修改敏感字段如 role, is_active）
+- [ ] 编写单元测试
 - [ ] 编写 API 文档
+
+### Story 5.7: 平台用户管理 (Platform User Management)
+**优先级**: P1  
+**工作量**: 2 天
+
+**目标受众**: 仅限 `platform_admin` 角色访问
+
+**API 端点**:
+- [ ] `GET /api/admin/users` - 列出所有用户（支持分页、搜索、角色过滤）
+- [ ] `POST /api/admin/users` - 创建新用户/管理员（指定 email, name, role）
+- [ ] `PUT /api/admin/users/:id/role` - 修改用户角色（升职/降职）
+- [ ] `PUT /api/admin/users/:id/status` - 修改用户状态（启用/禁用/封禁）
+- [ ] `GET /api/admin/users/:id` - 查看指定用户详细信息
+- [ ] `DELETE /api/admin/users/:id` - 删除用户（软删除）
+
+**功能要求**:
+- [ ] 实现 `RequirePlatformAdmin` 中间件（权限拦截）
+- [ ] 防止管理员删除自己
+- [ ] 防止降级最后一个 platform_admin
+- [ ] 审计日志（记录所有管理操作）
+- [ ] 输入验证和安全检查
+- [ ] 编写单元测试和集成测试
+- [ ] 编写 API 文档
+
+### Story 5.8: 系统用户初始化支持 (System User Initialization Support)
+**优先级**: P0  
+**工作量**: 0.5 天  
+**依赖**: Story 5.1 (User Schema), Story 1.17 (Platform Initialization) 将调用此能力
+
+**目标**: 为 Bootstrap 模块提供创建系统内置账号的 Service 方法
+
+**Service 方法**:
+- [ ] 实现 `AuthService.EnsureSystemUser(ctx)` 方法
+  - 检查是否存在 `name="system"` 用户
+  - 不存在则创建（固定 UUID: `00000000-0000-0000-0000-000000000000`, 无密码, 特殊标记 `is_system=true`）
+  - 禁止通过 Login API 登录
+- [ ] 实现 `AuthService.EnsureAdminUser(ctx, email, password)` 方法
+  - 检查是否存在该 email 的用户
+  - 不存在则创建（生成 UUID, bcrypt 密码, `platform_admin` 角色）
+  - 存在则跳过（幂等性）
+- [ ] 幂等性保证（多次调用安全，不会重复创建）
+- [ ] 编写单元测试（幂等性、边界条件、错误处理）
+- [ ] 更新 Auth Service 接口文档
+
+**验收标准**:
+- [ ] 方法幂等：连续调用 2 次返回相同结果
+- [ ] System 用户无法通过 `POST /api/auth/login` 登录
+- [ ] Admin 用户可正常登录获取 Token
+- [ ] Bootstrap 模块可成功调用这些方法
 
 ---
 

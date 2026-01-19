@@ -168,6 +168,9 @@ definitions:
       avatar:
         description: Avatar URL
         type: string
+      bio:
+        description: User biography / description
+        type: string
       created_at:
         description: Account creation timestamp
         type: string
@@ -360,6 +363,18 @@ definitions:
       success:
         type: boolean
     type: object
+  service.ChangePasswordRequest:
+    properties:
+      new_password:
+        description: New password (≥8 chars, complexity requirements)
+        type: string
+      old_password:
+        description: Current password
+        type: string
+    required:
+    - new_password
+    - old_password
+    type: object
   service.CreateProjectRequest:
     properties:
       description:
@@ -401,6 +416,36 @@ definitions:
         allOf:
         - $ref: '#/definitions/service.UserProfile'
         description: User profile data
+    type: object
+  service.ProfileResponse:
+    properties:
+      avatar:
+        description: Avatar URL (HTTPS)
+        type: string
+      bio:
+        description: Biography/description
+        type: string
+      created_at:
+        description: Creation timestamp
+        type: string
+      email:
+        description: Email address
+        type: string
+      id:
+        description: Public UUID
+        type: string
+      is_active:
+        description: Account active status
+        type: boolean
+      last_login_at:
+        description: Last login timestamp
+        type: string
+      name:
+        description: Display name (nickname)
+        type: string
+      role:
+        description: User role (from schema constants)
+        type: string
     type: object
   service.ProjectResponse:
     properties:
@@ -471,6 +516,18 @@ definitions:
       status:
         type: integer
       username:
+        type: string
+    type: object
+  service.UpdateProfileRequest:
+    properties:
+      avatar:
+        description: Avatar URL (HTTPS, ≤255 chars)
+        type: string
+      bio:
+        description: Biography (≤500 chars)
+        type: string
+      name:
+        description: Display name (2-50 chars)
         type: string
     type: object
   service.UserProfile:
@@ -549,40 +606,6 @@ paths:
           schema:
             $ref: '#/definitions/response.Response'
       summary: User login
-      tags:
-      - auth
-  /api/auth/me:
-    get:
-      consumes:
-      - application/json
-      description: Retrieve profile of the authenticated user
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  $ref: '#/definitions/service.UserProfile'
-              type: object
-        "401":
-          description: Missing or invalid token
-          schema:
-            $ref: '#/definitions/response.Response'
-        "404":
-          description: User not found
-          schema:
-            $ref: '#/definitions/response.Response'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.Response'
-      security:
-      - BearerAuth: []
-      summary: Get current user profile
       tags:
       - auth
   /api/auth/refresh:
@@ -849,7 +872,7 @@ paths:
       - BearerAuth: []
       summary: List user's projects
       tags:
-      - Projects
+      - projects
     post:
       consumes:
       - application/json
@@ -889,7 +912,7 @@ paths:
       - BearerAuth: []
       summary: Create a new project
       tags:
-      - Projects
+      - projects
   /api/projects/{id}:
     delete:
       description: Archives a project (soft delete)
@@ -922,7 +945,7 @@ paths:
       - BearerAuth: []
       summary: Delete project
       tags:
-      - Projects
+      - projects
     get:
       description: Gets detailed information about a specific project
       parameters:
@@ -959,7 +982,7 @@ paths:
       - BearerAuth: []
       summary: Get project details
       tags:
-      - Projects
+      - projects
     put:
       consumes:
       - application/json
@@ -1008,7 +1031,7 @@ paths:
       - BearerAuth: []
       summary: Update project
       tags:
-      - Projects
+      - projects
   /api/projects/{project_id}/members:
     get:
       description: Get a list of all members in a project
@@ -1256,6 +1279,128 @@ paths:
       summary: Get my permissions
       tags:
       - rbac
+  /api/users/me:
+    get:
+      description: Retrieve the complete profile of the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/service.ProfileResponse'
+              type: object
+        "401":
+          description: Unauthorized - missing or invalid token
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get current user profile
+      tags:
+      - users
+    put:
+      consumes:
+      - application/json
+      description: Update the authenticated user's profile (name, avatar, bio)
+      parameters:
+      - description: Profile update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/service.UpdateProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/service.ProfileResponse'
+              type: object
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Update current user profile
+      tags:
+      - users
+  /api/users/me/password:
+    put:
+      consumes:
+      - application/json
+      description: Change the authenticated user's password (requires old password
+        verification)
+      parameters:
+      - description: Password change data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/service.ChangePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                message:
+                  type: string
+              type: object
+        "400":
+          description: Validation error or wrong old password
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Change user password
+      tags:
+      - users
   /health:
     get:
       description: Check if the service is running

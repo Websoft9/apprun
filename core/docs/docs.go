@@ -93,64 +93,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/auth/me": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Retrieve profile of the authenticated user",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "auth"
-                ],
-                "summary": "Get current user profile",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/service.UserProfile"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Missing or invalid token",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "User not found",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    }
-                }
-            }
-        },
         "/api/auth/refresh": {
             "post": {
                 "description": "Exchange refresh token for new access/refresh token pair",
@@ -513,7 +455,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Projects"
+                    "projects"
                 ],
                 "summary": "List user's projects",
                 "responses": {
@@ -566,7 +508,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Projects"
+                    "projects"
                 ],
                 "summary": "Create a new project",
                 "parameters": [
@@ -632,7 +574,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Projects"
+                    "projects"
                 ],
                 "summary": "Get project details",
                 "parameters": [
@@ -697,7 +639,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Projects"
+                    "projects"
                 ],
                 "summary": "Update project",
                 "parameters": [
@@ -774,7 +716,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Projects"
+                    "projects"
                 ],
                 "summary": "Delete project",
                 "parameters": [
@@ -1219,6 +1161,209 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/users/me": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve the complete profile of the authenticated user",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Get current user profile",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/service.ProfileResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - missing or invalid token",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update the authenticated user's profile (name, avatar, bio)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Update current user profile",
+                "parameters": [
+                    {
+                        "description": "Profile update data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/service.UpdateProfileRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/service.ProfileResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/users/me/password": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Change the authenticated user's password (requires old password verification)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Change user password",
+                "parameters": [
+                    {
+                        "description": "Password change data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/service.ChangePasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error or wrong old password",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/health": {
             "get": {
                 "description": "Check if the service is running",
@@ -1481,6 +1626,10 @@ const docTemplate = `{
             "properties": {
                 "avatar": {
                     "description": "Avatar URL",
+                    "type": "string"
+                },
+                "bio": {
+                    "description": "User biography / description",
                     "type": "string"
                 },
                 "created_at": {
@@ -1759,6 +1908,23 @@ const docTemplate = `{
                 }
             }
         },
+        "service.ChangePasswordRequest": {
+            "type": "object",
+            "required": [
+                "new_password",
+                "old_password"
+            ],
+            "properties": {
+                "new_password": {
+                    "description": "New password (≥8 chars, complexity requirements)",
+                    "type": "string"
+                },
+                "old_password": {
+                    "description": "Current password",
+                    "type": "string"
+                }
+            }
+        },
         "service.CreateProjectRequest": {
             "type": "object",
             "required": [
@@ -1817,6 +1983,47 @@ const docTemplate = `{
                             "$ref": "#/definitions/service.UserProfile"
                         }
                     ]
+                }
+            }
+        },
+        "service.ProfileResponse": {
+            "type": "object",
+            "properties": {
+                "avatar": {
+                    "description": "Avatar URL (HTTPS)",
+                    "type": "string"
+                },
+                "bio": {
+                    "description": "Biography/description",
+                    "type": "string"
+                },
+                "created_at": {
+                    "description": "Creation timestamp",
+                    "type": "string"
+                },
+                "email": {
+                    "description": "Email address",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "Public UUID",
+                    "type": "string"
+                },
+                "is_active": {
+                    "description": "Account active status",
+                    "type": "boolean"
+                },
+                "last_login_at": {
+                    "description": "Last login timestamp",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Display name (nickname)",
+                    "type": "string"
+                },
+                "role": {
+                    "description": "User role (from schema constants)",
+                    "type": "string"
                 }
             }
         },
@@ -1915,6 +2122,23 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "service.UpdateProfileRequest": {
+            "type": "object",
+            "properties": {
+                "avatar": {
+                    "description": "Avatar URL (HTTPS, ≤255 chars)",
+                    "type": "string"
+                },
+                "bio": {
+                    "description": "Biography (≤500 chars)",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Display name (2-50 chars)",
                     "type": "string"
                 }
             }

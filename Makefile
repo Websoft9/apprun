@@ -11,7 +11,7 @@
 	db-diff db-migrate db-rollback db-status db-reset db-validate db-lint db-hash db-baseline \
 	docker-build docker-up docker-down docker-logs docker-clean docker-build-base docker-pull-base \
 	docs-api docs-validate story-validate story-sync story-index sprint-status sprint-summary \
-	clean clean-all install check-deps version
+	clean clean-all install check-deps version kill-port
 
 # ============================================
 # Help - Quick Reference
@@ -92,6 +92,7 @@ help:
 	@echo "  make clean         - Clean build artifacts"
 	@echo "  make install       - Install dev tools"
 	@echo "  make check-deps    - Check dependencies"
+	@echo "  make kill-port 8080 - Kill process using specified port"
 	@echo "  make help          - Show this help"
 	@echo ""
 
@@ -595,6 +596,44 @@ version:
 	@echo "Go version: $$(go version)"
 	@echo "Docker version: $$(docker --version 2>/dev/null || echo 'not installed')"
 	@echo "golangci-lint: $$(golangci-lint --version 2>/dev/null || echo 'not installed')"
+
+# Kill process using specified port
+kill-port:
+	@PORT_NUM="$(PORT)"; \
+	if [ -z "$$PORT_NUM" ]; then \
+		PORT_NUM="$(word 2,$(MAKECMDGOALS))"; \
+	fi; \
+	if [ -z "$$PORT_NUM" ]; then \
+		echo "❌ Error: PORT parameter required"; \
+		echo ""; \
+		echo "Usage:"; \
+		echo "  make kill-port 8080"; \
+		echo "  make kill-port PORT=8080"; \
+		echo ""; \
+		echo "Common ports:"; \
+		echo "  8080  - Application HTTP port"; \
+		echo "  5432  - PostgreSQL"; \
+		echo "  6379  - Redis"; \
+		echo ""; \
+		exit 1; \
+	fi; \
+	echo "🔍 Searching for process using port $$PORT_NUM..."; \
+	PID=$$(lsof -ti :$$PORT_NUM 2>/dev/null); \
+	if [ -z "$$PID" ]; then \
+		echo "✅ No process found using port $$PORT_NUM"; \
+	else \
+		PROCESS=$$(ps -p $$PID -o comm= 2>/dev/null || echo "unknown"); \
+		echo "📌 Found process using port $$PORT_NUM:"; \
+		echo "   PID: $$PID"; \
+		echo "   Process: $$PROCESS"; \
+		echo ""; \
+		echo "🛑 Killing process $$PID..."; \
+		kill -9 $$PID 2>/dev/null && echo "✅ Process killed successfully" || echo "❌ Failed to kill process"; \
+	fi
+
+# Catch-all target for port numbers (prevents "No rule to make target" error)
+%:
+	@:
 
 # ============================================
 # Backward Compatibility Aliases

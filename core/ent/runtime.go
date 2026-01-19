@@ -215,32 +215,36 @@ func init() {
 	userDescSignature := userFields[9].Descriptor()
 	// user.SignatureValidator is a validator for the "signature" field. It is called by the builders before save.
 	user.SignatureValidator = userDescSignature.Validators[0].(func(string) error)
+	// userDescBio is the schema descriptor for bio field.
+	userDescBio := userFields[10].Descriptor()
+	// user.BioValidator is a validator for the "bio" field. It is called by the builders before save.
+	user.BioValidator = userDescBio.Validators[0].(func(string) error)
 	// userDescStatus is the schema descriptor for status field.
-	userDescStatus := userFields[10].Descriptor()
+	userDescStatus := userFields[11].Descriptor()
 	// user.DefaultStatus holds the default value on creation for the status field.
 	user.DefaultStatus = userDescStatus.Default.(int8)
 	// userDescLastLoginIP is the schema descriptor for last_login_ip field.
-	userDescLastLoginIP := userFields[12].Descriptor()
+	userDescLastLoginIP := userFields[13].Descriptor()
 	// user.LastLoginIPValidator is a validator for the "last_login_ip" field. It is called by the builders before save.
 	user.LastLoginIPValidator = userDescLastLoginIP.Validators[0].(func(string) error)
 	// userDescTimezone is the schema descriptor for timezone field.
-	userDescTimezone := userFields[13].Descriptor()
+	userDescTimezone := userFields[14].Descriptor()
 	// user.DefaultTimezone holds the default value on creation for the timezone field.
 	user.DefaultTimezone = userDescTimezone.Default.(string)
 	// user.TimezoneValidator is a validator for the "timezone" field. It is called by the builders before save.
 	user.TimezoneValidator = userDescTimezone.Validators[0].(func(string) error)
 	// userDescLanguage is the schema descriptor for language field.
-	userDescLanguage := userFields[14].Descriptor()
+	userDescLanguage := userFields[15].Descriptor()
 	// user.DefaultLanguage holds the default value on creation for the language field.
 	user.DefaultLanguage = userDescLanguage.Default.(string)
 	// user.LanguageValidator is a validator for the "language" field. It is called by the builders before save.
 	user.LanguageValidator = userDescLanguage.Validators[0].(func(string) error)
 	// userDescCreatedAt is the schema descriptor for created_at field.
-	userDescCreatedAt := userFields[15].Descriptor()
+	userDescCreatedAt := userFields[16].Descriptor()
 	// user.DefaultCreatedAt holds the default value on creation for the created_at field.
 	user.DefaultCreatedAt = userDescCreatedAt.Default.(func() time.Time)
 	// userDescUpdatedAt is the schema descriptor for updated_at field.
-	userDescUpdatedAt := userFields[16].Descriptor()
+	userDescUpdatedAt := userFields[17].Descriptor()
 	// user.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	user.DefaultUpdatedAt = userDescUpdatedAt.Default.(func() time.Time)
 	// user.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.

@@ -82,8 +82,8 @@ so that I can securely access protected APIs and retrieve my profile information
 
 - [x] **Task 4: Register routes** (AC: #1, #2)
   - [x] Add `POST /api/auth/login` route in `core/routes/router.go` without JWT middleware
-  - [x] Add `GET /api/auth/me` route with JWT middleware: `r.With(middleware.RequireAuth()).Get("/me", handlers.Me)`
-  - [x] Apply middleware stack order: RequestID → Logger → CORS → JWT (for /me only)
+  - [x] Add `GET /api/users/me` route with JWT middleware in user self-service routes
+  - [x] Apply middleware stack order: RequestID → Logger → CORS → JWT (for /users/me only)
 
 - [x] **Task 5: Write comprehensive tests** (AC: #8)
   - [x] JWT package tests: generation, validation, expired, invalid signature (7+ tests completed)
@@ -422,11 +422,11 @@ GitHub Copilot (Claude 3.5 Sonnet) - Dev Agent v6.0.0-alpha.16
    - Token extraction from Authorization header
    - Token validation and claims parsing
    - Context injection of user_id for protected routes
-   - Applied to GET /api/auth/me endpoint
+   - Applied to GET /api/users/me endpoint
 
 5. **Routes Configuration** (`core/routes/router.go`)
    - POST /api/auth/login (public, no JWT required)
-   - GET /api/auth/me (protected, JWT middleware applied)
+   - GET /api/users/me (protected, JWT middleware applied)
    - Proper middleware chain: RequestID → Logger → i18n → JWT
 
 ### Test Results
@@ -484,7 +484,7 @@ GitHub Copilot (Claude 3.5 Sonnet) - Dev Agent v6.0.0-alpha.16
 ### Acceptance Criteria Validation
 
 ✅ **AC #1**: POST /api/auth/login endpoint implemented with all required fields  
-✅ **AC #2**: GET /api/auth/me endpoint with JWT validation  
+✅ **AC #2**: GET /api/users/me endpoint with JWT validation  
 ✅ **AC #3**: Password verification using bcrypt (Story 5.1 package)  
 ✅ **AC #4**: JWT token generation with claims and expiration  
 ✅ **AC #5**: Login history tracking (last_login_at, last_login_ip)  

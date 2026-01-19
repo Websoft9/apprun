@@ -144,7 +144,7 @@ func NewJWTMiddleware(runtimeCfg *jwt.RuntimeConfig) *JWTMiddleware
 
 #### 请求示例
 ```http
-GET /api/v1/auth/me
+GET /api/users/me
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 

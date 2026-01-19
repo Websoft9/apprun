@@ -207,6 +207,7 @@ var (
 		{Name: "phone", Type: field.TypeString, Nullable: true, Size: 20},
 		{Name: "gender", Type: field.TypeInt8, Default: 0},
 		{Name: "signature", Type: field.TypeString, Nullable: true, Size: 255},
+		{Name: "bio", Type: field.TypeString, Nullable: true, Size: 500},
 		{Name: "status", Type: field.TypeInt8, Default: 1},
 		{Name: "last_login_at", Type: field.TypeTime, Nullable: true},
 		{Name: "last_login_ip", Type: field.TypeString, Nullable: true, Size: 45},
@@ -234,12 +235,12 @@ var (
 			{
 				Name:    "user_status",
 				Unique:  false,
-				Columns: []*schema.Column{UsersColumns[10]},
+				Columns: []*schema.Column{UsersColumns[11]},
 			},
 			{
 				Name:    "user_created_at",
 				Unique:  false,
-				Columns: []*schema.Column{UsersColumns[15]},
+				Columns: []*schema.Column{UsersColumns[16]},
 			},
 		},
 	}

@@ -28,9 +28,6 @@ other = "auth.error.invalid_request"
 [auth.error.invalid_request_body]
 other = "auth.error.invalid_request_body"
 
-[auth.error.invalid_token]
-other = "auth.error.invalid_token"
-
 [auth.error.invalid_token_type]
 other = "auth.error.invalid_token_type"
 
@@ -42,9 +39,6 @@ other = "auth.error.missing_refresh_token"
 
 [auth.error.password_required]
 other = "auth.error.password_required"
-
-[auth.error.profile_fetch_failed]
-other = "auth.error.profile_fetch_failed"
 
 [auth.error.refresh_token_expired]
 other = "auth.error.refresh_token_expired"
@@ -60,6 +54,9 @@ other = "auth.error.token_refresh_failed"
 
 [auth.error.token_revoked]
 other = "auth.error.token_revoked"
+
+[auth.error.unauthorized]
+other = "auth.error.unauthorized"
 
 [auth.error.user_not_found]
 other = "auth.error.user_not_found"
@@ -84,4 +81,34 @@ other = "errors.not_found"
 
 [success.created]
 other = "success.created"
+
+[user.error.change_password_failed]
+other = "user.error.change_password_failed"
+
+[user.error.get_profile_failed]
+other = "user.error.get_profile_failed"
+
+[user.error.invalid_request_body]
+other = "user.error.invalid_request_body"
+
+[user.error.new_password_required]
+other = "user.error.new_password_required"
+
+[user.error.not_found]
+other = "user.error.not_found"
+
+[user.error.old_password_incorrect]
+other = "user.error.old_password_incorrect"
+
+[user.error.old_password_required]
+other = "user.error.old_password_required"
+
+[user.error.update_profile_failed]
+other = "user.error.update_profile_failed"
+
+[user.error.validation_failed]
+other = "user.error.validation_failed"
+
+[user.success.password_changed]
+other = "user.success.password_changed"
 

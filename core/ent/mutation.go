@@ -3493,6 +3493,7 @@ type UserMutation struct {
 	gender                     *int8
 	addgender                  *int8
 	signature                  *string
+	bio                        *string
 	status                     *int8
 	addstatus                  *int8
 	last_login_at              *time.Time
@@ -4029,6 +4030,55 @@ func (m *UserMutation) ResetSignature() {
 	delete(m.clearedFields, user.FieldSignature)
 }
 
+// SetBio sets the "bio" field.
+func (m *UserMutation) SetBio(s string) {
+	m.bio = &s
+}
+
+// Bio returns the value of the "bio" field in the mutation.
+func (m *UserMutation) Bio() (r string, exists bool) {
+	v := m.bio
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBio returns the old "bio" field's value of the User entity.
+// If the User object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserMutation) OldBio(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBio is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBio requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBio: %w", err)
+	}
+	return oldValue.Bio, nil
+}
+
+// ClearBio clears the value of the "bio" field.
+func (m *UserMutation) ClearBio() {
+	m.bio = nil
+	m.clearedFields[user.FieldBio] = struct{}{}
+}
+
+// BioCleared returns if the "bio" field was cleared in this mutation.
+func (m *UserMutation) BioCleared() bool {
+	_, ok := m.clearedFields[user.FieldBio]
+	return ok
+}
+
+// ResetBio resets all changes to the "bio" field.
+func (m *UserMutation) ResetBio() {
+	m.bio = nil
+	delete(m.clearedFields, user.FieldBio)
+}
+
 // SetStatus sets the "status" field.
 func (m *UserMutation) SetStatus(i int8) {
 	m.status = &i
@@ -4523,7 +4573,7 @@ func (m *UserMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UserMutation) Fields() []string {
-	fields := make([]string, 0, 16)
+	fields := make([]string, 0, 17)
 	if m.uuid != nil {
 		fields = append(fields, user.FieldUUID)
 	}
@@ -4550,6 +4600,9 @@ func (m *UserMutation) Fields() []string {
 	}
 	if m.signature != nil {
 		fields = append(fields, user.FieldSignature)
+	}
+	if m.bio != nil {
+		fields = append(fields, user.FieldBio)
 	}
 	if m.status != nil {
 		fields = append(fields, user.FieldStatus)
@@ -4598,6 +4651,8 @@ func (m *UserMutation) Field(name string) (ent.Value, bool) {
 		return m.Gender()
 	case user.FieldSignature:
 		return m.Signature()
+	case user.FieldBio:
+		return m.Bio()
 	case user.FieldStatus:
 		return m.Status()
 	case user.FieldLastLoginAt:
@@ -4639,6 +4694,8 @@ func (m *UserMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldGender(ctx)
 	case user.FieldSignature:
 		return m.OldSignature(ctx)
+	case user.FieldBio:
+		return m.OldBio(ctx)
 	case user.FieldStatus:
 		return m.OldStatus(ctx)
 	case user.FieldLastLoginAt:
@@ -4724,6 +4781,13 @@ func (m *UserMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetSignature(v)
+		return nil
+	case user.FieldBio:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBio(v)
 		return nil
 	case user.FieldStatus:
 		v, ok := value.(int8)
@@ -4846,6 +4910,9 @@ func (m *UserMutation) ClearedFields() []string {
 	if m.FieldCleared(user.FieldSignature) {
 		fields = append(fields, user.FieldSignature)
 	}
+	if m.FieldCleared(user.FieldBio) {
+		fields = append(fields, user.FieldBio)
+	}
 	if m.FieldCleared(user.FieldLastLoginAt) {
 		fields = append(fields, user.FieldLastLoginAt)
 	}
@@ -4880,6 +4947,9 @@ func (m *UserMutation) ClearField(name string) error {
 		return nil
 	case user.FieldSignature:
 		m.ClearSignature()
+		return nil
+	case user.FieldBio:
+		m.ClearBio()
 		return nil
 	case user.FieldLastLoginAt:
 		m.ClearLastLoginAt()
@@ -4921,6 +4991,9 @@ func (m *UserMutation) ResetField(name string) error {
 		return nil
 	case user.FieldSignature:
 		m.ResetSignature()
+		return nil
+	case user.FieldBio:
+		m.ResetBio()
 		return nil
 	case user.FieldStatus:
 		m.ResetStatus()

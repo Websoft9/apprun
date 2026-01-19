@@ -33,7 +33,7 @@ func NewProjectHandler(projectService *service.ProjectService, memberService *se
 //
 //	@Summary		Create a new project
 //	@Description	Creates a new project with the authenticated user as owner
-//	@Tags			Projects
+//	@Tags			projects
 //	@Accept			json
 //	@Produce		json
 //	@Param			request	body		service.CreateProjectRequest					true	"Project creation data"
@@ -87,7 +87,7 @@ func (h *ProjectHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		List user's projects
 //	@Description	Lists all projects where the authenticated user is a member
-//	@Tags			Projects
+//	@Tags			projects
 //	@Produce		json
 //	@Success		200	{object}	response.Response{data=[]service.ProjectResponse}	"List of projects"
 //	@Failure		401	{object}	response.Response									"Unauthorized"
@@ -127,7 +127,7 @@ func (h *ProjectHandler) ListProjects(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		Get project details
 //	@Description	Gets detailed information about a specific project
-//	@Tags			Projects
+//	@Tags			projects
 //	@Produce		json
 //	@Param			id	path		string											true	"Project UUID"
 //	@Success		200	{object}	response.Response{data=service.ProjectResponse}	"Project details"
@@ -192,7 +192,7 @@ func (h *ProjectHandler) GetProject(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		Update project
 //	@Description	Updates project information (name, description)
-//	@Tags			Projects
+//	@Tags			projects
 //	@Accept			json
 //	@Produce		json
 //	@Param			id		path		string											true	"Project UUID"
@@ -287,7 +287,7 @@ func (h *ProjectHandler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		Delete project
 //	@Description	Archives a project (soft delete)
-//	@Tags			Projects
+//	@Tags			projects
 //	@Produce		json
 //	@Param			id	path		string				true	"Project UUID"
 //	@Success		200	{object}	response.Response	"Project deleted successfully"

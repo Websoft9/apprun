@@ -180,6 +180,26 @@ func (_u *UserUpdate) ClearSignature() *UserUpdate {
 	return _u
 }
 
+// SetBio sets the "bio" field.
+func (_u *UserUpdate) SetBio(v string) *UserUpdate {
+	_u.mutation.SetBio(v)
+	return _u
+}
+
+// SetNillableBio sets the "bio" field if the given value is not nil.
+func (_u *UserUpdate) SetNillableBio(v *string) *UserUpdate {
+	if v != nil {
+		_u.SetBio(*v)
+	}
+	return _u
+}
+
+// ClearBio clears the value of the "bio" field.
+func (_u *UserUpdate) ClearBio() *UserUpdate {
+	_u.mutation.ClearBio()
+	return _u
+}
+
 // SetStatus sets the "status" field.
 func (_u *UserUpdate) SetStatus(v int8) *UserUpdate {
 	_u.mutation.ResetStatus()
@@ -461,6 +481,11 @@ func (_u *UserUpdate) check() error {
 			return &ValidationError{Name: "signature", err: fmt.Errorf(`ent: validator failed for field "User.signature": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.Bio(); ok {
+		if err := user.BioValidator(v); err != nil {
+			return &ValidationError{Name: "bio", err: fmt.Errorf(`ent: validator failed for field "User.bio": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.LastLoginIP(); ok {
 		if err := user.LastLoginIPValidator(v); err != nil {
 			return &ValidationError{Name: "last_login_ip", err: fmt.Errorf(`ent: validator failed for field "User.last_login_ip": %w`, err)}
@@ -532,6 +557,12 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.SignatureCleared() {
 		_spec.ClearField(user.FieldSignature, field.TypeString)
+	}
+	if value, ok := _u.mutation.Bio(); ok {
+		_spec.SetField(user.FieldBio, field.TypeString, value)
+	}
+	if _u.mutation.BioCleared() {
+		_spec.ClearField(user.FieldBio, field.TypeString)
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(user.FieldStatus, field.TypeInt8, value)
@@ -864,6 +895,26 @@ func (_u *UserUpdateOne) ClearSignature() *UserUpdateOne {
 	return _u
 }
 
+// SetBio sets the "bio" field.
+func (_u *UserUpdateOne) SetBio(v string) *UserUpdateOne {
+	_u.mutation.SetBio(v)
+	return _u
+}
+
+// SetNillableBio sets the "bio" field if the given value is not nil.
+func (_u *UserUpdateOne) SetNillableBio(v *string) *UserUpdateOne {
+	if v != nil {
+		_u.SetBio(*v)
+	}
+	return _u
+}
+
+// ClearBio clears the value of the "bio" field.
+func (_u *UserUpdateOne) ClearBio() *UserUpdateOne {
+	_u.mutation.ClearBio()
+	return _u
+}
+
 // SetStatus sets the "status" field.
 func (_u *UserUpdateOne) SetStatus(v int8) *UserUpdateOne {
 	_u.mutation.ResetStatus()
@@ -1158,6 +1209,11 @@ func (_u *UserUpdateOne) check() error {
 			return &ValidationError{Name: "signature", err: fmt.Errorf(`ent: validator failed for field "User.signature": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.Bio(); ok {
+		if err := user.BioValidator(v); err != nil {
+			return &ValidationError{Name: "bio", err: fmt.Errorf(`ent: validator failed for field "User.bio": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.LastLoginIP(); ok {
 		if err := user.LastLoginIPValidator(v); err != nil {
 			return &ValidationError{Name: "last_login_ip", err: fmt.Errorf(`ent: validator failed for field "User.last_login_ip": %w`, err)}
@@ -1246,6 +1302,12 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 	}
 	if _u.mutation.SignatureCleared() {
 		_spec.ClearField(user.FieldSignature, field.TypeString)
+	}
+	if value, ok := _u.mutation.Bio(); ok {
+		_spec.SetField(user.FieldBio, field.TypeString, value)
+	}
+	if _u.mutation.BioCleared() {
+		_spec.ClearField(user.FieldBio, field.TypeString)
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(user.FieldStatus, field.TypeInt8, value)

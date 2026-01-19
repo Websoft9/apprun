@@ -153,6 +153,13 @@ func (r *UserRepository) UpdateLoginHistory(ctx context.Context, userID int64, c
 		Exec(ctx)
 }
 
+// UpdatePassword updates a user's password hash.
+func (r *UserRepository) UpdatePassword(ctx context.Context, userID int64, passwordHash string) error {
+	return r.client.User.UpdateOneID(userID).
+		SetPasswordHash(passwordHash).
+		Exec(ctx)
+}
+
 // CreateUserParams holds parameters for user creation.
 type CreateUserParams struct {
 	Email        string

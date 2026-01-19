@@ -33,6 +33,8 @@ const (
 	FieldGender = "gender"
 	// FieldSignature holds the string denoting the signature field in the database.
 	FieldSignature = "signature"
+	// FieldBio holds the string denoting the bio field in the database.
+	FieldBio = "bio"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
 	// FieldLastLoginAt holds the string denoting the last_login_at field in the database.
@@ -90,6 +92,7 @@ var Columns = []string{
 	FieldPhone,
 	FieldGender,
 	FieldSignature,
+	FieldBio,
 	FieldStatus,
 	FieldLastLoginAt,
 	FieldLastLoginIP,
@@ -128,6 +131,8 @@ var (
 	DefaultGender int8
 	// SignatureValidator is a validator for the "signature" field. It is called by the builders before save.
 	SignatureValidator func(string) error
+	// BioValidator is a validator for the "bio" field. It is called by the builders before save.
+	BioValidator func(string) error
 	// DefaultStatus holds the default value on creation for the "status" field.
 	DefaultStatus int8
 	// LastLoginIPValidator is a validator for the "last_login_ip" field. It is called by the builders before save.
@@ -201,6 +206,11 @@ func ByGender(opts ...sql.OrderTermOption) OrderOption {
 // BySignature orders the results by the signature field.
 func BySignature(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSignature, opts...).ToFunc()
+}
+
+// ByBio orders the results by the bio field.
+func ByBio(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldBio, opts...).ToFunc()
 }
 
 // ByStatus orders the results by the status field.

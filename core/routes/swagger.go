@@ -7,7 +7,7 @@ import (
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
-// RegisterSwagger 注册 Swagger UI 路由
+// RegisterSwagger 注册 Swagger UI 路由（在根路由上）
 // 访问路径: /api/docs 或 /api/docs/
 // OpenAPI spec: /api/docs/doc.json
 //
@@ -23,4 +23,22 @@ func RegisterSwagger(r chi.Router) {
 	r.Get("/api/docs/*", httpSwagger.Handler(
 		httpSwagger.URL("doc.json"), // 使用相对路径，不绑定 host
 	))
+}
+
+// RegisterSwaggerInAPI 在 /api 路由组内注册 Swagger
+func RegisterSwaggerInAPI(r chi.Router) {
+	swaggerHandler := httpSwagger.Handler(
+		httpSwagger.URL("/api/docs/doc.json"),
+	)
+
+	// 处理 /docs 重定向到 /docs/index.html
+	r.Get("/docs", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/api/docs/index.html", http.StatusMovedPermanently)
+	})
+
+	// 处理 /docs/ (带尾部斜杠) - chi 的 /* 不匹配空字符串
+	r.Get("/docs/", swaggerHandler)
+
+	// Swagger UI 路由 (处理 /docs/index.html, /docs/doc.json 等)
+	r.Get("/docs/*", swaggerHandler)
 }
