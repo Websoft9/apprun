@@ -157,6 +157,7 @@ func generateConfigFile(generator config.Generator) error {
 
 	// Ensure directory exists
 	configDir := filepath.Dir(configPath)
+	// #nosec G301 -- config directory needs to be readable by service users
 	if err := os.MkdirAll(configDir, 0755); err != nil {
 		return fmt.Errorf("failed to create config directory: %w", err)
 	}
@@ -307,6 +308,7 @@ func runGenerateOpenAPI(cmd *cobra.Command, args []string) error {
 		"-o", openapiOutputDir,
 	}
 
+	// #nosec G204 -- swag binary is hardcoded, only args are dynamic (safe file paths)
 	swagCmd := exec.Command("swag", swagArgs...)
 	swagCmd.Stdout = os.Stdout
 	swagCmd.Stderr = os.Stderr

@@ -1,4 +1,4 @@
-# generated: 2026-01-16
+# generated: 2026-01-19
 # project: apprun
 # project_key: apprun
 # tracking_system: file-system
@@ -26,7 +26,7 @@
 #   - optional: Can be completed but not required
 #   - done: Retrospective has been completed
 
-generated: '2026-01-16'
+generated: '2026-01-19'
 project: apprun
 project_key: apprun
 tracking_system: file-system
@@ -106,8 +106,12 @@ development_status:
     title: Redis Cache Package
     sprint: sprint-2
   1-17-platform-initialization:
-    status: ready-for-dev
+    status: backlog
     title: Platform Initialization (平台初始化)
+    sprint: sprint-2
+  1-18-cli-generate-unified-code-generation:
+    status: in-progress
+    title: CLI Generate - Unified Code Generation
     sprint: sprint-2
   epic-1-retrospective:
     status: optional
@@ -137,9 +141,9 @@ development_status:
     status: optional
     title: i18n Epic Retrospective
 
-  # Epic 3: Configuration Management
+  # Epic 3: Configuration Management (100% complete - All core stories done)
   epic-3:
-    status: in-progress
+    status: done
     title: Configuration Management
   3-1-ent-schema:
     status: done

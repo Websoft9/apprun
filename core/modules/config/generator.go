@@ -381,8 +381,7 @@ func extractEnvOnlyVars(namespace string, configStruct interface{}) []string {
 			comment += fmt.Sprintf(" [default: %s]", defaultValue)
 		}
 
-		vars = append(vars, comment)
-		vars = append(vars, fmt.Sprintf("%s=%s", envName, defaultValue))
+		vars = append(vars, comment, fmt.Sprintf("%s=%s", envName, defaultValue))
 	}
 
 	return vars

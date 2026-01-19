@@ -14,21 +14,8 @@ import (
 func TestService_LoadConfig(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	// 创建有效的配置文件
-	validYAML := `
-app:
-  name: "test-service"
-  version: "1.0.0"
-database:
-  driver: "postgres"
-  host: "localhost"
-  port: 5432
-  user: "testuser"
-  password: "testpassword123"
-  dbname: "testdb"
-`
 	// #nosec G306 -- test file, 0644 is acceptable
-	err := os.WriteFile(filepath.Join(tmpDir, "default.yaml"), []byte(validYAML), 0644)
+	err := os.WriteFile(filepath.Join(tmpDir, "default.yaml"), []byte(validTestConfigYAML), 0644)
 	require.NoError(t, err)
 
 	loader, err := NewLoader(tmpDir, nil)
@@ -79,21 +66,8 @@ database:
 func TestService_UpdateConfig(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	// 创建基础配置
-	defaultYAML := `
-app:
-  name: "test-app"
-  version: "1.0.0"
-database:
-  driver: "postgres"
-  host: "localhost"
-  port: 5432
-  user: "testuser"
-  password: "testpassword123"
-  dbname: "testdb"
-`
 	// #nosec G306 -- test file, 0644 is acceptable
-	err := os.WriteFile(filepath.Join(tmpDir, "default.yaml"), []byte(defaultYAML), 0644)
+	err := os.WriteFile(filepath.Join(tmpDir, "default.yaml"), []byte(validTestConfigYAML), 0644)
 	require.NoError(t, err)
 
 	mockProvider := newMockProvider()
@@ -121,21 +95,8 @@ database:
 func TestService_UpdateConfig_DBFalse(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	// 创建基础配置
-	defaultYAML := `
-app:
-  name: "test-app"
-  version: "1.0.0"
-database:
-  driver: "postgres"
-  host: "localhost"
-  port: 5432
-  user: "testuser"
-  password: "testpassword123"
-  dbname: "testdb"
-`
 	// #nosec G306 -- test file, 0644 is acceptable
-	err := os.WriteFile(filepath.Join(tmpDir, "default.yaml"), []byte(defaultYAML), 0644)
+	err := os.WriteFile(filepath.Join(tmpDir, "default.yaml"), []byte(validTestConfigYAML), 0644)
 	require.NoError(t, err)
 
 	mockProvider := newMockProvider()
@@ -158,21 +119,8 @@ database:
 func TestService_DeleteDynamicConfig(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	// 创建基础配置
-	defaultYAML := `
-app:
-  name: "test-app"
-  version: "1.0.0"
-database:
-  driver: "postgres"
-  host: "localhost"
-  port: 5432
-  user: "testuser"
-  password: "testpassword123"
-  dbname: "testdb"
-`
 	// #nosec G306 -- test file, 0644 is acceptable
-	err := os.WriteFile(filepath.Join(tmpDir, "default.yaml"), []byte(defaultYAML), 0644)
+	err := os.WriteFile(filepath.Join(tmpDir, "default.yaml"), []byte(validTestConfigYAML), 0644)
 	require.NoError(t, err)
 
 	mockProvider := newMockProvider()

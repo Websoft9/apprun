@@ -67,7 +67,7 @@ Find more information at: https://github.com/websoft9/apprun`,
 		// Check if config file exists
 		configPath := filepath.Join(configDir, "default.yaml")
 		configFileExists := true
-		if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		if _, statErr := os.Stat(configPath); os.IsNotExist(statErr) {
 			configFileExists = false
 		}
 
@@ -163,10 +163,10 @@ Find more information at: https://github.com/websoft9/apprun`,
 
 		// Config file exists - load it to environment variables
 		// Priority: runtime env > config file > code defaults
-		if err := env.LoadConfigToEnv(configDir); err != nil {
+		if loadErr := env.LoadConfigToEnv(configDir); loadErr != nil {
 			fmt.Fprintf(os.Stderr, "\n❌ Configuration Error: Failed to load config file\n\n")
 			fmt.Fprintf(os.Stderr, "File: %s\n", configPath)
-			fmt.Fprintf(os.Stderr, "Error: %v\n\n", err)
+			fmt.Fprintf(os.Stderr, "Error: %v\n\n", loadErr)
 			fmt.Fprintf(os.Stderr, "Please check:\n")
 			fmt.Fprintf(os.Stderr, "  - YAML syntax is valid\n")
 			fmt.Fprintf(os.Stderr, "  - File is readable\n")

@@ -223,6 +223,6 @@ func TestLoader_AllowDatabaseStorage(t *testing.T) {
 	// database.password 标记为 db:false
 	assert.False(t, loader.AllowDatabaseStorage("database.password"))
 
-	// poc.enabled 标记为 db:true
-	assert.True(t, loader.AllowDatabaseStorage("poc.enabled"))
+	// app.timezone 标记为 db:true
+	assert.True(t, loader.AllowDatabaseStorage("app.timezone"))
 }

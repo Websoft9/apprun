@@ -84,25 +84,9 @@ func TestHandler_UpdateConfig(t *testing.T) {
 	// Arrange
 	tmpDir := t.TempDir()
 
-	// 创建 default.yaml，提供必填配置
-	defaultYAML := `
-app:
-  name: "apprun"
-  version: "1.0.0"
-database:
-  driver: "postgres"
-  host: "localhost"
-  port: 5432
-  user: "postgres"
-  password: "test-password-12345"
-  dbname: "apprun"
-poc:
-  enabled: true
-  database: "postgres://user:pass@localhost:5432/apprun_poc"
-  apikey: "test-api-key-12345"
-`
+	// 使用完整有效的配置 YAML
 	// #nosec G306 -- test file, 0644 is acceptable
-	err := os.WriteFile(filepath.Join(tmpDir, "default.yaml"), []byte(defaultYAML), 0644)
+	err := os.WriteFile(filepath.Join(tmpDir, "default.yaml"), []byte(validTestConfigYAML), 0644)
 	require.NoError(t, err)
 
 	mockProvider := &mockConfigProvider{configs: make(map[string]string)}
@@ -148,25 +132,9 @@ func TestHandler_UpdateConfig_DBFalse(t *testing.T) {
 	// Arrange
 	tmpDir := t.TempDir()
 
-	// 创建 default.yaml，提供必填配置
-	defaultYAML := `
-app:
-  name: "apprun"
-  version: "1.0.0"
-database:
-  driver: "postgres"
-  host: "localhost"
-  port: 5432
-  user: "postgres"
-  password: "test-password-12345"
-  dbname: "apprun"
-poc:
-  enabled: true
-  database: "postgres://user:pass@localhost:5432/apprun_poc"
-  apikey: "test-api-key-12345"
-`
+	// 使用完整有效的配置 YAML
 	// #nosec G306 -- test file, 0644 is acceptable
-	err := os.WriteFile(filepath.Join(tmpDir, "default.yaml"), []byte(defaultYAML), 0644)
+	err := os.WriteFile(filepath.Join(tmpDir, "default.yaml"), []byte(validTestConfigYAML), 0644)
 	require.NoError(t, err)
 
 	mockProvider := &mockConfigProvider{configs: make(map[string]string)}
@@ -345,25 +313,9 @@ func TestHandler_IntegrationFlow(t *testing.T) {
 	// Arrange - 创建完整的路由和 handler
 	tmpDir := t.TempDir()
 
-	// 创建基本的 default.yaml，提供必填配置项
-	defaultYAML := `
-app:
-  name: "apprun"
-  version: "1.0.0"
-database:
-  driver: "postgres"
-  host: "localhost"
-  port: 5432
-  user: "postgres"
-  password: "test-password-12345"
-  dbname: "apprun"
-poc:
-  enabled: true
-  database: "postgres://user:pass@localhost:5432/apprun_poc"
-  apikey: "test-api-key-12345"
-`
+	// 使用完整有效的配置 YAML 作为 default.yaml
 	// #nosec G306 -- test file, 0644 is acceptable
-	err := os.WriteFile(filepath.Join(tmpDir, "default.yaml"), []byte(defaultYAML), 0644)
+	err := os.WriteFile(filepath.Join(tmpDir, "default.yaml"), []byte(validTestConfigYAML), 0644)
 	require.NoError(t, err)
 
 	// 提供必填配置项以通过验证

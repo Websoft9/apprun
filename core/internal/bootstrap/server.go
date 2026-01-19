@@ -278,10 +278,10 @@ func initializePlatformProject(ctx context.Context, client *ent.Client, initConf
 	slogger.Info("Super admin initialized", logger.Field{Key: "user_id", Value: superAdmin.ID})
 
 	// Step 1.5: Assign platform_admin role to super admin
-	if err := rbac.AddPlatformRole(superAdmin.ID, rbac.RolePlatformAdmin); err != nil {
+	if roleErr := rbac.AddPlatformRole(superAdmin.ID, rbac.RolePlatformAdmin); roleErr != nil {
 		slogger.Warn("Failed to assign platform_admin role",
 			logger.Field{Key: "user_id", Value: superAdmin.ID},
-			logger.Field{Key: "error", Value: err.Error()})
+			logger.Field{Key: "error", Value: roleErr.Error()})
 		// Don't fail initialization if role assignment fails (role may already exist)
 	} else {
 		slogger.Info("Platform admin role assigned", logger.Field{Key: "user_id", Value: superAdmin.ID})

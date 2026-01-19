@@ -621,8 +621,8 @@ func runMigrateSync(cmd *cobra.Command, args []string) error {
 				fmt.Printf("  - %s\n", p)
 			}
 		} else {
-			if err := migrator.ApplyMigrations(ctx); err != nil {
-				return fmt.Errorf("failed to apply pending migrations: %w", err)
+			if applyErr := migrator.ApplyMigrations(ctx); applyErr != nil {
+				return fmt.Errorf("failed to apply pending migrations: %w", applyErr)
 			}
 			fmt.Println("✅ Pending migrations applied successfully")
 		}
@@ -951,7 +951,8 @@ func runMigrateClean(cmd *cobra.Command, args []string) error {
 	fmt.Println("🧹 Cleaning migration history...")
 	fmt.Println()
 
-	if cleanAll {
+	switch {
+	case cleanAll:
 		// Remove all failed migrations
 		fmt.Println("⚠️  Removing all failed migration records...")
 		count, err := migrator.CleanFailedMigrations(ctx)
@@ -959,7 +960,7 @@ func runMigrateClean(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("failed to clean migrations: %w", err)
 		}
 		fmt.Printf("✅ Removed %d failed migration record(s)\n", count)
-	} else if cleanLast {
+	case cleanLast:
 		// Remove last migration
 		fmt.Println("⚠️  Removing last migration record...")
 		version, err := migrator.CleanLastMigration(ctx)
@@ -967,7 +968,7 @@ func runMigrateClean(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("failed to clean last migration: %w", err)
 		}
 		fmt.Printf("✅ Removed migration: %s\n", version)
-	} else if len(args) > 0 {
+	case len(args) > 0:
 		// Remove specific version
 		version := args[0]
 		fmt.Printf("⚠️  Removing migration record: %s...\n", version)
@@ -975,7 +976,7 @@ func runMigrateClean(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("failed to clean migration: %w", err)
 		}
 		fmt.Printf("✅ Removed migration: %s\n", version)
-	} else {
+	default:
 		return fmt.Errorf("specify version, --all, or --last flag")
 	}
 

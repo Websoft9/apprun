@@ -69,6 +69,7 @@ func TestGenerateTokenPair_ExpirationDifferences(t *testing.T) {
 	viper.Set("jwt.refresh_token_expiration", 7*24*time.Hour)
 	viper.Set("jwt.issuer", "test-issuer")
 	viper.Set("jwt.audience", "test-audience")
+	resetGlobalService()
 
 	userClaims := map[string]interface{}{
 		"username": "testuser",
@@ -139,6 +140,7 @@ func TestValidateRefreshToken_Expired(t *testing.T) {
 	viper.Set("jwt.refresh_token_expiration", 1*time.Nanosecond) // Expires immediately
 	viper.Set("jwt.issuer", "test-issuer")
 	viper.Set("jwt.audience", "test-audience")
+	resetGlobalService()
 
 	userClaims := map[string]interface{}{
 		"username": "testuser",

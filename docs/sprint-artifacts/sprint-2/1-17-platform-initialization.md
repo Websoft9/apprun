@@ -22,7 +22,18 @@
 
 ## 关于初始化
 
-软件初始化不仅仅是“启动时跑个脚本”，而是一个多阶段、多场景的生命周期管理过程。它涉及数据库表结构、数据导入、用户创建等核心操作，这些操作需要在不同启动阶段（如首次启动、后续重启、版本升级）中智能适配，以避免数据不一致、性能瓶颈或安全风险。
+### 核心概念澄清
+
+软件初始化不仅仅是"启动时跑个脚本"，而是一个多阶段、多场景的生命周期管理过程。**关键区分**：
+
+**Schema 迁移（Infrastructure）≠ 数据初始化（Application）**
+
+| 操作类型 | 职责 | 工具 | 权限要求 | 执行时机 |
+|---------|------|------|----------|----------|
+| **Schema 迁移** | 创建/修改表结构 | `apprun migrate apply` | DDL 权限 | 程序外（部署阶段） |
+| **数据初始化** | 创建初始业务数据 | `apprun init` | DML 权限 | 程序外 或 程序内（AUTO_INIT） |
+
+**本 Story 聚焦于"数据初始化"**，Schema 迁移由 Story 1.5 负责。
 
 ### 场景分类
 
@@ -45,13 +56,22 @@
 - 场景描述：软件版本更新后首次启动。可能涉及数据库迁移（schema changes）、数据转换或新功能的启用。
 - 典型操作：检测版本差异、运行迁移脚本（migrations）、导入新数据、更新用户权限或角色。
 - 我的理解：这是“演进”阶段，最复杂。架构师需要设计“向后兼容”的迁移策略，避免破坏现有数据。
+**内置初始化**：apprun 作为产品包（二进制或容器），初始化逻辑完全内置于 Go 代码，不依赖外部工具如 Ansible
 
-4. 其他边缘场景：
+2. **职责分离**：
+   - **Schema 迁移**（程序外）：DBA/CI 使用 `apprun migrate` 工具执行
+   - **数据初始化**（程序外 + 程序内）：运维使用 `apprun init` 或启动时自动执行（AUTO_INIT）
 
-- 多环境部署：如开发/测试/生产环境，初始化逻辑需环境感知（environment-aware），避免生产数据被测试数据覆盖。
-- 灾难恢复：从备份恢复时，初始化需重建状态。
-- 横向扩展：新实例加入集群时，初始化需同步状态，而非重新创建。
+3. **幂等性保证**：多次执行 `apprun init` 或重启应用都是安全的，通过检查 system user 存在性判断初始化状态
 
+4. **事务完整性**：所有初始化操作在单个事务中完成，失败时自动回滚，避免部分初始化
+
+5. **最小权限原则**：
+   - Schema 迁移需要 DDL 权限（CREATE, ALTER, DROP）
+   - 数据初始化仅需 DML 权限（SELECT, INSERT, UPDATE）
+   - 应用运行时账号不应有 DDL 权限
+
+6. **状态机管理**：使用 system user 存在性作为初始化状态标志，未来可扩展为 `platform_meta` 表存储更多元数据
 > 这些场景不是孤立的——好的架构会将它们抽象成一个“初始化框架”，使用状态机或工作流来管理（例如，基于事件驱动的初始化管道）。
 
 ### 架构原则
@@ -97,17 +117,19 @@
 ## Implementation Tasks
 
 ### Task 1: Bootstrap Package（核心逻辑）
-- [ ] 创建 `core/pkg/bootstrap/initializer.go`
-  - [ ] `CheckInitialized(ctx)` - 查询 `platform_meta.initialized` 状态
+- [ ] 创建 `core/internal/bootstrap/initializer.go`
+  - [ ] `CheckInitialized(ctx)` - 查询 system user 是否存在（ID=1）
   - [ ] `Initialize(ctx, config)` - 执行初始化流程（事务）
-    - Create system user (ID=1, username="system")
-    - Create admin account (from config)
-    - Create platform project with system user as owner
-    - Insert `platform_meta.initialized = true`
-  - [ ] `Config` 结构体（AdminEmail, AdminPassword, AutoInit）
+    - Step 1: Create system user (ID=1, username="system", status=disabled)
+    - Step 2: Create admin account (from config, with password hash)
+    - Step 3: Create platform project (owner=system user, fixed UUID)
+    - Step 4: Add admin as platform project member (role=project_admin)
+    - Step 5: Assign platform_admin global role to admin
+    - Step 6: Mark initialized (可选：插入 platform_meta 记录)
+  - [ ] `InitConfig` 结构体（AdminUsername, AdminEmail, AdminPassword）
 
-### Task 2: Migration File（数据库结构）
-- [ ] 创建 `migrations/00X_platform_meta.sql`
+### Task 2: Migration File（数据库结构）- 可选
+- [ ] 创建 `migrations/00X_platform_meta.sql`（如果需要额外的元数据表）
   ```sql
   CREATE TABLE platform_meta (
     key VARCHAR(255) PRIMARY KEY,
@@ -115,22 +137,26 @@
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
   ```
+  **注意**：当前实现通过检查 system user 存在性判断初始化状态，此表为可选扩展
 
-### Task 3: CLI Command（Cobra 子命令）
-- [ ] 创建 `core/cmd/cli/init.go` - Cobra 子命令定义
-  - [ ] 实现 `initCmd` 命令，读取环境变量并调用 `bootstrap.Initialize()`
-  - [ ] 添加 flags：`--admin-email`, `--admin-password`, `--skip-confirmation`
+### Task 3: CLI Cominit.go` - Cobra 子命令定义
+  - [ ] 实现 `initCmd` 命令，读取环境变量并调用 `internal/bootstrap.Initialize()`
+  - [ ] 添加 flags：`--admin-email`, `--admin-username`, `--admin-password`
   - [ ] 在 `init()` 函数中注册到 rootCmd：`rootCmd.AddCommand(initCmd)`
+  - [ ] 幂等性处理：已初始化时友好提示而非报错
 - [ ] 添加 `Makefile` target:
   ```makefile
   init: db-migrate
+      @echo "🚀 Initializing platform..."
       @bin/apprun init
   ```
-- [ ] **依赖 Story 1.6**：需要 Cobra 框架和 `cmd/cli/root.go` 先完成
-
-### Task 4: Startup Integration（main.go）
-- [ ] 在 `Phase 2.8` 添加初始化检查
-  - 调用 `bootstrap.CheckInitialized()`
+- [ ] **依赖 Story 1.6**：需要 Cobra 框架和 `cmd
+- [ ] **依赖 Story 1.6**：需要 Cobra bootstrap/server.go）
+- [x] 在 `Phase 2.8` 添加初始化检查
+  - [x] 调用 `bootstrap.NewInitializer()` 和 `CheckInitialized()`
+  - [x] 使用 `bootstrap.DefaultConfig().AutoInit` 环境变量决定行为
+  - [x] 已创建 `core/internal/bootstrap/config.go` 定义 AUTO_INIT 配置结构
+- [ ] 重构现有实现：将 `initializePlatformProject()` 逻辑移到 `initializer.go`
   - 使用 `bootstrap.DefaultConfig().AutoInit` 环境变量决定行为
   - 已创建 `core/internal/bootstrap/config.go` 定义 AUTO_INIT 配置结构
 
@@ -146,19 +172,24 @@
 - [ ] 更新 `.env.example` 添加 `PLATFORM_ADMIN_EMAIL/PASSWORD/AUTO_INIT`
 - [ ] 更新 `README.md` 添加初始化步骤说明
 
----
+--- 说明 |
+|---------|------|------|------|
+| **System User** | 硬编码常量 | ID=1, username="system", status=disabled | 不可登录，作为平台资源所有者 |
+| **Admin Username** | 配置文件/环境变量 | auth.init.username 或 $ADMIN_USERNAME | 默认 "admin" |
+| **Admin Email** | 配置文件/环境变量 | auth.init.email 或 $ADMIN_EMAIL | 默认 "admin@example.com" |
+| **Admin Password** | 配置文件/环境变量 + 自动生成 | auth.init.password 或 $ADMIN_PASSWORD | 为空时随机生成 16 位密码 |
+| **Platform Project UUID** | 硬编码常量 | 00000000-0000-0000-0000-000000000000 | 固定 UUID 便于识别 |
+| **Platform Project Name** | 硬编码常量 | "Platform" | 全局平台项目名称 |
 
-## Technical Design
+**生成流程**：
+```
+配置文件 → 环境变量覆盖 → 密码生成/Hash → 事务性插入 → RBAC 角色分配
+```
 
-### Architecture Decision: 职责边界与分层
-
-**程序外（Infrastructure Layer - 由部署脚本/CI 完成）**：
-- 数据库 Schema 迁移（`make db-migrate` - Atlas CLI）
-- 容器镜像构建和环境变量注入
-- Secret 管理（DB密码、JWT密钥）
-
-**程序内（Application Layer - 由应用启动完成）**：
-- 初始化状态检查（Phase 2.8）
+**权限模型**：
+- System User **拥有** Platform Project（Ownership）
+- Admin **管理** Platform Project（通过 platform_admin 角色授权）
+- Admin 作为 Platform Project 的 member（role=project_admin）始化状态检查（Phase 2.8）
 - 条件初始化（根据 `AUTO_INIT` 环境变量）
 - 运行时配置加载和服务初始化
 
@@ -221,26 +252,28 @@
 
 ### Module Structure
 
-```
-core/
-├── cmd/
-│   ├── main.go                 # 程序入口
-│   └── cli/
-│       ├── root.go             # Cobra 根命令（来自 Story 1.6）
-│       ├── start.go            # start 子命令（来自 Story 1.6）
-│       ├── init.go             # NEW: init 子命令（本 Story）
-│       └── ...                 # 其他子命令
-├── pkg/
-│   └── bootstrap/              # NEW: 初始化模块
-│       ├── initializer.go      # 核心初始化逻辑
-│       └── initializer_test.go
+```root.go                 # Cobra 根命令（来自 Story 1.6）
+│   ├── serve.go                # serve 子命令（来自 Story 1.6）
+│   ├── init.go                 # NEW: init 子命令（本 Story）
+│   ├── migrate.go              # migrate 子命令（已有）
+│   └── generate.go             # generate 子命令（Story 1.18）
+├── internal/
+│   └── bootstrap/              # 启动与初始化模块
+│       ├── server.go           # 服务启动编排（已有）
+│       ├── config.go           # Bootstrap 配置（已有）
+│       ├── initializer.go      # NEW: 核心初始化逻辑
+│       └── initializer_test.go # NEW: 初始化测试
 └── migrations/
-    ├── 00X_platform_meta.sql   # NEW: platform_meta 表
-    └── data/                   # NEW: 数据迁移目录 (预留)
+    ├── 00X_platform_meta.sql   # 可选: platform_meta 表
+    └── data/                   # 可选: 数据迁移目录 (预留)
         └── README.md           # 说明数据迁移用法
 ```
 
 **架构说明：**
+- `cmd/init.go` 遵循 Story 1.6 的 Cobra 架构
+- `internal/bootstrap/` 包含所有启动和初始化逻辑（内部包，不对外暴露）
+- 统一的命令入口：`apprun init`（而非独立工具）
+- 所有子命令都在 `cmd
 - `cmd/cli/init.go` 遵循 Story 1.6 的 Cobra 架构
 - 统一的命令入口：`apprun init`（而非独立工具）
 - 所有子命令都在 `cmd/cli/` 目录下，保持一致性
@@ -250,29 +283,99 @@ core/
 ## Implementation Approach
 
 ### Key Implementation Points
-
-**1. Idempotency Pattern**
-```go
-// bootstrap/initializer.go
+internal/bootstrap/initializer.go
 func (i *Initializer) Initialize(ctx context.Context) error {
-    // Check if already initialized (query platform_meta table)
+    // Check if already initialized (check system user existence)
     if isInitialized, _ := i.CheckInitialized(ctx); isInitialized {
         return nil // Safe to call multiple times
     }
     
     // Execute in transaction
-    return i.db.WithTx(ctx, func(tx *ent.Tx) error {
-        // 1. Create system user (ID=1)
-        // 2. Create admin account
-        // 3. Create platform project
+    return i.client.WithTx(ctx, func(tx *ent.Tx) error {
+        // Step 1: Create system user (ID=1, status=disabled)
+        systemUser := tx.User.Create().SetID(1).SetUsername("system")...
+        
+        // Step 2: Create admin account (from config)
+        admin := tx.User.Create().SetEmail(i.config.AdminEmail)...
+        
+        // Step 3: Create platform project (owner=system)
+        platformProject := tx.Project.Create().SetOwnerID(systemUser.ID)...
+        bootstrap/server.go**
+```go
+// Phase 2.8: Initialization Check
+initConfig := bootstrap.InitConfig{
+    AdminUsername: authConfig.Init.Username,
+    AdminEmail:    authConfig.Init.Email,
+    AdminPassword: authConfig.Init.Password,
+}
+
+initializer := bootstrap.NewInitializer(dbClient.GetEntClient(), initConfig)
+
+if isInit, _ := initializer.CheckInitialized(ctx); !isInit {
+    boointernal/bootstrap/initializer_test.go`
+  - TestNewInitializer - 创建实例
+  - TestCheckInitialized_NotInitialized - 未初始化状态
+  - TestCheckInitialized_AlreadyInitialized - 已初始化状态
+  - TestInitialize_Success - 完整流程（system user + admin + platform project）
+  - TestInitialize_Idempotent - 重复执行安全（不创建重复数据）
+  - TestInitialize_RandomPassword - 密码为空时自动生成
+  - TestInitialize_TransactionRollback - 失败时完整回滚
+  - TestInitialize_SystemUserOwnership - 验证 Platform Project owner 是 system user
+  - TestInitialize_AdminRoleAssignment - 验证 admin 获得 platform_admin 角色; err != nil {
+            return fmt.Errorf("initialization failed: %w", err)
+        }ct
         // 4. Mark initialized
     })
 }
 ```
 
 **2. Environment Detection in main.go**
+```gobin/apprun init
+    @echo "✅ Platform initialized"
+    @echo "💡 Check console output for admin credentials (if generated)"
+```
+
 ```go
-// Phase 2.8: Initialization Check
+// cmd/init.go
+var initCmd = &cobra.Command{
+    Use:   "init",
+    Short: "Initialize platform (create admin and platform project)",
+    RunE:  runInit,
+}
+
+func runInit(cmd *cobra.Command, args []string) error {
+    // Load database config
+    dbConfig := database.DefaultConfig()
+    dbClient, err := database.Connect(ctx, dbConfig)
+    if err != nil {
+        return fmt.Errorf("failed to connect database: %w", err)
+    }
+    defer dbClient.Close()
+    
+    // Create initializer
+    initConfig := bootstrap.InitConfig{
+        AdminUsername: env.Get("ADMIN_USERNAME", "admin"),
+        AdminEmail:    env.Get("ADMIN_EMAIL", "admin@example.com"),
+        AdminPassword: env.Get("ADMIN_PASSWORD", ""),
+    }
+     vs Bootstrap**
+
+| 工具 | 职责 | 权限要求 | 执行时机 | 命令 |
+|-----|------|----------|----------|------|
+| **Atlas CLI** | Schema 迁移（表结构） | DDL（CREATE, ALTER, DROP） | 程序外（部署阶段） | `apprun migrate apply` |
+| **Bootstrap Initializer** | 数据初始化（业务数据） | DML（INSERT, SELECT） | 程序外 或 程序内 | `apprun init` 或 `apprun serve` |
+| **Ent Client** | ORM 操作（数据访问） | DML（CRUD） | 运行时 | N/A（库） |
+
+**关键区别**：
+- **Schema Migration**（结构）: `CREATE TABLE users (...)`
+- **Data Initialization**（数据）: `INSERT INTO users (id, username, ...) VALUES (1, 'system', ...)`
+- **Bootstrap 不执行 Schema 迁移**：遵循最小权限原则和生产安全要求
+
+**初始化类型对比**：
+- **Schema Migration** (Atlas): 表结构变更 → `make db-migrate`
+- **Data Migration** (Go): 业务数据转换（版本升级时） → `make migrate-data`（预留）
+- **Seed Data** (Bootstrap): 初始默认数据（首次部署） → `make init`
+}
 initializer := bootstrap.NewInitializer(dbClient, bootstrap.Config{
     AdminEmail:    env.Get("PLATFORM_ADMIN_EMAIL", "admin@example.com"),
     AdminPassword: env.Get("PLATFORM_ADMIN_PASSWORD", ""),

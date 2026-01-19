@@ -217,8 +217,8 @@ func TestDemoHandler_ErrorBusiness(t *testing.T) {
 
 	handler.ErrorBusiness(w, req)
 
-	if w.Code != http.StatusUnprocessableEntity {
-		t.Errorf("Expected status 422, got %d", w.Code)
+	if w.Code != http.StatusConflict {
+		t.Errorf("Expected status 409, got %d", w.Code)
 	}
 
 	var resp response.Response

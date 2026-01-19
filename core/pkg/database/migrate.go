@@ -81,11 +81,11 @@ func NewMigratorFromConfig(ctx context.Context, cfg *Config) (*Migrator, error) 
 		return nil, errors.Wrap(err, errors.ErrCodeDatabaseConnectFailed, "failed to open database for migration")
 	}
 
-	if err := db.PingContext(ctx); err != nil {
+	if pingErr := db.PingContext(ctx); pingErr != nil {
 		if closeErr := db.Close(); closeErr != nil {
 			log.Printf("Failed to close database after ping failure: %v", closeErr)
 		}
-		return nil, errors.Wrap(err, errors.ErrCodeDatabaseConnectFailed, "failed to ping database")
+		return nil, errors.Wrap(pingErr, errors.ErrCodeDatabaseConnectFailed, "failed to ping database")
 	}
 
 	// Determine migrations directory
@@ -316,7 +316,7 @@ func (m *Migrator) RollbackMigration(ctx context.Context) error {
 	// Atlas versioned migrations support down migrations if they exist
 	// Look for down migration file
 	downFile := filepath.Join(m.migrationsDir, lastApplied+".down.sql")
-	if _, err := os.Stat(downFile); os.IsNotExist(err) {
+	if _, statErr := os.Stat(downFile); os.IsNotExist(statErr) {
 		return errors.New(errors.ErrCodeDatabaseMigrateFailed,
 			fmt.Sprintf("no down migration found for version %s. Create %s to enable rollback", lastApplied, downFile))
 	}
@@ -390,6 +390,7 @@ func (m *Migrator) ResetDatabase(ctx context.Context) error {
 //
 // The Go SDK (ariga.io/atlas) does not provide schema diff functionality,
 // so we must use os/exec to call the atlas CLI binary directly.
+//nolint:gocyclo // Complex CLI interaction requires multiple conditional paths
 func (m *Migrator) GenerateMigration(ctx context.Context, name string, toSchema string, devURL string) (string, error) {
 	if name == "" {
 		return "", errors.New(errors.ErrCodeInvalidParam, "migration name is required")
@@ -413,10 +414,10 @@ func (m *Migrator) GenerateMigration(ctx context.Context, name string, toSchema 
 	var configPath string
 	var configCleanup func()
 	if m.atlasConfigProvider != nil {
-		var err error
-		configPath, configCleanup, err = m.atlasConfigProvider(dbURL)
-		if err != nil {
-			return "", errors.Wrap(err, errors.ErrCodeDatabaseMigrateFailed, "failed to get atlas config")
+		var configErr error
+		configPath, configCleanup, configErr = m.atlasConfigProvider(dbURL)
+		if configErr != nil {
+			return "", errors.Wrap(configErr, errors.ErrCodeDatabaseMigrateFailed, "failed to get atlas config")
 		}
 		if configCleanup != nil {
 			defer configCleanup()
@@ -436,6 +437,7 @@ func (m *Migrator) GenerateMigration(ctx context.Context, name string, toSchema 
 		args = append(args, "--config", "file://"+configPath, "--env", "local")
 	}
 
+	// #nosec G204 -- atlas binary is hardcoded, only args are file paths from config
 	cmd := exec.CommandContext(ctx, "atlas", args...)
 	// Set working directory to project root (where ent/schema is located)
 	cmd.Dir = m.workingDir
@@ -446,7 +448,7 @@ func (m *Migrator) GenerateMigration(ctx context.Context, name string, toSchema 
 
 	// Record current file list before running atlas
 	filesBefore := make(map[string]bool)
-	if entries, err := os.ReadDir(m.migrationsDir); err == nil {
+	if entries, readErr := os.ReadDir(m.migrationsDir); readErr == nil {
 		for _, entry := range entries {
 			if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".sql") {
 				filesBefore[entry.Name()] = true
@@ -626,10 +628,10 @@ func (m *Migrator) InspectSchema(ctx context.Context, schemaURL, devURL string) 
 	var configPath string
 	var configCleanup func()
 	if m.atlasConfigProvider != nil {
-		var err error
-		configPath, configCleanup, err = m.atlasConfigProvider(dbURL)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get atlas config: %w", err)
+		var providerErr error
+		configPath, configCleanup, providerErr = m.atlasConfigProvider(dbURL)
+		if providerErr != nil {
+			return nil, fmt.Errorf("failed to get atlas config: %w", providerErr)
 		}
 		if configCleanup != nil {
 			defer configCleanup()
@@ -649,6 +651,7 @@ func (m *Migrator) InspectSchema(ctx context.Context, schemaURL, devURL string) 
 		args = append(args, "--config", "file://"+configPath, "--env", "local")
 	}
 
+	// #nosec G204 -- atlas binary is hardcoded, args are from database config
 	cmd := exec.CommandContext(ctx, "atlas", args...)
 	cmd.Dir = m.workingDir
 
@@ -862,7 +865,7 @@ func filterAtlasMetadataTables(output string) string {
 	}
 
 	lines := strings.Split(output, "\n")
-	var filtered []string
+	filtered := make([]string, 0, len(lines))
 	skipBlock := false
 	blockDepth := 0
 
@@ -871,7 +874,7 @@ func filterAtlasMetadataTables(output string) string {
 		isMetadataTable := false
 		for _, table := range metadataTables {
 			// Match patterns like: -- Drop "atlas_schema_revisions" table
-			if strings.Contains(line, fmt.Sprintf(`"%s"`, table)) &&
+			if strings.Contains(line, fmt.Sprintf("%q", table)) &&
 				(strings.Contains(line, "DROP TABLE") ||
 					strings.Contains(line, "Create") ||
 					strings.Contains(line, "Modify")) {
@@ -880,7 +883,7 @@ func filterAtlasMetadataTables(output string) string {
 				break
 			}
 			// Match patterns like: DROP TABLE "atlas_schema_revisions";
-			if strings.Contains(line, fmt.Sprintf(`DROP TABLE "%s"`, table)) {
+			if strings.Contains(line, fmt.Sprintf("DROP TABLE %q", table)) {
 				isMetadataTable = true
 				// This is a single line statement, skip it
 				continue
