@@ -46,6 +46,11 @@ help:
 	@echo "  make i18n          - Process translations"
 	@echo "  make config-example - Generate config.example"
 	@echo ""
+	@echo "🔧 Code Generation (via CLI):"
+	@echo "  ./bin/apprun generate model    - Generate Ent ORM code"
+	@echo "  ./bin/apprun generate openapi  - Generate OpenAPI/Swagger docs"
+	@echo "  ./bin/apprun generate config   - Generate config examples"
+	@echo ""
 	@echo "🧪 Testing:"
 	@echo "  make test          - Run all tests"
 	@echo "  make test-unit     - Unit tests only"
@@ -189,8 +194,11 @@ build-fast: generate
 # 代码生成 (Ent ORM)
 generate:
 	@echo "🔄 Generating Ent code..."
-	@cd core && go generate ./ent
-	@echo "✅ Ent code generated"
+	@if [ ! -f core/bin/apprun ]; then \
+		echo "⚠️  bin/apprun not found, using go generate..." && cd core && go generate ./ent; \
+	else \
+		cd core && ./bin/apprun generate model; \
+	fi
 
 # ============================================
 # i18n Commands (Story 8)
@@ -218,11 +226,13 @@ i18n-merge:
 # Configuration Management (Story 10a)
 # ============================================
 
-# Generate config.example from registered modules
+# Generate config.example and .env.example using apprun CLI
 config-example:
-	@echo "🔧 Generating config.example from module registry..."
-	@cd core && go run ./scripts/generate-config-example.go
-	@echo "✅ config/config.example generated"
+	@echo "🔧 Generating config.example and .env.example..."
+	@if [ ! -f core/bin/apprun ]; then \
+		echo "⚠️  bin/apprun not found, building..." && $(MAKE) build-fast; \
+	fi
+	@cd core && ./bin/apprun generate config
 	@echo "💡 Review and customize for your environment"
 
 # ============================================
@@ -353,8 +363,11 @@ check: lint test security
 # Generate Swagger API documentation
 swagger:
 	@echo "📚 Generating Swagger API documentation..."
-	@cd core && swag init -g internal/bootstrap/server.go -o docs
-	@echo "✅ Swagger docs generated in core/docs/"
+	@if [ ! -f core/bin/apprun ]; then \
+		echo "⚠️  bin/apprun not found, using swag directly..." && cd core && swag init -g internal/bootstrap/server.go -o docs; \
+	else \
+		cd core && ./bin/apprun generate openapi; \
+	fi
 	@echo "💡 Access at: http://localhost:$${HTTP_PORT:-8080}/api/docs/"
 
 # Alias for swagger

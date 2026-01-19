@@ -34,7 +34,25 @@ const (
 	DefaultBcryptCost          = 10
 	DefaultMaxFailedAttempts   = 5
 	DefaultFailedLoginCacheTTL = 5 * time.Minute
+
+	// Platform Project Constants (Fixed Values)
+	// The platform project uses a fixed UUID (all zeros) for easy identification
+	PlatformProjectUUID        = "00000000-0000-0000-0000-000000000000"
+	PlatformProjectName        = "Platform"
+	PlatformProjectDescription = "Global platform-level resources and configuration"
 )
+
+// ReservedUsernames defines usernames that are reserved for system use.
+// These usernames can only be used during platform initialization (super admin creation).
+// Regular users cannot register with these names to prevent impersonation and confusion.
+var ReservedUsernames = []string{
+	"admin",
+	"administrator",
+	"root",
+	"system",
+	"superuser",
+	"sysadmin",
+}
 
 // ============================================================================
 // Configuration Structures (Config Center Managed)
@@ -45,6 +63,24 @@ const (
 type Config struct {
 	JWT      jwt.Config     `mapstructure:"jwt" json:"jwt"`           // JWT configuration (from pkg/jwt)
 	Security SecurityConfig `mapstructure:"security" json:"security"` // Security settings specific to auth module
+	Init     InitConfig     `mapstructure:"init" json:"init"`         // Platform initialization configuration (super admin account)
+}
+
+// InitConfig defines the platform initialization settings.
+// These values are used during bootstrap to create the initial super admin account.
+type InitConfig struct {
+	// Username for the super admin account
+	// Default: "admin"
+	Username string `mapstructure:"username" json:"username" default:"admin"`
+
+	// Email for the super admin account
+	// Default: "admin@example.com"
+	Email string `mapstructure:"email" json:"email" default:"admin@example.com"`
+
+	// Password for the super admin account
+	// If empty, a random password will be generated and logged during initialization
+	// Default: "" (empty, will trigger random generation)
+	Password string `mapstructure:"password" json:"password,omitempty" default:""`
 }
 
 // SecurityConfig defines security-related settings for authentication.
@@ -77,6 +113,16 @@ func DefaultConfig() *Config {
 	return &Config{
 		JWT:      *jwt.DefaultConfig(), // Use JWT package defaults
 		Security: DefaultSecurityConfig(),
+		Init:     DefaultInitConfig(),
+	}
+}
+
+// DefaultInitConfig returns default platform initialization configuration.
+func DefaultInitConfig() InitConfig {
+	return InitConfig{
+		Username: "admin",
+		Email:    "admin@example.com",
+		Password: "", // Empty means random password will be generated
 	}
 }
 
@@ -88,4 +134,34 @@ func DefaultSecurityConfig() SecurityConfig {
 		FailedLoginCacheTTL:     DefaultFailedLoginCacheTTL,
 		MaxFailedAttempts:       DefaultMaxFailedAttempts,
 	}
+}
+
+// IsReservedUsername checks if a username is reserved for system use.
+// Reserved usernames can only be used during platform initialization.
+func IsReservedUsername(username string) bool {
+	if username == "" {
+		return false
+	}
+
+	// Case-insensitive comparison
+	lowerUsername := toLower(username)
+	for _, reserved := range ReservedUsernames {
+		if lowerUsername == reserved {
+			return true
+		}
+	}
+	return false
+}
+
+// toLower converts a string to lowercase (simple ASCII implementation)
+func toLower(s string) string {
+	result := make([]byte, len(s))
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if c >= 'A' && c <= 'Z' {
+			c += ('a' - 'A')
+		}
+		result[i] = c
+	}
+	return string(result)
 }

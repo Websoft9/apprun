@@ -231,13 +231,13 @@ registry.Register("jwt", &jwt.Config{})
 
 ## References
 
-- [Story 10: Configuration Center Foundation](./story-10-config-basic.md)
+- [Story 3.2: Configuration Center Foundation](./3-2-config-basic.md)
+- [Story 1.18: CLI Generate - Unified Code Generation](./1-18-cli-generate.md) (covers config example generation)
 - [Coding Standards: Section 8 - Configuration Management](../../standards/coding-standards.md#8-配置管理)
-- [Story 20: JWT Optimization](../story-20-optimization.md)
 
 ---
 
 **Story Owner**: Platform Dev Team  
 **Created**: 2026-01-08  
-**Last Updated**: 2026-01-08  
-**Sprint**: Sprint 0 (Foundation)
+**Last Updated**: 2026-01-19  
+**Sprint**: Sprint 0-1 (Foundation)

@@ -10,6 +10,7 @@ import (
 	"apprun/ent/schema"
 	"apprun/internal/jwt"
 	"apprun/internal/password"
+	authmod "apprun/modules/auth"
 	"apprun/modules/auth/repository"
 	"apprun/pkg/errors"
 	"apprun/pkg/logger"
@@ -24,6 +25,8 @@ var (
 	ErrEmailExists = errors.New(errors.ErrCodeAuthEmailExists, "Email already registered")
 	// ErrUsernameExists wraps repository error
 	ErrUsernameExists = errors.New(errors.ErrCodeAuthUsernameExists, "Username already taken")
+	// ErrReservedUsername is returned when trying to register with a reserved username
+	ErrReservedUsername = errors.New(errors.ErrCodeInvalidParam, "Username is reserved for system use")
 	// ErrInvalidCredentials is returned for failed login attempts
 	ErrInvalidCredentials = errors.New(errors.ErrCodeAuthInvalidCredentials, "Invalid email or password")
 	// ErrAccountDisabled is returned when user account is disabled
@@ -132,6 +135,13 @@ func (s *AuthService) Register(ctx context.Context, req *RegisterRequest) (*Regi
 				logger.Field{Key: "username", Value: *req.Username},
 				logger.Field{Key: "error", Value: err.Error()})
 			return nil, err
+		}
+
+		// Check if username is reserved for system use
+		if authmod.IsReservedUsername(*req.Username) {
+			logger.Warn("Attempted to register with reserved username",
+				logger.Field{Key: "username", Value: *req.Username})
+			return nil, ErrReservedUsername.WithContext("username", *req.Username)
 		}
 
 		// Check username uniqueness
@@ -397,4 +407,80 @@ func (s *AuthService) GetUserProfile(ctx context.Context, userID int64) (*UserPr
 
 	profile := buildUserProfile(user)
 	return &profile, nil
+}
+
+// GetOrCreateSuperAdmin ensures the platform super admin exists.
+// If no admin exists, creates one with credentials from the provided config.
+// If password is empty in config, generates a random secure password.
+// This method is idempotent and safe to call multiple times.
+//
+// Parameters:
+//   - initConfig: platform initialization configuration (username, email, password)
+//
+// Returns:
+//   - *ent.User: super admin user
+//   - string: password used (original or generated, for logging)
+//   - error: database or creation error
+func (s *AuthService) GetOrCreateSuperAdmin(ctx context.Context, initConfig authmod.InitConfig) (*ent.User, string, error) {
+	log := logger.L()
+
+	// Try to find existing super admin by email
+	user, err := s.userRepo.GetByEmail(ctx, initConfig.Email)
+	if err == nil {
+		log.Info("Super admin already exists", logger.Field{Key: "user_id", Value: user.ID})
+		return user, "", nil
+	}
+
+	// If not found error, try to create
+	if !ent.IsNotFound(err) {
+		log.Error("Failed to query super admin", logger.Field{Key: "error", Value: err.Error()})
+		return nil, "", errors.Wrap(err, errors.ErrCodeInternalError, "Failed to query super admin")
+	}
+
+	// Determine password to use
+	passwordToUse := initConfig.Password
+	isRandomPassword := false
+
+	if passwordToUse == "" {
+		// Generate random password
+		randomPassword, genErr := password.GenerateRandomPassword(16)
+		if genErr != nil {
+			log.Error("Failed to generate random password", logger.Field{Key: "error", Value: genErr.Error()})
+			return nil, "", errors.Wrap(genErr, errors.ErrCodeInternalError, "Failed to generate random password")
+		}
+		passwordToUse = randomPassword
+		isRandomPassword = true
+		log.Info("Generated random password for super admin")
+	}
+
+	// Create super admin with credentials
+	log.Info("Creating super admin account",
+		logger.Field{Key: "email", Value: initConfig.Email},
+		logger.Field{Key: "username", Value: initConfig.Username})
+
+	passwordHash, err := password.Hash(passwordToUse)
+	if err != nil {
+		log.Error("Failed to hash admin password", logger.Field{Key: "error", Value: err.Error()})
+		return nil, "", errors.Wrap(err, errors.ErrCodeInternalError, "Failed to hash admin password")
+	}
+
+	user, err = s.userRepo.CreateUser(ctx, &repository.CreateUserParams{
+		Email:        initConfig.Email,
+		Username:     &initConfig.Username,
+		PasswordHash: passwordHash,
+	})
+	if err != nil {
+		log.Error("Failed to create super admin", logger.Field{Key: "error", Value: err.Error()})
+		return nil, "", errors.Wrap(err, errors.ErrCodeInternalError, "Failed to create super admin")
+	}
+
+	log.Info("Super admin created successfully",
+		logger.Field{Key: "user_id", Value: user.ID},
+		logger.Field{Key: "email", Value: user.Email})
+
+	// Return the password only if it was randomly generated (for logging)
+	if isRandomPassword {
+		return user, passwordToUse, nil
+	}
+	return user, "", nil
 }

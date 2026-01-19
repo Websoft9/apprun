@@ -55,7 +55,10 @@ func NewMigrator(db *sql.DB, migrationsDir string) *Migrator {
 	}
 
 	// Determine working directory (for Atlas CLI execution)
-	workingDir, _ := os.Getwd()
+	workingDir, err := os.Getwd()
+	if err != nil {
+		workingDir = "."
+	}
 
 	return &Migrator{
 		db:            db,
@@ -88,7 +91,10 @@ func NewMigratorFromConfig(ctx context.Context, cfg *Config) (*Migrator, error) 
 	// Determine migrations directory
 	// If APPRUN_CONFIG_DIR is set, use it as base for relative path
 	migrationsDir := "migrations"
-	workingDir, _ := os.Getwd()
+	workingDir, err := os.Getwd()
+	if err != nil {
+		workingDir = "."
+	}
 
 	if configDir := os.Getenv("APPRUN_CONFIG_DIR"); configDir != "" {
 		migrationsDir = filepath.Join(configDir, "..", "migrations")
@@ -178,7 +184,11 @@ func (r *simpleRevisionReadWriter) ReadRevisions(ctx context.Context) ([]*migrat
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			logger.Error("failed to close rows", logger.Field{Key: "error", Value: err})
+		}
+	}()
 
 	var revisions []*migrate.Revision
 	for rows.Next() {
@@ -343,7 +353,11 @@ func (m *Migrator) ResetDatabase(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrap(err, errors.ErrCodeDatabaseMigrateFailed, "failed to list tables")
 	}
-	defer rows.Close()
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil {
+			logger.Error("failed to close rows", logger.Field{Key: "error", Value: closeErr})
+		}
+	}()
 
 	tables := []string{}
 	for rows.Next() {
@@ -784,7 +798,10 @@ func (m *Migrator) CleanFailedMigrations(ctx context.Context) (int, error) {
 		return 0, fmt.Errorf("failed to delete failed migrations: %w", err)
 	}
 
-	count, _ := result.RowsAffected()
+	count, err := result.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get rows affected: %w", err)
+	}
 	return int(count), nil
 }
 
@@ -825,7 +842,10 @@ func (m *Migrator) CleanMigration(ctx context.Context, version string) error {
 		return fmt.Errorf("failed to delete migration: %w", err)
 	}
 
-	affected, _ := result.RowsAffected()
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
 	if affected == 0 {
 		return fmt.Errorf("migration version not found: %s", version)
 	}

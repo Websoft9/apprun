@@ -30,7 +30,7 @@ var (
 	migrateRepairExecute bool
 
 	// Shared flags
-	migrateName     string
+	// migrateName     string
 	migrateToSchema string
 	migrateDevURL   string
 )
@@ -729,7 +729,7 @@ func runMigrateReset(cmd *cobra.Command, args []string) error {
 	fmt.Scanln(&confirmation)
 
 	if confirmation != "yes" {
-		fmt.Println("❌ Reset cancelled")
+		fmt.Println("❌ Reset canceled")
 		return nil
 	}
 

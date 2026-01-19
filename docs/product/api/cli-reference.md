@@ -26,6 +26,7 @@ Commands that operate on the local system, no authentication required:
 - [`apprun configure`](#apprun-configure) - Configure CLI settings
 - [`apprun serve`](#apprun-serve) - Start HTTP server
 - [`apprun migrate`](#apprun-migrate) - Database migration management
+- [`apprun generate`](#apprun-generate) - Generate code and configuration artifacts
 - [`apprun version`](#apprun-version) - Display version information
 
 ### Client Commands (Remote Operations)
@@ -489,6 +490,203 @@ make db-inspect           # Check schema drift
 make db-repair            # Preview repair
 make db-repair-execute    # Execute repair
 ```
+
+---
+
+### apprun generate
+
+Generate code, configuration, and documentation artifacts.
+
+**Usage:**
+```bash
+apprun generate [subcommand] [flags]
+```
+
+**Description:**  
+Unified command for generating various project artifacts including configuration files, ORM models, and API documentation. Eliminates the need for manual script execution and provides a consistent interface for all generation tasks.
+
+**Available Subcommands:**
+
+#### apprun generate config
+
+Generate configuration example files.
+
+**Usage:**
+```bash
+apprun generate config [flags]
+```
+
+**Description:**  
+Generates `config.example` (YAML) and `.env.example` files by introspecting module configurations. Automatically discovers all registered modules and extracts:
+- Default values from struct tags
+- Validation rules
+- Database persistence flags
+- Environment-only operational switches
+
+**Flags:**
+```bash
+-o, --output string   Output directory (default: ".")
+    --config-only     Generate config.example only
+    --env-only        Generate .env.example only
+```
+
+**Examples:**
+```bash
+# Generate both files
+apprun generate config
+
+# Generate config.example only
+apprun generate config --config-only
+
+# Custom output directory
+apprun generate config --output /path/to/output
+```
+
+**Output Files:**
+- `config/config.example` - YAML configuration template (105 lines, 6 modules)
+- `.env.example` - Environment variables template (112 lines, 7 modules)
+
+**Equivalent Makefile:**
+```bash
+make config-example
+```
+
+---
+
+#### apprun generate model
+
+Generate Ent ORM code from schema definitions.
+
+**Usage:**
+```bash
+apprun generate model
+```
+
+**Description:**  
+Generates type-safe Go code from Ent schema definitions located in `ent/schema/`. Creates:
+- Entity structs and interfaces
+- Database query builders
+- Migration files (with Atlas integration)
+- CRUD operations with compile-time safety
+
+**Features Enabled:**
+- **VersionedMigration**: Atlas integration for schema versioning
+- **Privacy**: Access control and authorization hooks
+- **Upsert**: Insert-or-update operations
+
+**Examples:**
+```bash
+# Generate Ent ORM code
+apprun generate model
+```
+
+**Output:**
+```
+🔄 Generating Ent ORM code...
+✅ Ent code generated successfully
+💡 Generated files in ent/ directory
+```
+
+**Equivalent Makefile:**
+```bash
+make generate
+```
+
+**See Also:**
+- Ent Documentation: https://entgo.io/docs/code-gen
+- Schema Guide: `ent/schema/` directory
+
+---
+
+#### apprun generate openapi
+
+Generate OpenAPI/Swagger API documentation.
+
+**Usage:**
+```bash
+apprun generate openapi [flags]
+```
+
+**Description:**  
+Generates OpenAPI 2.0 (Swagger) documentation from Go code annotations in handler files. Scans your codebase for Swagger annotations and produces interactive API documentation.
+
+**Flags:**
+```bash
+-o, --output string   Output directory (default: "docs")
+-m, --main string     Main file for API annotations (default: "internal/bootstrap/server.go")
+```
+
+**Generated Files:**
+- `docs/swagger.json` - OpenAPI specification (JSON format, ~69KB)
+- `docs/swagger.yaml` - OpenAPI specification (YAML format, ~34KB)
+- `docs/docs.go` - Go code for serving documentation (~70KB)
+
+**Examples:**
+```bash
+# Generate OpenAPI documentation
+apprun generate openapi
+
+# Custom output directory
+apprun generate openapi --output api-docs
+
+# Custom main file
+apprun generate openapi --main cmd/api/main.go
+```
+
+**Output:**
+```
+📚 Generating OpenAPI/Swagger documentation...
+✅ OpenAPI documentation generated in docs/
+📄 Files created:
+   - docs/swagger.json
+   - docs/swagger.yaml
+   - docs/docs.go
+💡 Access at: http://localhost:8080/api/docs/
+```
+
+**Annotation Example:**
+```go
+// @Summary      Get user by ID
+// @Description  Retrieve user details
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Param        id   path      int  true  "User ID"
+// @Success      200  {object}  UserResponse
+// @Failure      404  {object}  response.Response
+// @Router       /users/{id} [get]
+func GetUser(c *gin.Context) {
+    // handler implementation
+}
+```
+
+**Equivalent Makefile:**
+```bash
+make swagger
+# or
+make docs-api
+```
+
+**See Also:**
+- Swag Documentation: https://github.com/swaggo/swag
+- Annotation Reference: https://github.com/swaggo/swag#declarative-comments-format
+
+---
+
+**Generate Command Summary:**
+
+| Subcommand | Purpose | Output Files | Equivalent Make |
+|------------|---------|--------------|-----------------|
+| `config` | Configuration examples | config.example, .env.example | `make config-example` |
+| `model` | Ent ORM code | ent/*.go | `make generate` |
+| `openapi` | API documentation | docs/swagger.* | `make swagger` |
+
+**Benefits:**
+- ✅ Unified CLI interface for all generation tasks
+- ✅ No need to remember different tools (go generate, swag, scripts)
+- ✅ Consistent flags and output format
+- ✅ Help documentation built-in (`--help`)
+- ✅ Works without separate tool installation (uses compiled binary)
 
 ---
 

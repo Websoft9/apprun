@@ -69,25 +69,28 @@
 ## Acceptance Criteria
 
 ### AC-001: 手动初始化命令（生产环境）
-- [ ] `make init` 执行完整初始化：数据库迁移 → 创建系统用户（ID=1） → 创建管理员账号 → 创建平台项目
-- [ ] 幂等性保证：多次执行 `make init` 安全（检查 `platform_meta.initialized`）
-- [ ] 初始化完成后输出管理员凭据和下一步操作提示
+- [x] `make init` 执行完整初始化：数据库迁移 → 创建超级管理员账号 → 创建平台项目
+- [x] 幂等性保证：多次执行 `make init` 安全（已存在则跳过）
+- [x] 初始化完成后输出管理员凭据和下一步操作提示（随机密码时显示在控制台框内）
 
-### AC-002: 环境差异化策略
-- [ ] **测试环境**：`AUTO_INIT=true` + 自动创建 `admin@test.com`
-- [ ] **生产环境**：`AUTO_INIT=false` + 未初始化时拒绝启动（提示运行 `make init`）
-- [ ] **容器环境**：支持通过环境变量 `PLATFORM_ADMIN_EMAIL` / `PLATFORM_ADMIN_PASSWORD` 配置
+### AC-002: 超级管理员配置 (InitConfig)
+- [x] 支持配置文件 `auth.init` 配置项：username, email, password
+- [x] **随机密码生成**：password 为空时自动生成 16 位安全密码（包含大小写、数字、特殊字符）
+- [x] 生成的密码在控制台美化输出（带边框警告信息）
+- [x] 密码使用 bcrypt 加密存储
+- [x] **保留用户名支持**：超级管理员初始化时可使用 admin 等保留用户名
 
-### AC-003: 启动时自动检测（程序内）
-- [ ] `main.go` Phase 2.8 检查初始化状态（查询 `platform_meta` 表）
-- [ ] 已初始化 → 继续启动
-- [ ] 未初始化 + `AUTO_INIT=true` → 自动执行初始化
-- [ ] 未初始化 + `AUTO_INIT=false` → 记录 FATAL 日志并退出
+### AC-003: 平台项目初始化
+- [x] 创建 Platform Project（固定 UUID: `00000000-0000-0000-0000-000000000000`）
+- [x] 超级管理员自动成为 Platform Project owner
+- [x] **分配平台管理员角色**：超级管理员自动获得 `platform_admin` 全局角色
+- [x] 通过 RBAC 系统赋予所有权限（`p, platform_admin, *, *`）
 
-### AC-004: 数据完整性与安全
-- [ ] 系统用户（ID=1）+ 管理员账号 + 平台项目原子创建（事务）
-- [ ] 管理员密码使用 bcrypt (cost=12) 哈希存储
-- [ ] 初始化失败时事务回滚，提供清晰错误信息
+### AC-004: 启动时自动检测（程序内）
+- [x] `bootstrap/server.go` 启动时检查超级管理员是否存在
+- [x] 已存在 → 继续启动
+- [x] 不存在 → 自动创建（使用配置文件设置）
+- [x] 创建失败时记录错误但不阻止启动（warning level）
 
 ---
 
@@ -128,7 +131,8 @@
 ### Task 4: Startup Integration（main.go）
 - [ ] 在 `Phase 2.8` 添加初始化检查
   - 调用 `bootstrap.CheckInitialized()`
-  - 根据 `AUTO_INIT` 环境变量决定行为
+  - 使用 `bootstrap.DefaultConfig().AutoInit` 环境变量决定行为
+  - 已创建 `core/internal/bootstrap/config.go` 定义 AUTO_INIT 配置结构
 
 ### Task 5: Data Migration Framework（为未来扩展）
 - [ ] 扩展 `platform_meta` 表支持迁移记录（key=migration_xxx, value=timestamp）

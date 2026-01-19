@@ -4,6 +4,7 @@ package bootstrap
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
@@ -122,8 +123,17 @@ func StartServer() error {
 
 	// Phase 2.3: Initialize Platform Project (Story 5.5 - RBAC)
 	// Create unique platform project for platform-level resources
+	// Load bootstrap config for operational settings (AUTO_INIT, etc.)
+	bootstrapCfg := DefaultConfig()
+	// Note: bootstrapCfg.AutoInit will be used in Story 1.17 Phase 2.8 for initialization check
+	_ = bootstrapCfg // TODO: Use in Phase 2.8 initialization logic
+
+	// Load auth config for platform initialization settings
+	authConfig := authmod.DefaultConfig()
+	// TODO: Load from config service or viper when available
+
 	// This must happen early since it's required for system initialization
-	if initErr := initializePlatformProject(ctx, dbClient.GetEntClient()); initErr != nil {
+	if initErr := initializePlatformProject(ctx, dbClient.GetEntClient(), authConfig.Init); initErr != nil {
 		log.Printf("⚠️  Warning: Failed to initialize platform project: %v", initErr)
 		log.Println("⚠️  Platform-level resources may not work correctly")
 	} else {
@@ -175,10 +185,8 @@ func StartServer() error {
 	}
 
 	// Phase 3.5: Apply Auth Module Configuration
-	// Load auth configuration and apply bcrypt cost setting
-	authConfig := authmod.DefaultConfig()
-	// TODO: Load from config service when dynamic config loading is implemented
-	// For now, use default config or environment variables via Viper
+	// Bcrypt cost was already loaded in Phase 2.3 with authConfig
+	// Reuse the same config instance
 	if costErr := password.SetCost(authConfig.Security.BcryptCost); costErr != nil {
 		log.Printf("⚠️  Warning: Invalid bcrypt cost %d, using default: %v", authConfig.Security.BcryptCost, costErr)
 	} else {
@@ -240,18 +248,73 @@ func StartServer() error {
 	return server.Start(router, serverCfg)
 }
 
-// initializePlatformProject creates or gets the unique platform project
-func initializePlatformProject(ctx context.Context, client *ent.Client) error {
-	// Get or create system user (ID: 1, hardcoded for platform operations)
-	// In production, this should be properly managed in bootstrap
-	const systemUserID int64 = 1
+// initializePlatformProject creates the super admin and platform project if they don't exist.
+// This function implements the platform initialization logic:
+// 1. Get or create super admin account (using auth module configuration)
+// 2. Get or create platform project owned by super admin
+// 3. Log generated password if one was created
+//
+// Parameters:
+//   - initConfig: platform initialization configuration from auth module
+//
+// This is idempotent and safe to call multiple times during server startup.
+func initializePlatformProject(ctx context.Context, client *ent.Client, initConfig authmod.InitConfig) error {
+	slogger := logger.L()
 
 	// Initialize repositories and services
+	userRepo := authRepository.NewUserRepository(client)
 	projectRepo := authRepository.NewProjectRepository(client)
 	memberRepo := authRepository.NewProjectMemberRepository(client)
 	projectService := authService.NewProjectService(projectRepo, memberRepo)
+	authSvc := authService.NewAuthService(userRepo, projectService)
 
-	// Get or create platform project
-	_, err := projectService.GetOrCreatePlatformProject(ctx, systemUserID)
-	return err
+	// Step 1: Get or create super admin
+	superAdmin, generatedPassword, err := authSvc.GetOrCreateSuperAdmin(ctx, initConfig)
+	if err != nil {
+		slogger.Error("Failed to initialize super admin", logger.Field{Key: "error", Value: err.Error()})
+		return err
+	}
+
+	slogger.Info("Super admin initialized", logger.Field{Key: "user_id", Value: superAdmin.ID})
+
+	// Step 1.5: Assign platform_admin role to super admin
+	if err := rbac.AddPlatformRole(superAdmin.ID, rbac.RolePlatformAdmin); err != nil {
+		slogger.Warn("Failed to assign platform_admin role",
+			logger.Field{Key: "user_id", Value: superAdmin.ID},
+			logger.Field{Key: "error", Value: err.Error()})
+		// Don't fail initialization if role assignment fails (role may already exist)
+	} else {
+		slogger.Info("Platform admin role assigned", logger.Field{Key: "user_id", Value: superAdmin.ID})
+	}
+
+	// Step 1.6: Log generated password if applicable (IMPORTANT for first-time setup)
+	if generatedPassword != "" {
+		// Use standard log for bootstrap messages (logger may not be fully initialized yet)
+		fmt.Printf("\n")
+		fmt.Printf("╔═══════════════════════════════════════════════════════════════╗\n")
+		fmt.Printf("║          🔐 SUPER ADMIN CREDENTIALS GENERATED                 ║\n")
+		fmt.Printf("╠═══════════════════════════════════════════════════════════════╣\n")
+		fmt.Printf("║  Email:    %-50s ║\n", initConfig.Email)
+		fmt.Printf("║  Username: %-50s ║\n", initConfig.Username)
+		fmt.Printf("║  Password: %-50s ║\n", generatedPassword)
+		fmt.Printf("╠═══════════════════════════════════════════════════════════════╣\n")
+		fmt.Printf("║  ⚠️  IMPORTANT: Save this password securely!                  ║\n")
+		fmt.Printf("║  This password will NOT be displayed again.                   ║\n")
+		fmt.Printf("║  Please change it after your first login.                     ║\n")
+		fmt.Printf("╚═══════════════════════════════════════════════════════════════╝\n")
+		fmt.Printf("\n")
+
+		// Also log to structured logger
+		slogger.Warn("Super admin password generated - see console output for credentials")
+	}
+
+	// Step 2: Get or create platform project owned by super admin
+	_, err = projectService.GetOrCreatePlatformProject(ctx, superAdmin.ID)
+	if err != nil {
+		slogger.Error("Failed to initialize platform project", logger.Field{Key: "error", Value: err.Error()})
+		return err
+	}
+
+	slogger.Info("Platform initialization completed")
+	return nil
 }

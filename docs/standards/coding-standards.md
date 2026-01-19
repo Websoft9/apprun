@@ -2170,6 +2170,37 @@ type Config struct {
 - ✅ 可通过配置中心管理
 - ✅ 不影响服务器启动
 
+**3. 仅环境变量配置（运维开关）** - 标记 `envonly:"true"`
+
+适用场景：
+- 部署时决策的运维开关（AUTO_INIT, DEBUG_MODE）
+- 不应在配置文件中出现的敏感设置
+- 容器编排层注入的环境信息
+
+```go
+// internal/bootstrap/config.go
+type Config struct {
+    // AutoInit 仅通过环境变量控制，不支持配置文件
+    AutoInit bool `json:"auto_init" default:"false" db:"false" envonly:"true"`
+}
+
+func DefaultConfig() *Config {
+    return &Config{
+        AutoInit: env.GetBool("AUTO_INIT", false), // 直接读环境变量
+    }
+}
+```
+
+**关键特征**：
+- ❌ 无 `mapstructure` 或 `yaml` 标签（不从配置文件加载）
+- ✅ 标记 `envonly:"true"`（工具生成 .env.example 时识别）
+- ✅ `DefaultConfig()` 使用 `env.Get*()` 直接读取环境变量
+
+**理由**：
+- ✅ 防止在配置文件中误写并提交到生产（如 auto_init: true）
+- ✅ 强制通过环境变量显式控制部署行为
+- ✅ 符合 12-Factor App 原则
+
 #### **验证规则示例**
 
 ```go

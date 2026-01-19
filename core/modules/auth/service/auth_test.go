@@ -101,6 +101,42 @@ func TestRegister_InvalidUsername(t *testing.T) {
 	}
 }
 
+// TestRegister_ReservedUsername tests that reserved usernames are rejected
+func TestRegister_ReservedUsername(t *testing.T) {
+	tests := []struct {
+		name     string
+		username string
+	}{
+		{"admin lowercase", "admin"},
+		{"admin uppercase", "ADMIN"},
+		{"admin mixed case", "AdMiN"},
+		{"administrator", "administrator"},
+		{"root", "root"},
+		{"ROOT uppercase", "ROOT"},
+		{"system", "system"},
+		{"superuser", "superuser"},
+		{"sysadmin", "sysadmin"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			service := &AuthService{userRepo: nil}
+			ctx := context.Background()
+
+			req := &RegisterRequest{
+				Email:    "test@example.com",
+				Password: "SecurePass123",
+				Username: &tt.username,
+			}
+
+			_, err := service.Register(ctx, req)
+			if !errors.Is(err, ErrReservedUsername) {
+				t.Errorf("Register() error = %v, want ErrReservedUsername", err)
+			}
+		})
+	}
+}
+
 // Note: Full integration tests with database mocks are in integration_test_story18.sh
 // These unit tests focus on validation logic that doesn't require database
 

@@ -64,6 +64,14 @@ auth:
     failed_login_cache_enabled: true      # Cache failed attempts to prevent bcrypt abuse (db:"true")
     failed_login_cache_ttl: 5m            # How long to cache failed attempts (db:"true")
     max_failed_attempts: 5                # Rate limit threshold per user (db:"true")
+  
+  # Platform initialization configuration (used during bootstrap)
+  # If password is empty, a random password will be generated and printed to console
+  init:
+    username: "admin"                     # Super admin username
+    email: "admin@example.com"            # Super admin email (used for login)
+    password: ""                          # Leave empty to auto-generate secure password (recommended)
+                                          # Or set via INIT_PASSWORD env var for production
 
 # Server configuration (infrastructure, not managed by config center)
 # Override via environment variables following naming convention:

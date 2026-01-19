@@ -63,6 +63,7 @@
 - [x] 缺失 user_id 返回 401（统一错误码）
 - [x] 权限拒绝日志（使用 pkg/logger 记录 user/project/resource/action）
 - [x] Repository 层强制 project_id 过滤（防止越权查询）
+- [x] 超级管理员初始化时自动获得 `platform_admin` 角色
 
 ### 可维护性验收
 - [x] 权限检查集中在 `rbac.CheckPermission()`（不散落在 handler）

@@ -8,14 +8,13 @@ import (
 	"apprun/ent"
 	"apprun/ent/schema"
 	"apprun/internal/rbac"
+	authmod "apprun/modules/auth"
 	"apprun/modules/auth/repository"
 	"apprun/pkg/errors"
 	"apprun/pkg/logger"
 )
 
 const (
-	PlatformProjectName         = "Platform"
-	PlatformProjectDescription  = "Global platform-level resources and configuration"
 	PersonalProjectNameTemplate = "%s's Personal Project"
 	PersonalProjectDescription  = "Personal workspace for individual user"
 )
@@ -73,13 +72,13 @@ func (s *ProjectService) GetOrCreatePlatformProject(ctx context.Context, systemU
 	projects, err := s.projectRepo.ListByOwner(ctx, systemUserID)
 	if err == nil {
 		for _, p := range projects {
-			if p.Name == PlatformProjectName {
+			if p.Name == authmod.PlatformProjectName {
 				log.Info("Platform project exists", logger.Field{Key: "id", Value: p.ID})
 				return p, nil
 			}
 		}
 	}
-	return s.CreateProject(ctx, PlatformProjectName, PlatformProjectDescription, systemUserID)
+	return s.CreateProject(ctx, authmod.PlatformProjectName, authmod.PlatformProjectDescription, systemUserID)
 }
 
 func (s *ProjectService) GetProjectByUUID(ctx context.Context, uuid string) (*ent.Project, error) {

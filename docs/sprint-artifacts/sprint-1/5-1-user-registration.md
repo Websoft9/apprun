@@ -45,6 +45,10 @@
 - [x] 错误信息不泄露敏感信息 (pkg/errors with error codes)
 - [x] 速率限制（3 次/小时/IP）
 - [x] 防止 SQL 注入和 XSS (Ent ORM parameterized queries)
+- [x] **保留用户名保护**：禁止普通用户注册系统保留用户名（admin, root, administrator, system 等）
+  - 不区分大小写检查
+  - 返回清晰错误信息：`ErrReservedUsername`
+  - 超级管理员初始化时可使用保留用户名
 
 ### 质量提升
 - [x] 结构化日志 (pkg/logger with 15 log points)
