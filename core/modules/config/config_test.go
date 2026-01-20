@@ -20,6 +20,7 @@ func TestConfigStructure(t *testing.T) {
 	assert.NotNil(t, cfg.Logger, "Logger config should be embedded")
 	assert.NotNil(t, cfg.I18n, "I18n config should be embedded")
 	assert.NotNil(t, cfg.Auth, "Auth config should be embedded")
+	assert.NotNil(t, cfg.Audit, "Audit config should be embedded")
 
 	t.Log("✅ All module configs are embedded in Config struct")
 }
@@ -31,7 +32,7 @@ func TestAutoRegistrationReflection(t *testing.T) {
 	modules := DefaultModules()
 
 	// Verify that only modules with register:"auto" are returned
-	assert.Len(t, modules, 3, "Should discover exactly 3 auto-registrable modules")
+	assert.Len(t, modules, 4, "Should discover exactly 4 auto-registrable modules")
 
 	// Verify module namespaces match mapstructure tags
 	namespaces := make(map[string]bool)
@@ -44,6 +45,7 @@ func TestAutoRegistrationReflection(t *testing.T) {
 	assert.True(t, namespaces["logger"], "Logger module should be auto-discovered")
 	assert.True(t, namespaces["i18n"], "I18n module should be auto-discovered")
 	assert.True(t, namespaces["auth"], "Auth module should be auto-discovered")
+	assert.True(t, namespaces["audit"], "Audit module should be auto-discovered")
 
 	// Verify that modules with register:"skip" are NOT included
 	assert.False(t, namespaces["database"], "Database should NOT be auto-registered (marked as skip)")

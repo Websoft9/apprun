@@ -10,7 +10,7 @@ import (
 func TestDefaultModules(t *testing.T) {
 	modules := DefaultModules()
 
-	assert.Len(t, modules, 3, "Should have 3 default modules")
+	assert.Len(t, modules, 4, "Should have 4 default modules")
 
 	// Verify module names
 	namespaces := make(map[string]bool)
@@ -21,6 +21,7 @@ func TestDefaultModules(t *testing.T) {
 	assert.True(t, namespaces["logger"], "Should include logger module")
 	assert.True(t, namespaces["i18n"], "Should include i18n module")
 	assert.True(t, namespaces["auth"], "Should include auth module")
+	assert.True(t, namespaces["audit"], "Should include audit module")
 
 	// Verify all modules have config structs
 	for _, mod := range modules {
@@ -36,10 +37,11 @@ func TestRegisterDefaultModules(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify all modules are registered
-	assert.Equal(t, 3, registry.Count(), "Should register 3 modules")
+	assert.Equal(t, 4, registry.Count(), "Should register 4 modules")
 	assert.True(t, registry.Has("logger"))
 	assert.True(t, registry.Has("i18n"))
 	assert.True(t, registry.Has("auth"))
+	assert.True(t, registry.Has("audit"))
 }
 
 func TestRegisterDefaultModules_Duplicate(t *testing.T) {
@@ -115,10 +117,11 @@ func TestRegisterModules_WithDefaultModules(t *testing.T) {
 	err = RegisterModules(registry, customModules)
 	require.NoError(t, err)
 
-	// Should have all modules
-	assert.Equal(t, 4, registry.Count())
+	// Should have all modules (4 default + 1 custom = 5)
+	assert.Equal(t, 5, registry.Count())
 	assert.True(t, registry.Has("logger"))
 	assert.True(t, registry.Has("i18n"))
 	assert.True(t, registry.Has("auth"))
+	assert.True(t, registry.Has("audit"))
 	assert.True(t, registry.Has("custom"))
 }

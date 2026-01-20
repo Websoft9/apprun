@@ -8,6 +8,50 @@ import (
 )
 
 var (
+	// AuditLogsColumns holds the columns for the "audit_logs" table.
+	AuditLogsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "timestamp", Type: field.TypeTime},
+		{Name: "operator_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "action", Type: field.TypeString},
+		{Name: "target_id", Type: field.TypeString, Nullable: true},
+		{Name: "target_type", Type: field.TypeString, Nullable: true},
+		{Name: "changes", Type: field.TypeJSON, Nullable: true},
+		{Name: "ip_address", Type: field.TypeString, Nullable: true, Size: 45},
+		{Name: "user_agent", Type: field.TypeString, Nullable: true, Size: 512},
+		{Name: "status_code", Type: field.TypeInt, Nullable: true},
+		{Name: "response_time_ms", Type: field.TypeInt, Nullable: true},
+		{Name: "method", Type: field.TypeString, Nullable: true, Size: 10},
+		{Name: "path", Type: field.TypeString, Nullable: true, Size: 512},
+	}
+	// AuditLogsTable holds the schema information for the "audit_logs" table.
+	AuditLogsTable = &schema.Table{
+		Name:       "audit_logs",
+		Columns:    AuditLogsColumns,
+		PrimaryKey: []*schema.Column{AuditLogsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "auditlog_timestamp",
+				Unique:  false,
+				Columns: []*schema.Column{AuditLogsColumns[1]},
+			},
+			{
+				Name:    "auditlog_operator_id",
+				Unique:  false,
+				Columns: []*schema.Column{AuditLogsColumns[2]},
+			},
+			{
+				Name:    "auditlog_action",
+				Unique:  false,
+				Columns: []*schema.Column{AuditLogsColumns[3]},
+			},
+			{
+				Name:    "auditlog_target_type_target_id",
+				Unique:  false,
+				Columns: []*schema.Column{AuditLogsColumns[5], AuditLogsColumns[4]},
+			},
+		},
+	}
 	// CasbinRulesColumns holds the columns for the "casbin_rules" table.
 	CasbinRulesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt64, Increment: true},
@@ -209,12 +253,16 @@ var (
 		{Name: "signature", Type: field.TypeString, Nullable: true, Size: 255},
 		{Name: "bio", Type: field.TypeString, Nullable: true, Size: 500},
 		{Name: "status", Type: field.TypeInt8, Default: 1},
+		{Name: "role", Type: field.TypeString, Size: 20, Default: "platform_user"},
+		{Name: "is_system", Type: field.TypeBool, Default: false},
+		{Name: "token_version", Type: field.TypeInt, Default: 0},
 		{Name: "last_login_at", Type: field.TypeTime, Nullable: true},
 		{Name: "last_login_ip", Type: field.TypeString, Nullable: true, Size: 45},
 		{Name: "timezone", Type: field.TypeString, Size: 64, Default: "UTC"},
 		{Name: "language", Type: field.TypeString, Size: 10, Default: "zh-CN"},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
 	}
 	// UsersTable holds the schema information for the "users" table.
 	UsersTable = &schema.Table{
@@ -238,14 +286,50 @@ var (
 				Columns: []*schema.Column{UsersColumns[11]},
 			},
 			{
+				Name:    "user_role",
+				Unique:  false,
+				Columns: []*schema.Column{UsersColumns[12]},
+			},
+			{
+				Name:    "user_is_system",
+				Unique:  false,
+				Columns: []*schema.Column{UsersColumns[13]},
+			},
+			{
+				Name:    "user_token_version",
+				Unique:  false,
+				Columns: []*schema.Column{UsersColumns[14]},
+			},
+			{
+				Name:    "user_deleted_at",
+				Unique:  false,
+				Columns: []*schema.Column{UsersColumns[21]},
+			},
+			{
 				Name:    "user_created_at",
 				Unique:  false,
-				Columns: []*schema.Column{UsersColumns[16]},
+				Columns: []*schema.Column{UsersColumns[19]},
+			},
+			{
+				Name:    "user_email_deleted_at",
+				Unique:  false,
+				Columns: []*schema.Column{UsersColumns[3], UsersColumns[21]},
+			},
+			{
+				Name:    "user_email_nickname",
+				Unique:  false,
+				Columns: []*schema.Column{UsersColumns[3], UsersColumns[5]},
+			},
+			{
+				Name:    "user_role_status",
+				Unique:  false,
+				Columns: []*schema.Column{UsersColumns[12], UsersColumns[11]},
 			},
 		},
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		AuditLogsTable,
 		CasbinRulesTable,
 		ConfigitemsTable,
 		ProjectsTable,

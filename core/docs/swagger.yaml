@@ -174,6 +174,9 @@ definitions:
       created_at:
         description: Account creation timestamp
         type: string
+      deleted_at:
+        description: Soft delete timestamp (NULL if not deleted)
+        type: string
       edges:
         allOf:
         - $ref: '#/definitions/ent.UserEdges'
@@ -191,6 +194,9 @@ definitions:
           ID of the ent.
           Internal database primary key (not exposed in API)
         type: integer
+      is_system:
+        description: System user flag (e.g., System, cannot login)
+        type: boolean
       language:
         description: Preferred language (e.g., zh-CN, en-US)
         type: string
@@ -206,6 +212,9 @@ definitions:
       phone:
         description: Phone number
         type: string
+      role:
+        description: 'Platform role: platform_user, platform_admin'
+        type: string
       signature:
         description: User signature / bio
         type: string
@@ -215,6 +224,9 @@ definitions:
       timezone:
         description: User timezone (e.g., Asia/Shanghai)
         type: string
+      token_version:
+        description: Token version for revocation mechanism (incremented on disable/delete)
+        type: integer
       updated_at:
         description: Last update timestamp
         type: string
@@ -565,6 +577,116 @@ info:
   title: AppRun API
   version: "1.0"
 paths:
+  /api/admin/audit-logs:
+    get:
+      consumes:
+      - application/json
+      description: Query system audit logs with filtering and pagination. Requires
+        platform_admin role. Returns audit logs with operator information including
+        email address. All query parameters are optional filters.
+      parameters:
+      - description: Start time filter in RFC3339 format
+        example: "2026-01-01T00:00:00Z"
+        in: query
+        name: start_time
+        type: string
+      - description: End time filter in RFC3339 format
+        example: "2026-01-20T23:59:59Z"
+        in: query
+        name: end_time
+        type: string
+      - description: Filter by operator UUID
+        example: 550e8400-e29b-41d4-a716-446655440000
+        format: uuid
+        in: query
+        name: operator_id
+        type: string
+      - description: 'Filter by action type. Available options: login, logout, token_refresh,
+          user.create, user.update, user.delete, role.assign, access_denied'
+        enum:
+        - login
+        - logout
+        - token_refresh
+        - user.create
+        - user.update
+        - user.delete
+        - role.assign
+        - access_denied
+        example: login
+        in: query
+        name: action
+        type: string
+      - description: 'Filter by target resource type. Available options: user, role,
+          config, project'
+        enum:
+        - user
+        - role
+        - config
+        - project
+        example: user
+        in: query
+        name: target_type
+        type: string
+      - default: 1
+        description: Page number, starts from 1
+        example: 1
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - default: 50
+        description: Page size, default 50, maximum 200
+        example: 20
+        in: query
+        maximum: 200
+        minimum: 1
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'Returns audit logs with pagination info. Each log contains:
+            id, timestamp, operator_id, operator_email, action, target_id, target_type,
+            changes, ip_address, user_agent, status_code, response_time_ms, method,
+            path'
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  properties:
+                    logs:
+                      items:
+                        additionalProperties: true
+                        type: object
+                      type: array
+                    page:
+                      type: integer
+                    page_size:
+                      type: integer
+                    total:
+                      format: int64
+                      type: integer
+                  type: object
+              type: object
+        "401":
+          description: Unauthorized - JWT token required
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: Forbidden - platform_admin role required
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Query audit logs
+      tags:
+      - audit
   /api/auth/login:
     post:
       consumes:

@@ -41,6 +41,12 @@ type User struct {
 	Bio string `json:"bio,omitempty"`
 	// Account status: 0-Disabled, 1-Active
 	Status int8 `json:"status,omitempty"`
+	// Platform role: platform_user, platform_admin
+	Role string `json:"role,omitempty"`
+	// System user flag (e.g., System, cannot login)
+	IsSystem bool `json:"is_system,omitempty"`
+	// Token version for revocation mechanism (incremented on disable/delete)
+	TokenVersion int `json:"token_version,omitempty"`
 	// Last login timestamp
 	LastLoginAt *time.Time `json:"last_login_at,omitempty"`
 	// Last login IP address (supports IPv6)
@@ -53,6 +59,8 @@ type User struct {
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// Last update timestamp
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
+	// Soft delete timestamp (NULL if not deleted)
+	DeletedAt *time.Time `json:"deleted_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the UserQuery when eager-loading is set.
 	Edges        UserEdges `json:"edges"`
@@ -104,11 +112,13 @@ func (*User) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case user.FieldID, user.FieldGender, user.FieldStatus:
+		case user.FieldIsSystem:
+			values[i] = new(sql.NullBool)
+		case user.FieldID, user.FieldGender, user.FieldStatus, user.FieldTokenVersion:
 			values[i] = new(sql.NullInt64)
-		case user.FieldUsername, user.FieldEmail, user.FieldPasswordHash, user.FieldNickname, user.FieldAvatar, user.FieldPhone, user.FieldSignature, user.FieldBio, user.FieldLastLoginIP, user.FieldTimezone, user.FieldLanguage:
+		case user.FieldUsername, user.FieldEmail, user.FieldPasswordHash, user.FieldNickname, user.FieldAvatar, user.FieldPhone, user.FieldSignature, user.FieldBio, user.FieldRole, user.FieldLastLoginIP, user.FieldTimezone, user.FieldLanguage:
 			values[i] = new(sql.NullString)
-		case user.FieldLastLoginAt, user.FieldCreatedAt, user.FieldUpdatedAt:
+		case user.FieldLastLoginAt, user.FieldCreatedAt, user.FieldUpdatedAt, user.FieldDeletedAt:
 			values[i] = new(sql.NullTime)
 		case user.FieldUUID:
 			values[i] = new(uuid.UUID)
@@ -199,6 +209,24 @@ func (_m *User) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.Status = int8(value.Int64)
 			}
+		case user.FieldRole:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field role", values[i])
+			} else if value.Valid {
+				_m.Role = value.String
+			}
+		case user.FieldIsSystem:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field is_system", values[i])
+			} else if value.Valid {
+				_m.IsSystem = value.Bool
+			}
+		case user.FieldTokenVersion:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field token_version", values[i])
+			} else if value.Valid {
+				_m.TokenVersion = int(value.Int64)
+			}
 		case user.FieldLastLoginAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field last_login_at", values[i])
@@ -235,6 +263,13 @@ func (_m *User) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
 				_m.UpdatedAt = value.Time
+			}
+		case user.FieldDeletedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field deleted_at", values[i])
+			} else if value.Valid {
+				_m.DeletedAt = new(time.Time)
+				*_m.DeletedAt = value.Time
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -319,6 +354,15 @@ func (_m *User) String() string {
 	builder.WriteString("status=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Status))
 	builder.WriteString(", ")
+	builder.WriteString("role=")
+	builder.WriteString(_m.Role)
+	builder.WriteString(", ")
+	builder.WriteString("is_system=")
+	builder.WriteString(fmt.Sprintf("%v", _m.IsSystem))
+	builder.WriteString(", ")
+	builder.WriteString("token_version=")
+	builder.WriteString(fmt.Sprintf("%v", _m.TokenVersion))
+	builder.WriteString(", ")
 	if v := _m.LastLoginAt; v != nil {
 		builder.WriteString("last_login_at=")
 		builder.WriteString(v.Format(time.ANSIC))
@@ -338,6 +382,11 @@ func (_m *User) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("updated_at=")
 	builder.WriteString(_m.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	if v := _m.DeletedAt; v != nil {
+		builder.WriteString("deleted_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
 	builder.WriteByte(')')
 	return builder.String()
 }

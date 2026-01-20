@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"apprun/ent/auditlog"
 	"apprun/ent/casbinrule"
 	"apprun/ent/configitem"
 	"apprun/ent/project"
@@ -19,6 +20,36 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	auditlogFields := schema.AuditLog{}.Fields()
+	_ = auditlogFields
+	// auditlogDescTimestamp is the schema descriptor for timestamp field.
+	auditlogDescTimestamp := auditlogFields[1].Descriptor()
+	// auditlog.DefaultTimestamp holds the default value on creation for the timestamp field.
+	auditlog.DefaultTimestamp = auditlogDescTimestamp.Default.(func() time.Time)
+	// auditlogDescAction is the schema descriptor for action field.
+	auditlogDescAction := auditlogFields[3].Descriptor()
+	// auditlog.ActionValidator is a validator for the "action" field. It is called by the builders before save.
+	auditlog.ActionValidator = auditlogDescAction.Validators[0].(func(string) error)
+	// auditlogDescIPAddress is the schema descriptor for ip_address field.
+	auditlogDescIPAddress := auditlogFields[7].Descriptor()
+	// auditlog.IPAddressValidator is a validator for the "ip_address" field. It is called by the builders before save.
+	auditlog.IPAddressValidator = auditlogDescIPAddress.Validators[0].(func(string) error)
+	// auditlogDescUserAgent is the schema descriptor for user_agent field.
+	auditlogDescUserAgent := auditlogFields[8].Descriptor()
+	// auditlog.UserAgentValidator is a validator for the "user_agent" field. It is called by the builders before save.
+	auditlog.UserAgentValidator = auditlogDescUserAgent.Validators[0].(func(string) error)
+	// auditlogDescMethod is the schema descriptor for method field.
+	auditlogDescMethod := auditlogFields[11].Descriptor()
+	// auditlog.MethodValidator is a validator for the "method" field. It is called by the builders before save.
+	auditlog.MethodValidator = auditlogDescMethod.Validators[0].(func(string) error)
+	// auditlogDescPath is the schema descriptor for path field.
+	auditlogDescPath := auditlogFields[12].Descriptor()
+	// auditlog.PathValidator is a validator for the "path" field. It is called by the builders before save.
+	auditlog.PathValidator = auditlogDescPath.Validators[0].(func(string) error)
+	// auditlogDescID is the schema descriptor for id field.
+	auditlogDescID := auditlogFields[0].Descriptor()
+	// auditlog.DefaultID holds the default value on creation for the id field.
+	auditlog.DefaultID = auditlogDescID.Default.(func() uuid.UUID)
 	casbinruleFields := schema.CasbinRule{}.Fields()
 	_ = casbinruleFields
 	// casbinruleDescPtype is the schema descriptor for ptype field.
@@ -223,28 +254,42 @@ func init() {
 	userDescStatus := userFields[11].Descriptor()
 	// user.DefaultStatus holds the default value on creation for the status field.
 	user.DefaultStatus = userDescStatus.Default.(int8)
+	// userDescRole is the schema descriptor for role field.
+	userDescRole := userFields[12].Descriptor()
+	// user.DefaultRole holds the default value on creation for the role field.
+	user.DefaultRole = userDescRole.Default.(string)
+	// user.RoleValidator is a validator for the "role" field. It is called by the builders before save.
+	user.RoleValidator = userDescRole.Validators[0].(func(string) error)
+	// userDescIsSystem is the schema descriptor for is_system field.
+	userDescIsSystem := userFields[13].Descriptor()
+	// user.DefaultIsSystem holds the default value on creation for the is_system field.
+	user.DefaultIsSystem = userDescIsSystem.Default.(bool)
+	// userDescTokenVersion is the schema descriptor for token_version field.
+	userDescTokenVersion := userFields[14].Descriptor()
+	// user.DefaultTokenVersion holds the default value on creation for the token_version field.
+	user.DefaultTokenVersion = userDescTokenVersion.Default.(int)
 	// userDescLastLoginIP is the schema descriptor for last_login_ip field.
-	userDescLastLoginIP := userFields[13].Descriptor()
+	userDescLastLoginIP := userFields[16].Descriptor()
 	// user.LastLoginIPValidator is a validator for the "last_login_ip" field. It is called by the builders before save.
 	user.LastLoginIPValidator = userDescLastLoginIP.Validators[0].(func(string) error)
 	// userDescTimezone is the schema descriptor for timezone field.
-	userDescTimezone := userFields[14].Descriptor()
+	userDescTimezone := userFields[17].Descriptor()
 	// user.DefaultTimezone holds the default value on creation for the timezone field.
 	user.DefaultTimezone = userDescTimezone.Default.(string)
 	// user.TimezoneValidator is a validator for the "timezone" field. It is called by the builders before save.
 	user.TimezoneValidator = userDescTimezone.Validators[0].(func(string) error)
 	// userDescLanguage is the schema descriptor for language field.
-	userDescLanguage := userFields[15].Descriptor()
+	userDescLanguage := userFields[18].Descriptor()
 	// user.DefaultLanguage holds the default value on creation for the language field.
 	user.DefaultLanguage = userDescLanguage.Default.(string)
 	// user.LanguageValidator is a validator for the "language" field. It is called by the builders before save.
 	user.LanguageValidator = userDescLanguage.Validators[0].(func(string) error)
 	// userDescCreatedAt is the schema descriptor for created_at field.
-	userDescCreatedAt := userFields[16].Descriptor()
+	userDescCreatedAt := userFields[19].Descriptor()
 	// user.DefaultCreatedAt holds the default value on creation for the created_at field.
 	user.DefaultCreatedAt = userDescCreatedAt.Default.(func() time.Time)
 	// userDescUpdatedAt is the schema descriptor for updated_at field.
-	userDescUpdatedAt := userFields[17].Descriptor()
+	userDescUpdatedAt := userFields[20].Descriptor()
 	// user.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	user.DefaultUpdatedAt = userDescUpdatedAt.Default.(func() time.Time)
 	// user.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.

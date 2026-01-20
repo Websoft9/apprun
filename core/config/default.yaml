@@ -73,6 +73,50 @@ auth:
     password: ""                          # Leave empty to auto-generate secure password (recommended)
                                           # Or set via INIT_PASSWORD env var for production
 
+# Audit logging configuration (managed by modules/audit/config.go)
+# See modules/audit/config.go for full config struct with validation tags
+audit:
+  service:
+    enabled: true                         # Enable audit logging (db:"true" - can be toggled at runtime)
+    buffer_size: 1000                     # Async queue size (db:"true" - adjustable for performance)
+    worker_count: 4                       # Concurrent workers (db:"true" - adjustable for performance)
+    flush_interval: 5s                    # Batch flush interval (db:"true" - adjustable)
+    fallback_file_path: "/var/log/apprun/audit-fallback.log"  # Fallback when DB unavailable (db:"true")
+  
+  middleware:
+    enabled: true                         # Enable HTTP request auditing (db:"true")
+    exclude_paths:                        # Paths to skip auditing (db:"true")
+      - /health
+      - /metrics
+      - /api/docs
+      - /swagger
+      - /favicon.ico
+      - /static
+    sensitive_fields:                     # Fields to redact in logs (db:"true")
+      - password
+      - token
+      - secret
+      - api_key
+      - authorization
+      - access_token
+      - refresh_token
+    include_request_body: false           # Log request bodies (db:"true", expensive)
+    include_response_body: false          # Log response bodies (db:"true", expensive)
+    max_body_size: 4096                   # Max body size to log in bytes (db:"true")
+  
+  storage:
+    type: database                        # Storage type: database, file, or both (db:"true")
+    async_write: true                     # Async writes for performance (db:"true")
+    file_path: "/var/log/apprun/audit.log"  # File storage path (db:"true")
+    file_rotate_size: 100                 # Rotate at MB (db:"true")
+    file_rotate_age: 7                    # Rotate at days (db:"true")
+  
+  retention:
+    enabled: false                        # Enable automatic cleanup (db:"true")
+    days: 365                             # Days to retain logs (db:"true")
+    archive_enabled: false                # Archive before deletion (db:"true")
+    archive_path: "/var/log/apprun/audit-archive"  # Archive location (db:"true")
+
 # Server configuration (infrastructure, not managed by config center)
 # Override via environment variables following naming convention:
 # Pattern: {GROUP}_UPPERCASE_{KEY}_UPPERCASE

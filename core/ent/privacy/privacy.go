@@ -110,6 +110,30 @@ func DenyMutationOperationRule(op ent.Op) MutationRule {
 	return OnMutationOperation(rule, op)
 }
 
+// The AuditLogQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type AuditLogQueryRuleFunc func(context.Context, *ent.AuditLogQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f AuditLogQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.AuditLogQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.AuditLogQuery", q)
+}
+
+// The AuditLogMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type AuditLogMutationRuleFunc func(context.Context, *ent.AuditLogMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f AuditLogMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.AuditLogMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.AuditLogMutation", m)
+}
+
 // The CasbinRuleQueryRuleFunc type is an adapter to allow the use of ordinary
 // functions as a query rule.
 type CasbinRuleQueryRuleFunc func(context.Context, *ent.CasbinRuleQuery) error

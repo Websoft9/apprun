@@ -1,3 +1,5 @@
-h1:7eq21QApsEmNiAWI2J5/s2iQexlxlwTldlkJZqtpY+4=
+h1:StlJ8IjosWEgS5aqx9tKBXjJlwuHVkMl+lQLkFRez0I=
 20260116104342_new_feature.sql h1:eel0XwQbw8eP577bWWsdRKJl3Auri5LQgNQ35WTSj6Q=
 20260119090653_add_user_bio_field.sql h1:wY95TUsCq+AR2pO7CaM3ScK0qrityQeew7CjABh8biE=
+20260120005723_add_token_version_to_users.sql h1:eLqY72B9Og/0c2MlS0/cYP0B4LcF9cH8CSwBtR/MVz8=
+20260120010211_add_auditlog_table.sql h1:0kUOveQzvaV+vpJVFA0lYAUAYzk+MFB/8RBQqbXgQ/8=

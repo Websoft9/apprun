@@ -8,6 +8,11 @@ import (
 	"apprun/ent"
 	"apprun/handlers"
 	internalMiddleware "apprun/internal/middleware"
+	"apprun/modules/audit"
+	auditHandler "apprun/modules/audit/handler"
+	auditMiddleware "apprun/modules/audit/middleware"
+	auditService "apprun/modules/audit/service"
+	auditStorage "apprun/modules/audit/storage"
 	authHandler "apprun/modules/auth/handler"
 	authRepository "apprun/modules/auth/repository"
 	authService "apprun/modules/auth/service"
@@ -31,6 +36,31 @@ func SetupRoutes(dbClient *ent.Client, configService *configModule.Service) *chi
 
 	// Use i18n language detector middleware
 	r.Use(internalMiddleware.LanguageDetector())
+
+	// Initialize audit service and middleware
+	var auditSvc *auditService.Service
+
+	// Get audit config from config service, or use defaults
+	auditConfig := audit.DefaultConfig()
+	// TODO: Get audit config from configService when it's available
+	// if configService != nil {
+	// 	auditConfig = configService.GetAuditConfig()
+	// }
+
+	auditStor := auditStorage.NewDatabaseStorage(dbClient)
+	svc, err := auditService.NewService(auditStor, auditConfig.Service, auditConfig.Middleware.SensitiveFields)
+	if err != nil {
+		log.Printf("Failed to initialize audit service: %v", err)
+	} else {
+		auditSvc = svc
+		if err := auditSvc.Start(); err != nil {
+			log.Printf("Failed to start audit service: %v", err)
+		} else {
+			// Apply audit middleware globally
+			auditMw := auditMiddleware.New(auditSvc, auditConfig.Middleware)
+			r.Use(auditMw.Handler)
+		}
+	}
 
 	// Health check at root (documented in Swagger)
 	r.Get("/health", handlers.HealthHandler)
@@ -76,6 +106,11 @@ func SetupRoutes(dbClient *ent.Client, configService *configModule.Service) *chi
 
 		// User self-service routes (Story 5.6)
 		RegisterUserRoutes(r, dbClient)
+
+		// Audit log routes (Story 5.9)
+		if auditSvc != nil {
+			RegisterAuditRoutes(r, dbClient, auditSvc)
+		}
 
 		// feature/config routes (如果提供了配置服务)
 		if configService != nil {
@@ -200,5 +235,25 @@ func RegisterUserRoutes(r chi.Router, dbClient *ent.Client) {
 
 		// Change password
 		r.Put("/password", passwordHandler.ChangePassword)
+	})
+}
+
+// RegisterAuditRoutes registers audit log query routes (Story 5.9)
+func RegisterAuditRoutes(r chi.Router, dbClient *ent.Client, auditSvc *auditService.Service) {
+	// Initialize audit handler
+	auditHdl := auditHandler.New(auditSvc, dbClient)
+
+	// JWT middleware
+	jwtMiddleware := internalMiddleware.NewJWTMiddleware()
+
+	// Admin audit routes (platform_admin only)
+	r.Route("/admin/audit-logs", func(r chi.Router) {
+		// Require authentication
+		r.Use(jwtMiddleware.JWTAuth)
+		// TODO: Add RequirePlatformAdmin middleware (Story 5.7)
+		// r.Use(internalMiddleware.RequirePlatformAdmin)
+
+		// Query audit logs
+		r.Get("/", auditHdl.QueryLogs)
 	})
 }

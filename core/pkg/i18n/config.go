@@ -9,7 +9,7 @@ type Config struct {
 	DefaultLanguage string `mapstructure:"default_language" json:"default_language" default:"en-US" db:"true" validate:"required"`
 
 	// SupportedLanguages is the list of languages supported by the application
-	SupportedLanguages []string `mapstructure:"supported_languages" json:"supported_languages" default:"en-US,zh-CN" db:"true" validate:"required,min=1"`
+	SupportedLanguages []string `mapstructure:"supported_languages" json:"supported_languages" default:"en-US,zh-CN" db:"true" validate:"omitempty,min=1"`
 
 	// TranslationsPath is the directory path containing translation files
 	TranslationsPath string `mapstructure:"translations_path" json:"translations_path" default:"./locales" db:"true" validate:"required"`

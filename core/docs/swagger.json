@@ -19,6 +19,156 @@
         "version": "1.0"
     },
     "paths": {
+        "/api/admin/audit-logs": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Query system audit logs with filtering and pagination. Requires platform_admin role. Returns audit logs with operator information including email address. All query parameters are optional filters.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "audit"
+                ],
+                "summary": "Query audit logs",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "2026-01-01T00:00:00Z",
+                        "description": "Start time filter in RFC3339 format",
+                        "name": "start_time",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "2026-01-20T23:59:59Z",
+                        "description": "End time filter in RFC3339 format",
+                        "name": "end_time",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "example": "550e8400-e29b-41d4-a716-446655440000",
+                        "description": "Filter by operator UUID",
+                        "name": "operator_id",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "login",
+                            "logout",
+                            "token_refresh",
+                            "user.create",
+                            "user.update",
+                            "user.delete",
+                            "role.assign",
+                            "access_denied"
+                        ],
+                        "type": "string",
+                        "example": "login",
+                        "description": "Filter by action type. Available options: login, logout, token_refresh, user.create, user.update, user.delete, role.assign, access_denied",
+                        "name": "action",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "user",
+                            "role",
+                            "config",
+                            "project"
+                        ],
+                        "type": "string",
+                        "example": "user",
+                        "description": "Filter by target resource type. Available options: user, role, config, project",
+                        "name": "target_type",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 1,
+                        "example": 1,
+                        "description": "Page number, starts from 1",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 200,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 50,
+                        "example": 20,
+                        "description": "Page size, default 50, maximum 200",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Returns audit logs with pagination info. Each log contains: id, timestamp, operator_id, operator_email, action, target_id, target_type, changes, ip_address, user_agent, status_code, response_time_ms, method, path",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "logs": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "additionalProperties": true
+                                                    }
+                                                },
+                                                "page": {
+                                                    "type": "integer"
+                                                },
+                                                "page_size": {
+                                                    "type": "integer"
+                                                },
+                                                "total": {
+                                                    "type": "integer",
+                                                    "format": "int64"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - JWT token required",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - platform_admin role required",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/auth/login": {
             "post": {
                 "description": "Authenticate user and return JWT token",
@@ -1632,6 +1782,10 @@
                     "description": "Account creation timestamp",
                     "type": "string"
                 },
+                "deleted_at": {
+                    "description": "Soft delete timestamp (NULL if not deleted)",
+                    "type": "string"
+                },
                 "edges": {
                     "description": "Edges holds the relations/edges for other nodes in the graph.\nThe values are being populated by the UserQuery when eager-loading is set.",
                     "allOf": [
@@ -1651,6 +1805,10 @@
                 "id": {
                     "description": "ID of the ent.\nInternal database primary key (not exposed in API)",
                     "type": "integer"
+                },
+                "is_system": {
+                    "description": "System user flag (e.g., System, cannot login)",
+                    "type": "boolean"
                 },
                 "language": {
                     "description": "Preferred language (e.g., zh-CN, en-US)",
@@ -1672,6 +1830,10 @@
                     "description": "Phone number",
                     "type": "string"
                 },
+                "role": {
+                    "description": "Platform role: platform_user, platform_admin",
+                    "type": "string"
+                },
                 "signature": {
                     "description": "User signature / bio",
                     "type": "string"
@@ -1683,6 +1845,10 @@
                 "timezone": {
                     "description": "User timezone (e.g., Asia/Shanghai)",
                     "type": "string"
+                },
+                "token_version": {
+                    "description": "Token version for revocation mechanism (incremented on disable/delete)",
+                    "type": "integer"
                 },
                 "updated_at": {
                     "description": "Last update timestamp",

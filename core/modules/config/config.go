@@ -2,6 +2,7 @@
 package config
 
 import (
+	auditmod "apprun/modules/audit"
 	authmod "apprun/modules/auth"
 	"apprun/pkg/cache"
 	"apprun/pkg/database"
@@ -33,7 +34,8 @@ type Config struct {
 	Database database.Config `mapstructure:"database" json:"database" validate:"required" register:"skip" description:"Database connection (startup-only, not runtime configurable)"`
 	Cache    cache.Config    `mapstructure:"cache" json:"cache" validate:"required" register:"skip" description:"Cache connection (startup-only, not runtime configurable)"`
 
-	Logger logger.Config  `mapstructure:"logger" json:"logger" validate:"required" register:"auto" description:"Logger module (runtime logging configuration)"`
-	I18n   i18n.Config    `mapstructure:"i18n" json:"i18n" validate:"required" register:"auto" description:"Internationalization module (language and translations)"`
-	Auth   authmod.Config `mapstructure:"auth" json:"auth" validate:"required" register:"auto" description:"Authentication module (includes JWT and security settings)"`
+	Logger logger.Config   `mapstructure:"logger" json:"logger" validate:"required" register:"auto" description:"Logger module (runtime logging configuration)"`
+	I18n   i18n.Config     `mapstructure:"i18n" json:"i18n" validate:"required" register:"auto" description:"Internationalization module (language and translations)"`
+	Auth   authmod.Config  `mapstructure:"auth" json:"auth" validate:"required" register:"auto" description:"Authentication module (includes JWT and security settings)"`
+	Audit  auditmod.Config `mapstructure:"audit" json:"audit" validate:"required" register:"auto" description:"Audit logging module (HTTP request auditing and action logging)"`
 }

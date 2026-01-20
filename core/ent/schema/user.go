@@ -77,6 +77,20 @@ func (User) Fields() []ent.Field {
 			Default(1).
 			Comment("Account status: 0-Disabled, 1-Active"),
 
+		// Platform Role
+		field.String("role").
+			MaxLen(20).
+			Default("platform_user").
+			Comment("Platform role: platform_user, platform_admin"),
+		field.Bool("is_system").
+			Default(false).
+			Comment("System user flag (e.g., System, cannot login)"),
+
+		// Token Management
+		field.Int("token_version").
+			Default(0).
+			Comment("Token version for revocation mechanism (incremented on disable/delete)"),
+
 		// Login History
 		field.Time("last_login_at").
 			Optional().
@@ -106,6 +120,10 @@ func (User) Fields() []ent.Field {
 			Default(time.Now).
 			UpdateDefault(time.Now).
 			Comment("Last update timestamp"),
+		field.Time("deleted_at").
+			Optional().
+			Nillable().
+			Comment("Soft delete timestamp (NULL if not deleted)"),
 	}
 }
 
@@ -118,7 +136,20 @@ func (User) Indexes() []ent.Index {
 
 		// Performance indexes
 		index.Fields("status"),
+		index.Fields("role"),
+		index.Fields("is_system"),
+		index.Fields("token_version"),
+		index.Fields("deleted_at"),
 		index.Fields("created_at"),
+
+		// Composite indexes for soft delete queries
+		index.Fields("email", "deleted_at"),
+
+		// Composite indexes for admin user management queries
+		// Search index for email and nickname
+		index.Fields("email", "nickname"),
+		// Filter by role and status
+		index.Fields("role", "status"),
 	}
 }
 

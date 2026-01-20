@@ -53,11 +53,11 @@ type Config struct {
 	// AccessTokenExpiration defines how long access tokens are valid.
 	// Supports duration strings like "24h", "1h30m", "7d" (7*24h).
 	// db:"true" - Can be updated dynamically via config center.
-	AccessTokenExpiration time.Duration `mapstructure:"access_token_expiration" json:"access_token_expiration" default:"24h" db:"true" validate:"min=1h,max=168h"`
+	AccessTokenExpiration time.Duration `mapstructure:"access_token_expiration" json:"access_token_expiration" default:"24h" db:"true" validate:"omitempty,min=1h,max=168h"`
 
 	// RefreshTokenExpiration defines how long refresh tokens are valid (for future use).
 	// db:"true" - Can be updated dynamically via config center.
-	RefreshTokenExpiration time.Duration `mapstructure:"refresh_token_expiration" json:"refresh_token_expiration" default:"168h" db:"true" validate:"min=24h,max=720h"`
+	RefreshTokenExpiration time.Duration `mapstructure:"refresh_token_expiration" json:"refresh_token_expiration" default:"168h" db:"true" validate:"omitempty,min=24h,max=720h"`
 
 	// Issuer is the JWT "iss" claim value.
 	// db:"false" - Infrastructure config, not changeable at runtime.
@@ -71,7 +71,7 @@ type Config struct {
 	// db:"true" - Can be updated to add/remove whitelisted routes at runtime.
 	// Note: Paths should start with "/" (e.g., "/api/auth/login")
 	// Validation: Only ensures the list is not empty (min=1)
-	WhitelistPaths []string `mapstructure:"whitelist_paths" json:"whitelist_paths" db:"true" validate:"min=1"`
+	WhitelistPaths []string `mapstructure:"whitelist_paths" json:"whitelist_paths" db:"true" validate:"omitempty,min=1"`
 }
 
 // DefaultConfig returns the default JWT configuration.
