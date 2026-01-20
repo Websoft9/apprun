@@ -245,7 +245,7 @@ var (
 		{Name: "uuid", Type: field.TypeUUID, Unique: true},
 		{Name: "username", Type: field.TypeString, Unique: true, Nullable: true, Size: 64},
 		{Name: "email", Type: field.TypeString, Unique: true, Size: 255},
-		{Name: "password_hash", Type: field.TypeString, Size: 255},
+		{Name: "password_hash", Type: field.TypeString, Size: 255, Default: ""},
 		{Name: "nickname", Type: field.TypeString, Nullable: true, Size: 64},
 		{Name: "avatar", Type: field.TypeString, Nullable: true, Size: 255},
 		{Name: "phone", Type: field.TypeString, Nullable: true, Size: 20},

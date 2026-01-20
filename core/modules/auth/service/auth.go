@@ -304,7 +304,15 @@ func (s *AuthService) Login(ctx context.Context, req *LoginRequest, clientIP str
 		return nil, errors.Wrap(err, errors.ErrCodeInternalError, "Failed to query user")
 	}
 
-	// 2. Verify password
+	// 2. Check if user is system user (cannot login)
+	if user.IsSystem {
+		logger.Warn("System user login attempt blocked",
+			logger.Field{Key: "identifier", Value: req.Identifier},
+			logger.Field{Key: "user_id", Value: user.ID})
+		return nil, ErrSystemCannotLogin
+	}
+
+	// 3. Verify password
 	if verifyErr := password.Verify(req.Password, user.PasswordHash); verifyErr != nil {
 		logger.Warn("Invalid password",
 			logger.Field{Key: "user_id", Value: user.ID},
@@ -312,7 +320,7 @@ func (s *AuthService) Login(ctx context.Context, req *LoginRequest, clientIP str
 		return nil, ErrInvalidCredentials // Generic error - don't reveal password wrong
 	}
 
-	// 3. Check user status (active)
+	// 4. Check user status (active)
 	if user.Status != schema.UserStatusActive {
 		logger.Warn("Disabled account login attempt",
 			logger.Field{Key: "user_id", Value: user.ID},
@@ -320,7 +328,7 @@ func (s *AuthService) Login(ctx context.Context, req *LoginRequest, clientIP str
 		return nil, ErrAccountDisabled
 	}
 
-	// 4. Generate JWT token pair
+	// 5. Generate JWT token pair
 	accessToken, refreshToken, expiresAt, err := s.generateTokenPair(user)
 	if err != nil {
 		logger.Error("Failed to generate JWT token pair",
@@ -329,14 +337,14 @@ func (s *AuthService) Login(ctx context.Context, req *LoginRequest, clientIP str
 		return nil, errors.Wrap(err, errors.ErrCodeInternalError, "Failed to generate tokens")
 	}
 
-	// 5. Update login history (non-blocking)
+	// 6. Update login history (non-blocking)
 	go s.updateLoginHistory(context.Background(), user.ID, clientIP)
 
 	logger.Info("User logged in successfully",
 		logger.Field{Key: "user_id", Value: user.ID},
 		logger.Field{Key: "email", Value: user.Email})
 
-	// 6. Build response
+	// 7. Build response
 	expiresIn := int64(time.Until(expiresAt).Seconds())
 	return &LoginResponse{
 		AccessToken:  accessToken,

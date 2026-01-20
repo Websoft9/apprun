@@ -131,6 +131,8 @@ var (
 	UsernameValidator func(string) error
 	// EmailValidator is a validator for the "email" field. It is called by the builders before save.
 	EmailValidator func(string) error
+	// DefaultPasswordHash holds the default value on creation for the "password_hash" field.
+	DefaultPasswordHash string
 	// PasswordHashValidator is a validator for the "password_hash" field. It is called by the builders before save.
 	PasswordHashValidator func(string) error
 	// NicknameValidator is a validator for the "nickname" field. It is called by the builders before save.

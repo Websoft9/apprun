@@ -8,6 +8,8 @@ import (
 
 	"apprun/ent"
 	"apprun/ent/user"
+
+	"github.com/google/uuid"
 )
 
 var (
@@ -53,7 +55,13 @@ func (r *UserRepository) CreateUser(ctx context.Context, params *CreateUserParam
 		SetNillableNickname(params.Nickname).
 		SetNillablePhone(params.Phone).
 		SetNillableTimezone(params.Timezone).
-		SetNillableLanguage(params.Language)
+		SetNillableLanguage(params.Language).
+		SetNillableIsSystem(params.IsSystem).
+		SetNillableRole(params.Role)
+
+	if params.UUID != nil {
+		builder.SetUUID(*params.UUID)
+	}
 
 	if params.Gender != nil {
 		builder.SetGender(*params.Gender)
@@ -162,6 +170,7 @@ func (r *UserRepository) UpdatePassword(ctx context.Context, userID int64, passw
 
 // CreateUserParams holds parameters for user creation.
 type CreateUserParams struct {
+	UUID         *uuid.UUID // Optional: for system user with fixed UUID
 	Email        string
 	PasswordHash string
 	Username     *string
@@ -170,6 +179,8 @@ type CreateUserParams struct {
 	Gender       *int8
 	Timezone     *string
 	Language     *string
+	IsSystem     *bool   // Optional: mark as system user
+	Role         *string // Optional: platform role (platform_user, platform_admin)
 }
 
 // containsString is a helper to check if a string contains a substring (case-insensitive).

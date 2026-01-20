@@ -210,22 +210,10 @@ func init() {
 	}()
 	// userDescPasswordHash is the schema descriptor for password_hash field.
 	userDescPasswordHash := userFields[4].Descriptor()
+	// user.DefaultPasswordHash holds the default value on creation for the password_hash field.
+	user.DefaultPasswordHash = userDescPasswordHash.Default.(string)
 	// user.PasswordHashValidator is a validator for the "password_hash" field. It is called by the builders before save.
-	user.PasswordHashValidator = func() func(string) error {
-		validators := userDescPasswordHash.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(password_hash string) error {
-			for _, fn := range fns {
-				if err := fn(password_hash); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
+	user.PasswordHashValidator = userDescPasswordHash.Validators[0].(func(string) error)
 	// userDescNickname is the schema descriptor for nickname field.
 	userDescNickname := userFields[5].Descriptor()
 	// user.NicknameValidator is a validator for the "nickname" field. It is called by the builders before save.

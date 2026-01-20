@@ -221,6 +221,10 @@ development_status:
     status: review
     title: Platform User Management (平台用户管理)
     sprint: sprint-2
+  5-8-system-user-initialization:
+    status: done
+    title: 系统用户初始化支持
+    sprint: sprint-2
   epic-5-retrospective:
     status: optional
     title: Auth Epic Retrospective

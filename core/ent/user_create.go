@@ -66,6 +66,14 @@ func (_c *UserCreate) SetPasswordHash(v string) *UserCreate {
 	return _c
 }
 
+// SetNillablePasswordHash sets the "password_hash" field if the given value is not nil.
+func (_c *UserCreate) SetNillablePasswordHash(v *string) *UserCreate {
+	if v != nil {
+		_c.SetPasswordHash(*v)
+	}
+	return _c
+}
+
 // SetNickname sets the "nickname" field.
 func (_c *UserCreate) SetNickname(v string) *UserCreate {
 	_c.mutation.SetNickname(v)
@@ -393,6 +401,10 @@ func (_c *UserCreate) defaults() {
 	if _, ok := _c.mutation.UUID(); !ok {
 		v := user.DefaultUUID()
 		_c.mutation.SetUUID(v)
+	}
+	if _, ok := _c.mutation.PasswordHash(); !ok {
+		v := user.DefaultPasswordHash
+		_c.mutation.SetPasswordHash(v)
 	}
 	if _, ok := _c.mutation.Gender(); !ok {
 		v := user.DefaultGender

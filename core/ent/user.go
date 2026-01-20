@@ -25,7 +25,7 @@ type User struct {
 	Username string `json:"username,omitempty"`
 	// Email address for login (required, unique)
 	Email string `json:"email,omitempty"`
-	// Bcrypt password hash (cost=12)
+	// Bcrypt password hash (cost=12, empty for system user)
 	PasswordHash string `json:"-"`
 	// Display name / nickname
 	Nickname string `json:"nickname,omitempty"`

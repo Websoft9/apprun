@@ -43,9 +43,9 @@ func (User) Fields() []ent.Field {
 			Comment("Email address for login (required, unique)"),
 		field.String("password_hash").
 			MaxLen(255).
-			NotEmpty().
+			Default("").
 			Sensitive().
-			Comment("Bcrypt password hash (cost=12)"),
+			Comment("Bcrypt password hash (cost=12, empty for system user)"),
 
 		// Profile Fields
 		field.String("nickname").
