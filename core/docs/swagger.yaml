@@ -342,6 +342,99 @@ definitions:
         example: ok
         type: string
     type: object
+  obs.AllMetrics:
+    properties:
+      active_users:
+        type: integer
+      admin_users:
+        type: integer
+      api_error_rate:
+        type: number
+      api_requests_total:
+        type: integer
+      api_response_time_p95:
+        type: integer
+      banned_users:
+        type: integer
+      cache_hit:
+        type: boolean
+      cpu_usage_percent:
+        type: number
+      disk_usage_percent:
+        type: number
+      failed_login_attempts:
+        type: integer
+      login_attempts_total:
+        type: integer
+      login_success_rate:
+        type: number
+      memory_usage_mb:
+        type: integer
+      new_users_today:
+        type: integer
+      timestamp:
+        type: string
+      token_issued_total:
+        type: integer
+      total_users:
+        type: integer
+      uptime_seconds:
+        type: integer
+      user_registrations_last_7_days:
+        type: integer
+    type: object
+  obs.PerformanceMetrics:
+    properties:
+      api_error_rate:
+        description: percentage
+        type: number
+      api_requests_total:
+        type: integer
+      api_response_time_p95:
+        description: milliseconds
+        type: integer
+      cache_hit:
+        type: boolean
+      database_query_duration_avg:
+        description: milliseconds
+        type: number
+      timestamp:
+        type: string
+    type: object
+  obs.SystemMetrics:
+    properties:
+      cpu_usage_percent:
+        type: number
+      disk_usage_percent:
+        type: number
+      goroutines:
+        type: integer
+      memory_usage_mb:
+        type: integer
+      timestamp:
+        type: string
+      uptime_seconds:
+        type: integer
+    type: object
+  obs.UserMetrics:
+    properties:
+      active_users:
+        type: integer
+      admin_users:
+        type: integer
+      banned_users:
+        type: integer
+      cache_hit:
+        type: boolean
+      new_users_today:
+        type: integer
+      timestamp:
+        type: string
+      total_users:
+        type: integer
+      user_registrations_last_7_days:
+        type: integer
+    type: object
   response.ErrorInfo:
     properties:
       code:
@@ -387,6 +480,20 @@ definitions:
     - new_password
     - old_password
     type: object
+  service.ChangeUserRoleRequest:
+    properties:
+      role:
+        type: string
+    required:
+    - role
+    type: object
+  service.ChangeUserStatusRequest:
+    properties:
+      status:
+        type: integer
+    required:
+    - status
+    type: object
   service.CreateProjectRequest:
     properties:
       description:
@@ -398,6 +505,34 @@ definitions:
         type: string
     required:
     - name
+    type: object
+  service.CreateUserRequest:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+      password:
+        description: Optional, will be auto-generated if empty
+        type: string
+      role:
+        type: string
+    required:
+    - email
+    - role
+    type: object
+  service.ListUsersResponse:
+    properties:
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total:
+        type: integer
+      users:
+        items:
+          $ref: '#/definitions/service.UserSummary'
+        type: array
     type: object
   service.LoginRequest:
     properties:
@@ -565,6 +700,24 @@ definitions:
       username:
         type: string
     type: object
+  service.UserSummary:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      is_system:
+        type: boolean
+      nickname:
+        description: Plain string, not pointer (Ent schema)
+        type: string
+      role:
+        type: string
+      status:
+        type: integer
+    type: object
 info:
   contact:
     email: support@websoft9.com
@@ -687,6 +840,312 @@ paths:
       summary: Query audit logs
       tags:
       - audit
+  /api/admin/users:
+    get:
+      consumes:
+      - application/json
+      description: Get paginated list of all platform users with optional filtering
+        by role, status, and search term
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: page_size
+        type: integer
+      - description: Search term (email, nickname)
+        in: query
+        name: search
+        type: string
+      - description: Filter by role (platform_admin, platform_user)
+        in: query
+        name: role
+        type: string
+      - description: Filter by status (0=disabled, 1=active)
+        in: query
+        name: status
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/service.ListUsersResponse'
+              type: object
+        "401":
+          description: Unauthorized - JWT token required
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: Forbidden - platform_admin role required
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: List all users (admin only)
+      tags:
+      - admin
+    post:
+      consumes:
+      - application/json
+      description: Create a new platform user or administrator
+      parameters:
+      - description: User creation data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/service.CreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Bad request - invalid input
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Unauthorized - JWT token required
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: Forbidden - platform_admin role required
+          schema:
+            $ref: '#/definitions/response.Response'
+        "409":
+          description: Conflict - email already exists
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Create new user (admin only)
+      tags:
+      - admin
+  /api/admin/users/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Soft delete a user account (preserves data relations)
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                message:
+                  type: string
+              type: object
+        "400":
+          description: Bad request - invalid user ID
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Unauthorized - JWT token required
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: Forbidden - cannot delete self, last admin, or system user
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Delete user (admin only)
+      tags:
+      - admin
+    get:
+      consumes:
+      - application/json
+      description: Get detailed information about a specific user
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "401":
+          description: Unauthorized - JWT token required
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: Forbidden - platform_admin role required
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get user by ID (admin only)
+      tags:
+      - admin
+  /api/admin/users/{id}/role:
+    put:
+      consumes:
+      - application/json
+      description: Change a user's platform role (upgrade/downgrade between platform_admin
+        and platform_user)
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: New role
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/service.ChangeUserRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Bad request - invalid role
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Unauthorized - JWT token required
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: Forbidden - cannot demote last admin or modify system user
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Change user role (admin only)
+      tags:
+      - admin
+  /api/admin/users/{id}/status:
+    put:
+      consumes:
+      - application/json
+      description: Enable or disable a user account
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: New status (0=disabled, 1=active)
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/service.ChangeUserStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Bad request - invalid status
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Unauthorized - JWT token required
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: Forbidden - cannot disable self or modify system user
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Change user status (admin only)
+      tags:
+      - admin
   /api/auth/login:
     post:
       consumes:
@@ -965,6 +1424,258 @@ paths:
       summary: i18n Demo
       tags:
       - demo
+  /api/metrics:
+    get:
+      description: Get all platform metrics including users, system, auth, and performance
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/obs.AllMetrics'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: Forbidden - requires platform_admin role
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - Bearer: []
+      summary: Get All Metrics
+      tags:
+      - metrics
+  /api/metrics/performance:
+    get:
+      description: Get application performance metrics including response times and
+        throughput
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/obs.PerformanceMetrics'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: Forbidden - requires platform_admin role
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - Bearer: []
+      summary: Get Performance Metrics
+      tags:
+      - metrics
+  /api/metrics/system:
+    get:
+      description: Get system health metrics including CPU, memory, and disk usage
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/obs.SystemMetrics'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: Forbidden - requires platform_admin role
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - Bearer: []
+      summary: Get System Metrics
+      tags:
+      - metrics
+  /api/metrics/users:
+    get:
+      description: Get user statistics including total, active, admin, banned, and
+        registration metrics
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/obs.UserMetrics'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: Forbidden - requires platform_admin role
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - Bearer: []
+      summary: Get User Metrics
+      tags:
+      - metrics
+  /api/profile:
+    get:
+      description: Retrieve the complete profile of the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/service.ProfileResponse'
+              type: object
+        "401":
+          description: Unauthorized - missing or invalid token
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get current user profile
+      tags:
+      - profile
+    put:
+      consumes:
+      - application/json
+      description: Update the authenticated user's profile (name, avatar, bio)
+      parameters:
+      - description: Profile update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/service.UpdateProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/service.ProfileResponse'
+              type: object
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Update current user profile
+      tags:
+      - profile
+  /api/profile/password:
+    put:
+      consumes:
+      - application/json
+      description: Change the authenticated user's password (requires old password
+        verification)
+      parameters:
+      - description: Password change data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/service.ChangePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                message:
+                  type: string
+              type: object
+        "400":
+          description: Validation error or wrong old password
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Change user password
+      tags:
+      - profile
   /api/projects:
     get:
       description: Lists all projects where the authenticated user is a member
@@ -1401,128 +2112,6 @@ paths:
       summary: Get my permissions
       tags:
       - rbac
-  /api/users/me:
-    get:
-      description: Retrieve the complete profile of the authenticated user
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  $ref: '#/definitions/service.ProfileResponse'
-              type: object
-        "401":
-          description: Unauthorized - missing or invalid token
-          schema:
-            $ref: '#/definitions/response.Response'
-        "404":
-          description: User not found
-          schema:
-            $ref: '#/definitions/response.Response'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.Response'
-      security:
-      - BearerAuth: []
-      summary: Get current user profile
-      tags:
-      - users
-    put:
-      consumes:
-      - application/json
-      description: Update the authenticated user's profile (name, avatar, bio)
-      parameters:
-      - description: Profile update data
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/service.UpdateProfileRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  $ref: '#/definitions/service.ProfileResponse'
-              type: object
-        "400":
-          description: Validation error
-          schema:
-            $ref: '#/definitions/response.Response'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.Response'
-        "404":
-          description: User not found
-          schema:
-            $ref: '#/definitions/response.Response'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.Response'
-      security:
-      - BearerAuth: []
-      summary: Update current user profile
-      tags:
-      - users
-  /api/users/me/password:
-    put:
-      consumes:
-      - application/json
-      description: Change the authenticated user's password (requires old password
-        verification)
-      parameters:
-      - description: Password change data
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/service.ChangePasswordRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                message:
-                  type: string
-              type: object
-        "400":
-          description: Validation error or wrong old password
-          schema:
-            $ref: '#/definitions/response.Response'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.Response'
-        "404":
-          description: User not found
-          schema:
-            $ref: '#/definitions/response.Response'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.Response'
-      security:
-      - BearerAuth: []
-      summary: Change user password
-      tags:
-      - users
   /health:
     get:
       description: Check if the service is running

@@ -51,12 +51,15 @@ func (s *TokenService) GenerateToken(userID int64, userClaims map[string]interfa
 	username, _ := userClaims["username"].(string)
 	//nolint:errcheck // Type assertion failure is acceptable, defaults to empty string
 	email, _ := userClaims["email"].(string)
+	//nolint:errcheck // Type assertion failure is acceptable, defaults to 0
+	tokenVersion, _ := userClaims["token_version"].(int)
 
 	claims := CustomClaims{
-		UserID:    userID,
-		Username:  username,
-		Email:     email,
-		TokenType: "access",
+		UserID:       userID,
+		Username:     username,
+		Email:        email,
+		TokenType:    "access",
+		TokenVersion: tokenVersion,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expiresAt),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -124,12 +127,15 @@ func (s *TokenService) GenerateTokenPair(userID int64, userClaims map[string]int
 	username, _ := userClaims["username"].(string)
 	//nolint:errcheck // Type assertion failure is acceptable, defaults to empty string
 	email, _ := userClaims["email"].(string)
+	//nolint:errcheck // Type assertion failure is acceptable, defaults to 0
+	tokenVersion, _ := userClaims["token_version"].(int)
 
 	accessClaims := CustomClaims{
-		UserID:    userID,
-		Username:  username,
-		Email:     email,
-		TokenType: "access",
+		UserID:       userID,
+		Username:     username,
+		Email:        email,
+		TokenType:    "access",
+		TokenVersion: tokenVersion,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(accessExpiresAt),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -157,12 +163,15 @@ func (s *TokenService) GenerateTokenPair(userID int64, userClaims map[string]int
 	usernameRefresh, _ := userClaims["username"].(string)
 	//nolint:errcheck // Type assertion failure is acceptable, defaults to empty string
 	emailRefresh, _ := userClaims["email"].(string)
+	//nolint:errcheck // Type assertion failure is acceptable, defaults to 0
+	tokenVersionRefresh, _ := userClaims["token_version"].(int)
 
 	refreshClaims := CustomClaims{
-		UserID:    userID,
-		Username:  usernameRefresh,
-		Email:     emailRefresh,
-		TokenType: "refresh",
+		UserID:       userID,
+		Username:     usernameRefresh,
+		Email:        emailRefresh,
+		TokenType:    "refresh",
+		TokenVersion: tokenVersionRefresh,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(refreshExpiresAt),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

@@ -27,13 +27,13 @@
 ## Acceptance Criteria
 
 ### 功能验收
-- [ ] 实现 `GET /api/users/me` - 获取当前用户的完整资料
+- [ ] 实现 `GET /api/profile` - 获取当前用户的完整资料
   - 返回字段：id, email, name, avatar, bio, role, is_active, created_at, last_login_at
-- [ ] 实现 `PUT /api/users/me` - 修改当前用户的个人资料
+- [ ] 实现 `PUT /api/profile` - 修改当前用户的个人资料
   - 允许修改字段：name (2-50字符), avatar (HTTPS URL, ≤255字符), bio (≤500字符)
   - 禁止修改字段：email, role, is_active, is_system
   - 返回更新后的完整用户对象
-- [ ] 实现 `PUT /api/users/me/password` - 修改当前用户的密码
+- [ ] 实现 `PUT /api/profile/password` - 修改当前用户的密码
   - 需要提供旧密码进行验证
   - 新密码需通过强度验证（≥8字符，包含大写、小写字母和数字）
 
@@ -57,7 +57,7 @@
 
 ### API 端点
 
-#### 1. GET /api/users/me
+#### 1. GET /api/profile
 **描述**: 获取当前用户完整资料  
 **认证**: JWT Required  
 **响应示例**:
@@ -78,7 +78,7 @@
 }
 ```
 
-#### 2. PUT /api/users/me
+#### 2. PUT /api/profile
 **描述**: 修改当前用户资料  
 **认证**: JWT Required  
 **请求体**:
@@ -107,7 +107,7 @@
 }
 ```
 
-#### 3. PUT /api/users/me/password
+#### 3. PUT /api/profile/password
 **描述**: 修改当前用户密码  
 **认证**: JWT Required  
 **请求体**:
@@ -130,8 +130,8 @@
 ```
 modules/auth/
 ├── handlers/
-│   ├── profile.go         # GET/PUT /api/users/me
-│   └── password.go        # PUT /api/users/me/password
+│   ├── profile.go         # GET/PUT /api/profile
+│   └── password.go        # PUT /api/profile/password
 └── services/
     └── user_service.go    # 业务逻辑
 ```

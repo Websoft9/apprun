@@ -25,18 +25,18 @@ func NewProfileHandler(userService *service.UserService) *ProfileHandler {
 	}
 }
 
-// GetProfile handles GET /api/users/me - retrieve current user's profile.
+// GetProfile handles GET /api/profile - retrieve current user's profile.
 //
 //	@Summary		Get current user profile
 //	@Description	Retrieve the complete profile of the authenticated user
-//	@Tags			users
+//	@Tags			profile
 //	@Security		BearerAuth
 //	@Produce		json
 //	@Success		200	{object}	response.Response{data=service.ProfileResponse}
 //	@Failure		401	{object}	response.Response	"Unauthorized - missing or invalid token"
 //	@Failure		404	{object}	response.Response	"User not found"
 //	@Failure		500	{object}	response.Response	"Internal server error"
-//	@Router			/api/users/me [get]
+//	@Router			/api/profile [get]
 func (h *ProfileHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	logger.Info("Get profile request received",
 		logger.Field{Key: "method", Value: r.Method},
@@ -73,11 +73,11 @@ func (h *ProfileHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	response.Success(w, profile)
 }
 
-// UpdateProfile handles PUT /api/users/me - update current user's profile.
+// UpdateProfile handles PUT /api/profile - update current user's profile.
 //
 //	@Summary		Update current user profile
 //	@Description	Update the authenticated user's profile (name, avatar, bio)
-//	@Tags			users
+//	@Tags			profile
 //	@Security		BearerAuth
 //	@Accept			json
 //	@Produce		json
@@ -87,7 +87,7 @@ func (h *ProfileHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 //	@Failure		401		{object}	response.Response	"Unauthorized"
 //	@Failure		404		{object}	response.Response	"User not found"
 //	@Failure		500		{object}	response.Response	"Internal server error"
-//	@Router			/api/users/me [put]
+//	@Router			/api/profile [put]
 func (h *ProfileHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	logger.Info("Update profile request received",
 		logger.Field{Key: "method", Value: r.Method},

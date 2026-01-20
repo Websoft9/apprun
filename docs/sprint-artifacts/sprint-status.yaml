@@ -113,6 +113,10 @@ development_status:
     status: in-progress
     title: CLI Generate - Unified Code Generation
     sprint: sprint-2
+  1-19-unified-dto-standard:
+    status: ready-for-dev
+    title: Unified API Module DTO Design andnd Implementation
+    sprint: sprint-2
   epic-1-retrospective:
     status: optional
     title: Infrastructure Epic Retrospective
@@ -213,6 +217,10 @@ development_status:
     status: in-progress
     title: RBAC API Endpoints
     sprint: sprint-1
+  5-7-platform-user-management:
+    status: review
+    title: Platform User Management (平台用户管理)
+    sprint: sprint-2
   epic-5-retrospective:
     status: optional
     title: Auth Epic Retrospective
@@ -268,3 +276,27 @@ development_status:
   epic-7-retrospective:
     status: optional
     title: Functions Epic Retrospective
+
+  # Epic 8: Event Hub Service
+  epic-8:
+    status: backlog
+    title: Event Hub
+  8-1-event-publishing:
+    status: ready-for-dev
+    title: Event Publishing API
+    sprint: sprint-2
+  epic-8-retrospective:
+    status: optional
+    title: Event Hub Epic Retrospective
+
+  # Epic 9: Observability & Monitoring
+  epic-9:
+    status: in-progress
+    title: Observability & Monitoring
+  9-1-metrics-exposure:
+    status: ready-for-dev
+    title: Metrics Exposure (平台指标暴露)
+    sprint: sprint-3
+  epic-9-retrospective:
+    status: optional
+    title: Observability Epic Retrospective

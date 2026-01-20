@@ -221,7 +221,7 @@ func StartServer() error {
 
 	// Phase 5: Setup HTTP Routes
 	// Register all HTTP handlers and middleware
-	router := routes.SetupRoutes(dbClient.GetEntClient(), configService)
+	router := routes.SetupRoutes(dbClient.GetEntClient(), configService, cacheClient)
 	log.Println("✅ HTTP routes configured")
 
 	// Phase 6: Configure HTTP/HTTPS Server

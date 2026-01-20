@@ -6,7 +6,7 @@
 project_name: apprun
 user_skill_level: intermediate
 planning_artifacts: "{project-root}/_bmad-output/planning-artifacts"
-implementation_artifacts: "{project-root}/_bmad-output/implementation-artifacts"
+implementation_artifacts: "{project-root}/docs/implementation-artifacts"
 project_knowledge: "{project-root}/docs"
 tea_use_mcp_enhancements: false
 tea_use_playwright_utils: false
@@ -15,4 +15,4 @@ tea_use_playwright_utils: false
 user_name: Websoft9
 communication_language: Chinese
 document_output_language: English
-output_folder: "{project-root}/_bmad-output"
+output_folder: "{project-root}/docs"

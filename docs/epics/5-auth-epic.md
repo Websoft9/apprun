@@ -379,8 +379,8 @@ auth:
 **工作量**: 1 天
 
 - [ ] 实现 `/api/auth/me` 端点（获取当前用户信息）
-- [ ] 实现 `/api/users/me` 端点（查看自己的详细资料）
-- [ ] 实现 `PUT /api/users/me` 端点（修改自己的资料：name, avatar 等）
+- [ ] 实现 `/api/profile` 端点（查看自己的详细资料）
+- [ ] 实现 `PUT /api/profile` 端点（修改自己的资料：name, avatar 等）
 - [ ] 实现 `/api/auth/change-password` 端点（修改自己的密码）
 - [ ] 实现 `/api/auth/logout`（可选，客户端删除 Token）
 - [ ] 输入验证（防止修改敏感字段如 role, is_active）

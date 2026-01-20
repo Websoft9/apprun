@@ -35,6 +35,7 @@ docs/epics/
 | [Infrastructure & Foundation](./1-infrastructure-epic.md) | 🔄 In Progress | P0 | 77% (14/18) | 平台基础设施与核心工具包 |
 | [Configuration Management](./3-config-epic.md) | 🔄 In Progress | P0 | 50% (1/2) | 配置中心与多环境管理 |
 | [Authentication & Authorization](./5-auth-epic.md) | 🔄 In Progress | P1 | 33% (1/3) | 用户认证、授权与权限管理 |
+| [Observability & Monitoring](./9-observability-epic.md) | 📝 Planning | P1 | 0% (0/6) | Prometheus 监控与 Grafana 可视化 |
 | [Internationalization & Localization](./2-i18n-epic.md) | 📝 Planning | P1 | 0% (0/4) | 多语言支持与本地化 |
 | [File Storage Service](./6-storage-epic.md) | 📝 Planning | P2 | 0% (0/0) | 对象存储与文件管理 |
 | [Serverless Functions](./7-functions-epic.md) | 📝 Planning | P2 | 0% (0/0) | 函数计算与任务调度 |

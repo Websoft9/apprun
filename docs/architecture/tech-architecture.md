@@ -122,7 +122,7 @@ tokenString, _ := token.SignedString(jwtSecret)
 - `POST /api/v1/auth/register` - 用户注册
 - `POST /api/v1/auth/login` - 用户登录（返回 JWT）
 - `POST /api/v1/auth/refresh` - 刷新 Token
-- `GET /api/users/me` - 获取当前用户信息
+- `GET /api/profile` - 获取当前用户信息
 
 ### 3.2 授权模块 (RBAC)
 

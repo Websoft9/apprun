@@ -8,6 +8,8 @@ import (
 	"apprun/ent"
 	"apprun/handlers"
 	internalMiddleware "apprun/internal/middleware"
+	adminHandler "apprun/modules/admin/handler"
+	adminService "apprun/modules/admin/service"
 	"apprun/modules/audit"
 	auditHandler "apprun/modules/audit/handler"
 	auditMiddleware "apprun/modules/audit/middleware"
@@ -17,15 +19,19 @@ import (
 	authRepository "apprun/modules/auth/repository"
 	authService "apprun/modules/auth/service"
 	configModule "apprun/modules/config"
+	"apprun/modules/obs"
+	"apprun/pkg/cache"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 // SetupRoutes 设置所有路由
 // dbClient: 数据库客户端（必需，用于认证等模块）
 // configService: 配置服务（可选）
-func SetupRoutes(dbClient *ent.Client, configService *configModule.Service) *chi.Mux {
+// cacheClient: 缓存客户端（可选，用于metrics等模块）
+func SetupRoutes(dbClient *ent.Client, configService *configModule.Service, cacheClient cache.Client) *chi.Mux {
 	r := chi.NewRouter()
 
 	// Use go-chi middlewares
@@ -64,6 +70,9 @@ func SetupRoutes(dbClient *ent.Client, configService *configModule.Service) *chi
 
 	// Health check at root (documented in Swagger)
 	r.Get("/health", handlers.HealthHandler)
+
+	// Prometheus metrics endpoint
+	r.Handle("/metrics", promhttp.Handler())
 
 	// API routes group
 	r.Route("/api", func(r chi.Router) {
@@ -107,6 +116,14 @@ func SetupRoutes(dbClient *ent.Client, configService *configModule.Service) *chi
 		// User self-service routes (Story 5.6)
 		RegisterUserRoutes(r, dbClient)
 
+		// Admin user management routes (Story 5.7)
+		RegisterAdminUserRoutes(r, dbClient)
+
+		// Metrics routes (Story 9.1 - Observability)
+		if cacheClient != nil {
+			RegisterMetricsRoutes(r, dbClient, cacheClient)
+		}
+
 		// Audit log routes (Story 5.9)
 		if auditSvc != nil {
 			RegisterAuditRoutes(r, dbClient, auditSvc)
@@ -136,12 +153,12 @@ func RegisterRBACRoutes(r chi.Router, dbClient *ent.Client) {
 	memberHandler := authHandler.NewProjectMemberHandler(memberSvc)
 	permissionHandler := authHandler.NewPermissionHandler(permissionSvc)
 
-	// JWT middleware (required for all RBAC routes)
-	jwtMiddleware := internalMiddleware.NewJWTMiddleware()
+	// JWT middleware with DB client for token version validation (Story 5.7)
+	jwtMiddleware := internalMiddleware.NewJWTMiddlewareWithDB(dbClient)
 
 	// Project member management routes
 	r.Route("/projects/{project_id}/members", func(r chi.Router) {
-		// Apply JWT authentication
+		// Apply JWT authentication with token version validation
 		r.Use(jwtMiddleware.JWTAuth)
 		// Apply project context middleware (loads project from URL param)
 		r.Use(internalMiddleware.ProjectContextMiddleware(dbClient))
@@ -183,8 +200,8 @@ func RegisterProjectRoutes(r chi.Router, dbClient *ent.Client) {
 	memberSvc := authService.NewProjectMemberService(memberRepo, projectRepo)
 	projectHandler := authHandler.NewProjectHandler(projectSvc, memberSvc)
 
-	// JWT middleware (required for all project routes)
-	jwtMiddleware := internalMiddleware.NewJWTMiddleware()
+	// JWT middleware with DB client for token version validation (Story 5.7)
+	jwtMiddleware := internalMiddleware.NewJWTMiddlewareWithDB(dbClient)
 
 	// Project CRUD routes
 	r.Route("/projects", func(r chi.Router) {
@@ -219,11 +236,11 @@ func RegisterUserRoutes(r chi.Router, dbClient *ent.Client) {
 	profileHandler := authHandler.NewProfileHandler(userSvc)
 	passwordHandler := authHandler.NewPasswordHandler(userSvc)
 
-	// JWT middleware (required for all user routes)
-	jwtMiddleware := internalMiddleware.NewJWTMiddleware()
+	// JWT middleware with DB client for token version validation (Story 5.7)
+	jwtMiddleware := internalMiddleware.NewJWTMiddlewareWithDB(dbClient)
 
 	// User self-service routes
-	r.Route("/users/me", func(r chi.Router) {
+	r.Route("/profile", func(r chi.Router) {
 		// All routes require authentication
 		r.Use(jwtMiddleware.JWTAuth)
 
@@ -243,17 +260,97 @@ func RegisterAuditRoutes(r chi.Router, dbClient *ent.Client, auditSvc *auditServ
 	// Initialize audit handler
 	auditHdl := auditHandler.New(auditSvc, dbClient)
 
-	// JWT middleware
-	jwtMiddleware := internalMiddleware.NewJWTMiddleware()
+	// JWT middleware with DB client for token version validation
+	jwtMiddleware := internalMiddleware.NewJWTMiddlewareWithDB(dbClient)
+
+	// Platform admin middleware
+	platformAdminMw := internalMiddleware.NewRequirePlatformAdminMiddleware(dbClient)
 
 	// Admin audit routes (platform_admin only)
 	r.Route("/admin/audit-logs", func(r chi.Router) {
 		// Require authentication
 		r.Use(jwtMiddleware.JWTAuth)
-		// TODO: Add RequirePlatformAdmin middleware (Story 5.7)
-		// r.Use(internalMiddleware.RequirePlatformAdmin)
+		// Require platform_admin role (Story 5.7)
+		r.Use(platformAdminMw.RequirePlatformAdmin)
 
 		// Query audit logs
 		r.Get("/", auditHdl.QueryLogs)
+	})
+}
+
+// RegisterAdminUserRoutes registers admin user management routes (Story 5.7)
+func RegisterAdminUserRoutes(r chi.Router, dbClient *ent.Client) {
+	// Initialize user management dependencies
+	userMgmtSvc := adminService.NewUserMgmtService(dbClient)
+	usersHandler := adminHandler.NewUsersHandler(userMgmtSvc)
+
+	// JWT middleware with DB client for token version validation (Story 5.7)
+	jwtMiddleware := internalMiddleware.NewJWTMiddlewareWithDB(dbClient)
+
+	// Platform admin middleware (Story 5.7)
+	platformAdminMw := internalMiddleware.NewRequirePlatformAdminMiddleware(dbClient)
+
+	// Admin user management routes
+	r.Route("/admin/users", func(r chi.Router) {
+		// All routes require authentication
+		r.Use(jwtMiddleware.JWTAuth)
+		// All routes require platform_admin role
+		r.Use(platformAdminMw.RequirePlatformAdmin)
+
+		// Rate limit admin user management to 60 requests per minute per IP
+		r.Use(middleware.Throttle(60))
+
+		// List all users with filtering
+		r.Get("/", usersHandler.ListUsers)
+
+		// Create new user
+		r.Post("/", usersHandler.CreateUser)
+
+		// User-specific routes
+		r.Route("/{id}", func(r chi.Router) {
+			// Get user details
+			r.Get("/", usersHandler.GetUser)
+
+			// Change user role
+			r.Put("/role", usersHandler.ChangeUserRole)
+
+			// Change user status
+			r.Put("/status", usersHandler.ChangeUserStatus)
+
+			// Delete user (soft delete)
+			r.Delete("/", usersHandler.DeleteUser)
+		})
+	})
+}
+
+// RegisterMetricsRoutes registers metrics routes (Story 9.1 - Observability)
+func RegisterMetricsRoutes(r chi.Router, dbClient *ent.Client, cacheClient cache.Client) {
+	// Initialize metrics dependencies
+	metricsService := obs.NewMetricsService(dbClient, cacheClient)
+	metricsHandler := obs.NewMetricsHandler(metricsService)
+
+	// JWT middleware with DB client for token version validation
+	jwtMiddleware := internalMiddleware.NewJWTMiddlewareWithDB(dbClient)
+
+	// Platform admin middleware
+	platformAdminMw := internalMiddleware.NewRequirePlatformAdminMiddleware(dbClient)
+
+	// Metrics routes (platform_admin only)
+	r.Route("/metrics", func(r chi.Router) {
+		// Apply rate limiting: 100 requests per minute
+		r.Use(middleware.Throttle(int(obs.MetricsRateLimitRequests)))
+
+		// Require authentication
+		r.Use(jwtMiddleware.JWTAuth)
+		// Require platform_admin role
+		r.Use(platformAdminMw.RequirePlatformAdmin)
+
+		// Get all metrics
+		r.Get("/", metricsHandler.GetAll)
+
+		// Get specific metric categories
+		r.Get("/users", metricsHandler.GetUsers)
+		r.Get("/system", metricsHandler.GetSystem)
+		r.Get("/performance", metricsHandler.GetPerformance)
 	})
 }

@@ -58,6 +58,30 @@
 
 ## Technical Design
 
+### ✅ 依赖验证结果
+
+**验证时间**: 2026-01-20
+
+1. **数据模型** - ✅ 已就绪
+   - `is_system` 字段：已定义 (`field.Bool("is_system").Default(false)`)
+   - `role` 字段：已定义 (`field.String("role").Default("platform_user")`)
+   - 位置：[core/ent/schema/user.go](core/ent/schema/user.go#L81-L87)
+
+2. **密码验证** - ✅ 已就绪
+   - `password.Validate()` 方法：已实现
+   - 验证规则：8-72字符，包含大小写字母和数字
+   - 位置：[core/internal/password/validator.go](core/internal/password/validator.go#L47)
+   - 在 AuthService 中使用：[core/modules/auth/service/auth.go](core/modules/auth/service/auth.go#L126)
+
+3. **审计日志** - 📝 明确设计
+   - 使用**结构化日志** (pkg/logger)，不写入 audit_logs 表
+   - 创建成功：`logger.Info("System user created", ...)`
+   - 已存在：`logger.Debug("System user already exists", ...)`
+   - 错误：`logger.Error("Failed to create system user", ...)`
+   - 理由：初始化操作发生在 Bootstrap 阶段，此时 audit 模块可能未完全启动
+
+---
+
 ### Service 方法签名
 
 #### 1. EnsureSystemUser
@@ -110,7 +134,9 @@ func (s *AuthService) EnsureAdminUser(ctx context.Context, email, password strin
 
 **参数验证**:
 - email 不能为空，必须符合邮箱格式
-- password 不能为空，必须符合 Story 5.1 定义的密码强度要求（调用 `AuthService.ValidatePassword()` 方法）
+- password 不能为空，必须符合 Story 5.1 定义的密码强度要求
+  - 调用 `password.Validate(password)` 方法 (位于 `core/internal/password/validator.go`)
+  - 规则：8-72字符，包含大小写字母和数字
 
 **返回值**:
 - `*ent.User`: 用户对象（不包含 password_hash 字段）
@@ -152,43 +178,65 @@ func InitPlatform(container *Container) error {
 ### 目录结构
 
 ```
-modules/auth/
-└── services/
-    ├── auth_service.go       # 现有文件
-    └── bootstrap.go          # 新增：初始化方法
+core/
+├── modules/auth/service/
+│   ├── auth.go           # 现有：注册/登录逻辑
+│   └── bootstrap.go      # 新增：系统初始化方法
+└── internal/password/
+    └── validator.go      # 现有：密码强度验证（password.Validate）
 ```
 
 ---
 
 ## Implementation Tasks
 
-1. **Service 方法实现**
-   - 在 `modules/auth/services/` 创建 `bootstrap.go`
-   - 实现 `EnsureSystemUser()` 方法
-   - 实现 `EnsureAdminUser()` 方法
+### Phase 1: Service 方法实现
+- [ ] 在 `core/modules/auth/service/` 创建 `bootstrap.go` 文件
+- [ ] 实现 `EnsureSystemUser(ctx)` 方法
+  - [ ] 查询 `name="system"` 的用户
+  - [ ] 存在：验证一致性（UUID、is_system 字段）
+  - [ ] 不存在：创建 system 用户（固定 UUID `00000000-...`）
+- [ ] 实现 `EnsureAdminUser(ctx, email, password)` 方法
+  - [ ] 验证 email 格式（调用 `isValidEmail()`）
+  - [ ] 验证密码强度（调用 `password.Validate()`）
+  - [ ] 查询该 email 的用户
+  - [ ] 存在：返回用户（不修改密码）
+  - [ ] 不存在：创建 admin 用户（随机 UUID）
 
-2. **防止 system 用户登录**
-   - 在 `modules/auth/services/auth_service.go` 的 `Login()` 方法中
-   - 添加检查：如果 `user.IsSystem == true`，返回错误
+### Phase 2: 安全加固
+- [ ] 在 `core/modules/auth/service/auth.go` 的 `Login()` 方法中
+  - [ ] 添加检查：`if user.IsSystem { return ErrSystemCannotLogin }`
+  - [ ] 位置：密码验证之前（避免无意义的哈希计算）
 
-3. **幂等性保证**
-   - 使用数据库的 UNIQUE 约束（email, name）
-   - 捕获重复插入错误，转换为查询逻辑
+### Phase 3: 幂等性保证
+- [ ] 在 `EnsureSystemUser` 中处理唯一性冲突
+  - [ ] 使用 Ent 的 `OnConflict()` 或 `Save()` + 错误检查
+  - [ ] 发生冲突时：查询并返回已有用户
+- [ ] 在 `EnsureAdminUser` 中处理唯一性冲突
+  - [ ] 同上策略
 
-4. **日志记录**
-   - 创建成功时记录 INFO 日志
-   - 已存在时记录 DEBUG 日志
-   - 错误时记录 ERROR 日志
+### Phase 4: 日志记录
+- [ ] 使用 `pkg/logger` 记录结构化日志
+  - [ ] 创建成功：`logger.Info("System user created", Field{Key: "uuid", Value: ...})`
+  - [ ] 已存在：`logger.Debug("System user already exists", ...)`
+  - [ ] 错误：`logger.Error("Failed to create system user", Field{Key: "error", Value: ...})`
 
-5. **测试**
-   - 单元测试：首次创建
-   - 单元测试：幂等性（多次调用）
-   - 单元测试：参数验证（空 email, 弱密码）
-   - 集成测试：system 用户无法登录
+### Phase 5: 测试
+- [ ] **单元测试** (`core/modules/auth/service/bootstrap_test.go`):
+  - [ ] `TestEnsureSystemUser_FirstTime` - 首次创建
+  - [ ] `TestEnsureSystemUser_Idempotent` - 多次调用幂等性
+  - [ ] `TestEnsureSystemUser_ConsistencyCheck` - 一致性验证
+  - [ ] `TestEnsureAdminUser_FirstTime` - 首次创建
+  - [ ] `TestEnsureAdminUser_Idempotent` - 多次调用不改密码
+  - [ ] `TestEnsureAdminUser_InvalidEmail` - 空 email
+  - [ ] `TestEnsureAdminUser_WeakPassword` - 弱密码
+- [ ] **集成测试** (`tests/integration/auth/`):
+  - [ ] `TestSystemUserCannotLogin` - system 用户禁止登录
+  - [ ] `TestAdminUserCanLogin` - admin 用户正常登录
 
-6. **文档**
-   - 更新 Auth Service 接口文档
-   - 在 Story 1.17 中添加调用示例
+### Phase 6: 文档更新
+- [ ] 在 Story 1.17 中添加调用示例
+- [ ] 更新 API 文档（如有必要）
 
 ---
 
@@ -216,44 +264,33 @@ modules/auth/
 
 ## Data Model Changes
 
-### 用户表增强
+### ✅ 无需更改
 
-**Ent Schema** (`ent/schema/user.go`):
+User schema 已包含所需字段：
+
+**现有字段** (`core/ent/schema/user.go`):
 ```go
-import (
-    "entgo.io/ent"
-    "entgo.io/ent/schema/field"
-    "entgo.io/ent/schema/index"
-)
-
-func (User) Fields() []ent.Field {
-    return []ent.Field{
-        // ... 现有字段
-        field.Bool("is_system").
-            Default(false).
-            Comment("是否为系统用户"),
-        field.Enum("role").
-            Values("platform_user", "platform_admin").
-            Default("platform_user").
-            Comment("用户角色"),
-    }
-}
-
-func (User) Indexes() []ent.Index {
-    return []ent.Index{
-        index.Fields("name").Unique(),
-        index.Fields("is_system"),
-    }
-}
+// Line 81-87
+field.String("role").
+    MaxLen(20).
+    Default("platform_user").
+    Comment("Platform role: platform_user, platform_admin"),
+field.Bool("is_system").
+    Default(false).
+    Comment("System user flag (e.g., System, cannot login"),
 ```
 
-**Migration**:
+**已有索引**:
+- `email` - UNIQUE (已有)
+- `username` - UNIQUE (已有)
+
+**新增索引建议**:
 ```sql
-ALTER TABLE users ADD COLUMN IF NOT EXISTS is_system BOOLEAN DEFAULT FALSE;
-ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'platform_user';
-CREATE UNIQUE INDEX IF NOT EXISTS idx_users_name ON users(name);
-CREATE INDEX IF NOT EXISTS idx_users_is_system ON users(is_system);
+-- 可选优化：加速 is_system 查询
+CREATE INDEX IF NOT EXISTS idx_users_is_system ON users(is_system) WHERE is_system = true;
 ```
+
+**无需 Migration** - 字段已在 Story 5.1 中创建。
 
 ---
 
@@ -280,7 +317,7 @@ ADMIN_PASSWORD=ChangeMe123!
 | 错误码 | HTTP 状态码 | 说明 |
 |--------|------------|------|
 | `USER_INVALID_EMAIL` | 400 | 邮箱格式无效 |
-| `USER_WEAK_PASSWORD` | 400 | 密码强度不足（引用 Story 5.1 规则） |
+| `USER_WEAK_PASSWORD` | 400 | 密码强度不足（来自 `password.Validate()` 错误） |
 | `USER_SYSTEM_CANNOT_LOGIN` | 403 | System 用户不能登录 |
 | `USER_DATA_CORRUPTION` | 500 | System 用户数据不一致（UUID 或 is_system 字段异常） |
 | `INTERNAL_ERROR` | 500 | 内部错误（数据库操作失败） |

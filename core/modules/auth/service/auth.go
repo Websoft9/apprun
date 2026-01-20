@@ -349,9 +349,10 @@ func (s *AuthService) Login(ctx context.Context, req *LoginRequest, clientIP str
 // generateTokenPair creates both access and refresh JWT tokens for the user.
 func (s *AuthService) generateTokenPair(user *ent.User) (string, string, time.Time, error) {
 	userClaims := map[string]interface{}{
-		"user_id":  user.ID,
-		"username": user.Username,
-		"email":    user.Email,
+		"user_id":       user.ID,
+		"username":      user.Username,
+		"email":         user.Email,
+		"token_version": user.TokenVersion, // Include token version for revocation (Story 5.7)
 	}
 	return jwt.GenerateTokenPair(user.ID, userClaims)
 }

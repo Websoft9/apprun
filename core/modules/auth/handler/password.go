@@ -25,11 +25,11 @@ func NewPasswordHandler(userService *service.UserService) *PasswordHandler {
 	}
 }
 
-// ChangePassword handles PUT /api/users/me/password - change current user's password.
+// ChangePassword handles PUT /api/profile/password - change current user's password.
 //
 //	@Summary		Change user password
 //	@Description	Change the authenticated user's password (requires old password verification)
-//	@Tags			users
+//	@Tags			profile
 //	@Security		BearerAuth
 //	@Accept			json
 //	@Produce		json
@@ -39,7 +39,7 @@ func NewPasswordHandler(userService *service.UserService) *PasswordHandler {
 //	@Failure		401		{object}	response.Response	"Unauthorized"
 //	@Failure		404		{object}	response.Response	"User not found"
 //	@Failure		500		{object}	response.Response	"Internal server error"
-//	@Router			/api/users/me/password [put]
+//	@Router			/api/profile/password [put]
 func (h *PasswordHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	logger.Info("Change password request received",
 		logger.Field{Key: "method", Value: r.Method},

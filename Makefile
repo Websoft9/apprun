@@ -177,7 +177,7 @@ build: generate i18n swagger
 	cd core && go build -ldflags="-X apprun/pkg/version.Version=$$VERSION \
 		-X apprun/pkg/version.GitCommit=$$GIT_COMMIT \
 		-X apprun/pkg/version.BuildTime=$$BUILD_TIME" \
-		-o bin/apprun .
+		-o bin/apprun ./main.go
 	@echo "✅ Build complete: core/bin/apprun"
 	@# Create backward compatibility symlink
 	@cd core/bin && rm -f server && ln -sf apprun server
@@ -186,7 +186,7 @@ build: generate i18n swagger
 # 快速构建（跳过文档生成）
 build-fast: generate
 	@echo "⚡ Quick build (skip docs)..."
-	@cd core && go build -o bin/apprun .
+	@cd core && go build -o bin/apprun ./main.go
 	@echo "✅ Quick build complete: core/bin/apprun"
 	@# Create backward compatibility symlink
 	@cd core/bin && rm -f server && ln -sf apprun server
@@ -291,38 +291,115 @@ db-repair-execute:
 # 3. Testing (测试)
 # ============================================
 
-# Run all tests (alias for test-all)
-test: test-unit test-integration
+# Run all tests (new test framework)
+test: test-unit-new test-integration-new
 	@echo "✅ All tests passed"
 
-# Run unit tests
-test-unit:
-	@echo "🧪 Running unit tests..."
+# Run unit tests (new test framework)
+test-unit-new:
+	@echo "🧪 Running unit tests (new framework)..."
+	@cd tests && go test -v -race -short -coverprofile=coverage-unit.out ./unit/...
+	@echo ""
+	@echo "📊 Coverage summary:"
+	@cd tests && go tool cover -func=coverage-unit.out | grep total | awk '{print "Total coverage: " $$3}'
+	@echo "✅ Unit tests passed"
+
+# Run unit tests (legacy - core package tests)
+test-unit-legacy:
+	@echo "🧪 Running unit tests (legacy)..."
 	cd core && go test -v -race -coverprofile=coverage.out ./...
 	@echo ""
 	@echo "📊 Coverage summary:"
 	@cd core && go tool cover -func=coverage.out
 
-# Generate coverage report (HTML)
-test-cover: test-unit
+# Run unit tests with coverage (new framework)
+test-unit-cover:
+	@echo "🧪 Running unit tests with coverage..."
+	@cd tests && go test -v -race -short -coverprofile=coverage-unit.out ./unit/...
 	@echo ""
 	@echo "📊 Generating HTML coverage report..."
-	cd core && go tool cover -html=coverage.out -o coverage.html
-	@echo "✅ Coverage report: core/coverage.html"
+	@cd tests && go tool cover -html=coverage-unit.out -o coverage-unit.html
+	@echo "✅ Coverage report: tests/coverage-unit.html"
+	@cd tests && go tool cover -func=coverage-unit.out | grep total
 
-# Run integration tests
-test-integration:
-	@echo "🧪 Running integration tests..."
+# Generate coverage report (HTML)
+test-cover: test-unit-cover
+
+# Run integration tests (new test framework)
+test-integration-new:
+	@echo "🧪 Running integration tests (new framework)..."
+	@echo "⚙️  Setting up test database..."
+	@export TEST_DATABASE_URL="postgresql://postgres:postgres@localhost:5432/apprun_test?sslmode=disable" && \
+	cd tests && go test -v -timeout 5m ./integration/...
+	@echo "✅ Integration tests passed"
+
+# Run integration tests (legacy shell scripts)
+test-integration-legacy:
+	@echo "🧪 Running integration tests (legacy)..."
 	@./tests/scripts/setup-test-db.sh
 	@./tests/integration/config/test-api.sh
 	@./tests/integration/config/test-priority.sh
 	@./tests/scripts/cleanup.sh
 	@echo "✅ Integration tests passed"
 
-# Run end-to-end tests
+# Alias for backward compatibility
+test-unit: test-unit-new
+test-integration: test-integration-new
+
+# Run end-to-end tests (new test framework)
 test-e2e:
 	@echo "🧪 Running E2E tests..."
-	@echo "⚠️  E2E tests not implemented yet"
+	@echo "⚙️  Checking if server is running..."
+	@curl -sf http://localhost:8080/health > /dev/null 2>&1 || \
+		(echo "❌ Server not running at http://localhost:8080" && \
+		 echo "💡 Start server with: make dev-start && make app-start" && \
+		 echo "💡 Or use: make test-e2e-auto (auto-starts server)" && exit 1)
+	@export TEST_API_URL="http://localhost:8080" && \
+	cd tests && go test -v -timeout 10m ./e2e/...
+	@echo "✅ E2E tests passed"
+
+# Run E2E tests with auto server start (using docker-compose)
+test-e2e-auto:
+	@echo "🧪 Running E2E tests (auto-start server)..."
+	@docker compose -f docker-compose.test.yml up -d || \
+		(echo "⚠️  docker-compose.test.yml not found, using dev compose..." && \
+		 docker compose -f docker-compose.dev.yml up -d)
+	@echo "⏳ Waiting for services to be ready..."
+	@sleep 5
+	@export TEST_API_URL="http://localhost:8080" && \
+	cd tests && go test -v -timeout 10m ./e2e/... || \
+		(docker compose -f docker-compose.dev.yml down && exit 1)
+	@docker compose -f docker-compose.dev.yml down
+	@echo "✅ E2E tests passed"
+
+# Run tests by package
+# Usage: make test-pkg PKG=unit/auth
+test-pkg:
+ifndef PKG
+	@echo "❌ PKG variable required"
+	@echo "Usage: make test-pkg PKG=unit/auth"
+	@echo "Examples:"
+	@echo "  make test-pkg PKG=unit/auth"
+	@echo "  make test-pkg PKG=integration/api"
+	@echo "  make test-pkg PKG=e2e/scenarios"
+	@exit 1
+endif
+	@echo "🧪 Running tests for $(PKG)..."
+	@cd tests && go test -v ./$(PKG)/...
+
+# Watch and run tests (requires entr tool)
+# Usage: make test-watch PKG=unit/auth
+test-watch:
+ifndef PKG
+	@echo "❌ PKG variable required"
+	@echo "Usage: make test-watch PKG=unit/auth"
+	@exit 1
+endif
+	@which entr >/dev/null 2>&1 || \
+		(echo "❌ entr not installed. Install with: brew install entr" && exit 1)
+	@echo "👀 Watching tests for $(PKG)..."
+	@echo "💡 Edit files to trigger test run"
+	@find tests/$(PKG) -name "*.go" | entr -c make test-pkg PKG=$(PKG)
 
 # Backward compatibility
 test-all: test

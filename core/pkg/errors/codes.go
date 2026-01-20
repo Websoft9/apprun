@@ -427,3 +427,17 @@ const (
 	ErrCodeLicenseFeatureDisabled = "LICENSE_BIZ_FEATURE_DISABLED_002"
 	ErrCodeLicenseQuotaExceeded   = "LICENSE_BIZ_QUOTA_EXCEEDED_003"
 )
+
+// =============================================================================
+// ADMIN Module Error Codes (Platform User Management)
+// =============================================================================
+
+// ADMIN - Business logic errors
+const (
+	ErrCodeAdminEmailExists           = "ADMIN_BIZ_EMAIL_EXISTS_001"
+	ErrCodeAdminCannotDeleteSelf      = "ADMIN_BIZ_CANNOT_DELETE_SELF_002"
+	ErrCodeAdminCannotDisableSelf     = "ADMIN_BIZ_CANNOT_DISABLE_SELF_003"
+	ErrCodeAdminCannotDemoteLastAdmin = "ADMIN_BIZ_CANNOT_DEMOTE_LAST_ADMIN_004"
+	ErrCodeAdminCannotDeleteLastAdmin = "ADMIN_BIZ_CANNOT_DELETE_LAST_ADMIN_005"
+	ErrCodeAdminCannotModifySystem    = "ADMIN_BIZ_CANNOT_MODIFY_SYSTEM_006"
+)

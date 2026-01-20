@@ -236,23 +236,46 @@ This PRD defines the **Functional Requirements (FR)** and **Non-Functional Requi
 
 ### 2.11 Logging & Monitoring
 
-#### FR-LOG-001: Logging and Monitoring Service
-- **Requirement**: Provide centralized log collection and system monitoring capability
+#### FR-LOG-001: Logging Service
+- **Requirement**: Provide centralized log collection capability
 - **Core Capabilities**:
   - Centralized log collection (unified format, Trace ID)
   - Log query (time range, keyword, Trace ID)
-  - Basic performance metrics (CPU, memory, API response time, QPS)
-  - Alert rules and notifications
+  - Structured logging with context (user_id, project_id, request_id)
 - **Acceptance Criteria**:
   - All module logs can be queried uniformly
   - Log query response < 5 seconds
-  - Performance metrics viewable in real-time
-  - Alert latency < 1 minute
+  - Logs include trace ID for request correlation
 
 **MVP Does Not Include**:
 - ❌ Distributed Tracing
-- ❌ Custom Dashboard
 - ❌ AI-driven anomaly detection
+
+#### FR-MON-001: System Monitoring & Metrics
+- **Requirement**: Provide comprehensive system monitoring and metrics for platform administrators
+- **Core Capabilities**:
+  - User activity metrics (total users, active users, registrations, logins)
+  - Authentication metrics (login attempts, success rate, token statistics)
+  - API performance metrics (request count, response times, error rates)
+  - System health metrics (uptime, CPU, memory, disk usage)
+  - Metrics caching for performance optimization
+  - Admin-only metrics API with RBAC enforcement
+- **Acceptance Criteria**:
+  - Platform admins can view real-time user statistics via API
+  - System health indicators accessible through metrics endpoint
+  - Metrics API response time < 200ms (with caching)
+  - Non-admin users receive 403 Forbidden when accessing metrics
+  - Metrics updated at least every 5 minutes
+  - API provides both aggregate and category-specific metrics
+- **Implementation Constraints**:
+  - MVP Phase: Admin-only metrics API with Redis caching
+  - Future Enhancement: Integration with external monitoring tools (Prometheus, Grafana)
+
+**MVP Does Not Include**:
+- ❌ Custom monitoring dashboard UI
+- ❌ Real-time alerting and notifications
+- ❌ Historical trend analysis and time-series data
+- ❌ Prometheus exporter integration
 
 ---
 
