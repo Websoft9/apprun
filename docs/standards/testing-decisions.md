@@ -15,9 +15,11 @@
 - **Rationale**: Follow Go conventions, enable `go test ./...`
 
 ### Integration Tests
-- **Location**: `tests/integration/`
-- **Structure**: Organized by component (`api/`, `db/`)
-- **Rationale**: Centralized management, CI/CD friendly
+- **White-box**: Module directory (`package same_name`)
+  - **Rationale**: Access private code, test internal logic
+- **Black-box**: `tests/integration/` (`package *_test`)
+  - **Structure**: Organized by component (`api/`, `db/`)
+  - **Rationale**: Centralized management, CI/CD friendly
 
 ### E2E Tests
 - **Location**: `tests/e2e/scenarios/`

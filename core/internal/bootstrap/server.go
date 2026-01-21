@@ -159,11 +159,11 @@ func StartServer() error {
 	viperProvider := pkgconfig.NewViperProvider(nil)
 	jwt.InitBlacklist(cacheClient, viperProvider)
 
-	// Phase 2.7: Initialize RBAC Enforcer (Story 5.5.2)
+	// Phase 2.7: Initialize RBAC Enforcer (Story 5.5.3 - Database Storage)
 	// RBAC enforcer must be initialized before routes to enable permission checks
+	// Uses database storage via Ent adapter for production-ready policy management
 	rbacCfg := rbac.Config{
-		PolicyPath:  env.Get("RBAC_POLICY_PATH", ""), // Empty = use embedded default policy
-		UseDatabase: false,                           // MVP: false (file-based), Production: true
+		EntClient: dbClient.GetEntClient(), // Use database adapter
 	}
 	if rbacErr := rbac.InitEnforcer(rbacCfg); rbacErr != nil {
 		log.Printf("⚠️  Warning: Failed to initialize RBAC enforcer: %v", rbacErr)
@@ -171,7 +171,16 @@ func StartServer() error {
 		// In production, this should be a fatal error
 		// For development, we allow graceful degradation
 	} else {
-		log.Println("✅ RBAC enforcer initialized")
+		// Seed default policies from embedded CSV (idempotent)
+		if seedErr := rbac.SeedDefaultPolicies(); seedErr != nil {
+			log.Printf("⚠️  Warning: Failed to seed default RBAC policies: %v", seedErr)
+		}
+		pCount, gCount, g2Count := rbac.GetPolicySummary()
+		storageType := "memory"
+		if rbac.IsUsingDatabaseStorage() {
+			storageType = "database"
+		}
+		log.Printf("✅ RBAC enforcer initialized (%s storage, %d policies, %d groupings, %d g2)", storageType, pCount, gCount, g2Count)
 	}
 
 	// Phase 3: Initialize Config Service (Layer 2 - Configuration Center)
@@ -267,6 +276,14 @@ func initializePlatformProject(ctx context.Context, client *ent.Client, initConf
 	memberRepo := authRepository.NewProjectMemberRepository(client)
 	projectService := authService.NewProjectService(projectRepo, memberRepo)
 	authSvc := authService.NewAuthService(userRepo, projectService)
+
+	// Step 0: Get or create system user (ID=1, for platform operations)
+	systemUser, sysErr := authSvc.GetOrCreateSystemUser(ctx)
+	if sysErr != nil {
+		slogger.Error("Failed to initialize system user", logger.Field{Key: "error", Value: sysErr.Error()})
+		return sysErr
+	}
+	slogger.Info("System user initialized", logger.Field{Key: "user_id", Value: systemUser.ID})
 
 	// Step 1: Get or create super admin
 	superAdmin, generatedPassword, err := authSvc.GetOrCreateSuperAdmin(ctx, initConfig)

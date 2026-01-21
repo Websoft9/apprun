@@ -25,7 +25,7 @@ func AddPlatformRole(userID int64, role string) error {
 		return fmt.Errorf("enforcer not initialized")
 	}
 
-	subject := fmt.Sprintf("user:%d", userID)
+	subject := FormatUserKey(userID) // Use consistent format: u:<userID>
 
 	// Use g2 for platform roles (no domain)
 	_, err := enforcer.AddRoleForUser(subject, role)
@@ -42,7 +42,7 @@ func RemovePlatformRole(userID int64, role string) error {
 		return fmt.Errorf("enforcer not initialized")
 	}
 
-	subject := fmt.Sprintf("user:%d", userID)
+	subject := FormatUserKey(userID) // Use consistent format: u:<userID>
 
 	_, err := enforcer.DeleteRoleForUser(subject, role)
 	if err != nil {
@@ -58,7 +58,7 @@ func GetPlatformRoles(userID int64) ([]string, error) {
 		return nil, fmt.Errorf("enforcer not initialized")
 	}
 
-	subject := fmt.Sprintf("user:%d", userID)
+	subject := FormatUserKey(userID) // Use consistent format: u:<userID>
 
 	roles, err := enforcer.GetRolesForUser(subject)
 	if err != nil {

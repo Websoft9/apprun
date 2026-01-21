@@ -26,7 +26,7 @@ func TestMetricsHandler_GetAll(t *testing.T) {
 	cacheClient := cache.NewMockClient()
 
 	// Create service and handler
-	service := NewMetricsService(client, cacheClient)
+	service := NewMetricsService(client, cacheClient, nil)
 	handler := NewMetricsHandler(service)
 
 	// Create test request
@@ -73,7 +73,7 @@ func TestMetricsHandler_GetUsers(t *testing.T) {
 	cacheClient := cache.NewMockClient()
 
 	// Create service and handler
-	service := NewMetricsService(client, cacheClient)
+	service := NewMetricsService(client, cacheClient, nil)
 	handler := NewMetricsHandler(service)
 
 	// Create test request
@@ -115,7 +115,7 @@ func TestMetricsHandler_GetSystem(t *testing.T) {
 	cacheClient := cache.NewMockClient()
 
 	// Create service and handler
-	service := NewMetricsService(client, cacheClient)
+	service := NewMetricsService(client, cacheClient, nil)
 	handler := NewMetricsHandler(service)
 
 	// Create test request
@@ -156,7 +156,7 @@ func TestMetricsHandler_GetPerformance(t *testing.T) {
 	cacheClient := cache.NewMockClient()
 
 	// Create service and handler
-	service := NewMetricsService(client, cacheClient)
+	service := NewMetricsService(client, cacheClient, nil)
 	handler := NewMetricsHandler(service)
 
 	// Create test request
@@ -195,7 +195,7 @@ func TestMetricsHandler_Caching(t *testing.T) {
 	cacheClient := cache.NewMockClient()
 
 	// Create service and handler
-	service := NewMetricsService(client, cacheClient)
+	service := NewMetricsService(client, cacheClient, nil)
 	handler := NewMetricsHandler(service)
 
 	// First request - should miss cache

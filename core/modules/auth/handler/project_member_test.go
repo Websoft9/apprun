@@ -63,8 +63,8 @@ func setupTestHandler(t *testing.T) (*handler.ProjectMemberHandler, *ent.Client,
 		t.Fatalf("Failed to create project member: %v", err)
 	}
 
-	// Initialize RBAC
-	rbac.InitEnforcer(rbac.Config{UseDatabase: false})
+	// Initialize RBAC (in-memory mode for testing)
+	rbac.InitEnforcer(rbac.Config{})
 
 	// Add owner role to RBAC enforcer
 	enforcer := rbac.GetEnforcer()
@@ -73,7 +73,6 @@ func setupTestHandler(t *testing.T) (*handler.ProjectMemberHandler, *ent.Client,
 		"owner", // Role name matches policy file
 		rbac.FormatDomain(project.ID),
 	)
-	enforcer.SavePolicy()
 
 	// Setup handler
 	projectRepo := repository.NewProjectRepository(client)

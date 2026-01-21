@@ -1,40 +1,32 @@
 package rbac
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestInitEnforcer(t *testing.T) {
-	// Create temporary test files
-	tmpDir := t.TempDir()
-	policyPath := filepath.Join(tmpDir, "policy.csv")
+func TestInitEnforcerWithEmbeddedPolicy(t *testing.T) {
+	// Reset enforcer before test
+	resetEnforcerForTest()
 
-	// Write minimal test policy
-	policyContent := `p, owner, *, *
-p, viewer, config, read`
-
-	err := os.WriteFile(policyPath, []byte(policyContent), 0644)
-	require.NoError(t, err)
-
-	// Test initialization (model is now embedded)
-	cfg := Config{
-		PolicyPath: policyPath,
-	}
-
-	err = InitEnforcer(cfg)
+	// Test initialization with embedded policy (no EntClient = in-memory mode)
+	cfg := Config{}
+	err := InitEnforcer(cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, GetEnforcer())
+	assert.False(t, IsUsingDatabaseStorage(), "Should not use database storage when EntClient is nil")
+
+	// Verify embedded policies are loaded
+	pCount, gCount, g2Count := GetPolicySummary()
+	assert.Greater(t, pCount, 0, "Should have loaded policy rules from embedded CSV")
+	t.Logf("Loaded policies: p=%d, g=%d, g2=%d", pCount, gCount, g2Count)
 }
 
 func TestCheckPermission(t *testing.T) {
-	// Setup test enforcer
-	tmpDir := t.TempDir()
-	setupTestEnforcer(t, tmpDir)
+	// Setup test enforcer with embedded policy
+	setupTestEnforcerWithEmbeddedPolicy(t)
 
 	// Add test roles
 	err := AddUserRole(1, 1, "owner")
@@ -85,23 +77,86 @@ func TestCheckPermission(t *testing.T) {
 	}
 }
 
-func setupTestEnforcer(t *testing.T, tmpDir string) {
-	policyPath := filepath.Join(tmpDir, "policy.csv")
+func TestSeedDefaultPoliciesIdempotent(t *testing.T) {
+	// Setup test enforcer
+	setupTestEnforcerWithEmbeddedPolicy(t)
 
-	policyContent := `p, owner, *, *
-p, viewer, config, read`
+	// Get initial policy count
+	pCountBefore, _, _ := GetPolicySummary()
 
-	err := os.WriteFile(policyPath, []byte(policyContent), 0644)
-	require.NoError(t, err)
+	// Call SeedDefaultPolicies multiple times (should be idempotent)
+	err := SeedDefaultPolicies()
+	assert.NoError(t, err)
 
-	// Reset and initialize enforcer for test (model is now embedded)
-	resetEnforcerForTest()
+	err = SeedDefaultPolicies()
+	assert.NoError(t, err)
 
-	cfg := Config{
-		PolicyPath: policyPath,
+	// Policy count should remain the same
+	pCountAfter, _, _ := GetPolicySummary()
+	assert.Equal(t, pCountBefore, pCountAfter, "SeedDefaultPolicies should be idempotent")
+}
+
+func TestLoadEmbeddedPolicies(t *testing.T) {
+	// Verify that embedded policy content can be parsed
+	lines := splitLines(defaultPolicyContent)
+	policyCount := 0
+
+	for _, line := range lines {
+		line = trimLine(line)
+		if line == "" || line[0] == '#' {
+			continue
+		}
+
+		ptype, rule, ok := parseCSVLine(line)
+		if ok {
+			assert.NotEmpty(t, ptype, "ptype should not be empty")
+			assert.NotEmpty(t, rule, "rule should not be empty")
+			policyCount++
+		}
 	}
 
-	err = InitEnforcer(cfg)
+	assert.Greater(t, policyCount, 0, "Should have parsed policies from embedded CSV")
+	t.Logf("Parsed %d policy lines from embedded CSV", policyCount)
+}
+
+func TestHelperFunctions(t *testing.T) {
+	t.Run("splitLines", func(t *testing.T) {
+		content := "line1\nline2\nline3"
+		lines := splitLines(content)
+		assert.Len(t, lines, 3)
+		assert.Equal(t, "line1", lines[0])
+		assert.Equal(t, "line2", lines[1])
+		assert.Equal(t, "line3", lines[2])
+	})
+
+	t.Run("trimLine", func(t *testing.T) {
+		assert.Equal(t, "test", trimLine("  test  "))
+		assert.Equal(t, "test", trimLine("\ttest\t"))
+		assert.Equal(t, "test", trimLine("  \t  test  \t  "))
+	})
+
+	t.Run("parseCSVLine", func(t *testing.T) {
+		ptype, rule, ok := parseCSVLine("p, role, resource, action")
+		assert.True(t, ok)
+		assert.Equal(t, "p", ptype)
+		assert.Equal(t, []string{"role", "resource", "action"}, rule)
+
+		ptype, rule, ok = parseCSVLine("g, user, role, domain")
+		assert.True(t, ok)
+		assert.Equal(t, "g", ptype)
+		assert.Equal(t, []string{"user", "role", "domain"}, rule)
+
+		_, _, ok = parseCSVLine("single")
+		assert.False(t, ok)
+	})
+}
+
+func setupTestEnforcerWithEmbeddedPolicy(t *testing.T) {
+	// Reset and initialize enforcer with embedded policy (in-memory mode)
+	resetEnforcerForTest()
+
+	cfg := Config{} // No EntClient = in-memory mode with embedded policies
+	err := InitEnforcer(cfg)
 	require.NoError(t, err)
 	require.NotNil(t, GetEnforcer())
 }

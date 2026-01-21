@@ -23,7 +23,7 @@ func TestMetricsCollector_CollectUserMetrics(t *testing.T) {
 	defer client.Close()
 
 	ctx := context.Background()
-	collector := NewMetricsCollector(client)
+	collector := NewMetricsCollector(client, nil)
 
 	// Create test users
 	now := time.Now()
@@ -84,7 +84,7 @@ func TestMetricsCollector_CollectSystemMetrics(t *testing.T) {
 	defer client.Close()
 
 	ctx := context.Background()
-	collector := NewMetricsCollector(client)
+	collector := NewMetricsCollector(client, nil)
 
 	// Collect system metrics
 	metrics, err := collector.CollectSystemMetrics(ctx)
@@ -105,7 +105,7 @@ func TestMetricsCollector_CollectAuthMetrics(t *testing.T) {
 	defer client.Close()
 
 	ctx := context.Background()
-	collector := NewMetricsCollector(client)
+	collector := NewMetricsCollector(client, nil)
 
 	// Collect auth metrics (stub implementation)
 	metrics, err := collector.CollectAuthMetrics(ctx)
@@ -123,7 +123,7 @@ func TestMetricsCollector_CollectPerformanceMetrics(t *testing.T) {
 	defer client.Close()
 
 	ctx := context.Background()
-	collector := NewMetricsCollector(client)
+	collector := NewMetricsCollector(client, nil)
 
 	// Collect performance metrics (stub implementation)
 	metrics, err := collector.CollectPerformanceMetrics(ctx)
@@ -141,7 +141,7 @@ func TestMetricsCollector_CollectAllMetrics(t *testing.T) {
 	defer client.Close()
 
 	ctx := context.Background()
-	collector := NewMetricsCollector(client)
+	collector := NewMetricsCollector(client, nil)
 
 	// Create some test data
 	_, err := client.User.Create().

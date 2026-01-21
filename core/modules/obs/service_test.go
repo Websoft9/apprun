@@ -17,7 +17,7 @@ func TestMetricsService_GetUserMetrics_CacheMiss(t *testing.T) {
 	defer client.Close()
 
 	cacheClient := cache.NewMockClient()
-	service := NewMetricsService(client, cacheClient)
+	service := NewMetricsService(client, cacheClient, nil)
 
 	ctx := context.Background()
 
@@ -43,7 +43,7 @@ func TestMetricsService_GetUserMetrics_CacheHit(t *testing.T) {
 	defer client.Close()
 
 	cacheClient := cache.NewMockClient()
-	service := NewMetricsService(client, cacheClient)
+	service := NewMetricsService(client, cacheClient, nil)
 
 	ctx := context.Background()
 
@@ -73,7 +73,7 @@ func TestMetricsService_GetSystemMetrics(t *testing.T) {
 	defer client.Close()
 
 	cacheClient := cache.NewMockClient()
-	service := NewMetricsService(client, cacheClient)
+	service := NewMetricsService(client, cacheClient, nil)
 
 	ctx := context.Background()
 
@@ -90,7 +90,7 @@ func TestMetricsService_GetAllMetrics_CacheHit(t *testing.T) {
 	defer client.Close()
 
 	cacheClient := cache.NewMockClient()
-	service := NewMetricsService(client, cacheClient)
+	service := NewMetricsService(client, cacheClient, nil)
 
 	ctx := context.Background()
 
@@ -121,7 +121,7 @@ func TestMetricsService_CacheExpiration(t *testing.T) {
 	defer client.Close()
 
 	mockCache := cache.NewMockClient()
-	service := NewMetricsService(client, mockCache)
+	service := NewMetricsService(client, mockCache, nil)
 
 	ctx := context.Background()
 
@@ -153,7 +153,7 @@ func TestMetricsService_PerformanceMetrics(t *testing.T) {
 	defer client.Close()
 
 	cacheClient := cache.NewMockClient()
-	service := NewMetricsService(client, cacheClient)
+	service := NewMetricsService(client, cacheClient, nil)
 
 	ctx := context.Background()
 
@@ -169,7 +169,7 @@ func TestMetricsService_AuthMetrics(t *testing.T) {
 	defer client.Close()
 
 	cacheClient := cache.NewMockClient()
-	service := NewMetricsService(client, cacheClient)
+	service := NewMetricsService(client, cacheClient, nil)
 
 	ctx := context.Background()
 

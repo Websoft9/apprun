@@ -270,7 +270,7 @@ func (s *UserService) toProfileResponse(u *ent.User) *ProfileResponse {
 		Name:      &u.Nickname,
 		Avatar:    &u.Avatar,
 		Bio:       &u.Bio,
-		Role:      "platform_user", // TODO: Add role field to User schema (Story 5.5) and map from u.Role
+		Role:      u.Role, // Read from database
 		IsActive:  u.Status == 1,
 		CreatedAt: u.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}

@@ -383,6 +383,83 @@ definitions:
       user_registrations_last_7_days:
         type: integer
     type: object
+  obs.HealthResponse:
+    properties:
+      backend:
+        type: string
+      disk_usage_mb:
+        type: number
+      metrics_count:
+        type: integer
+      stats:
+        additionalProperties: true
+        type: object
+      status:
+        type: string
+    type: object
+  obs.HistoryResponse:
+    properties:
+      count:
+        type: integer
+      end:
+        type: string
+      has_more:
+        type: boolean
+      metrics:
+        items:
+          $ref: '#/definitions/obs.MetricPoint'
+        type: array
+      start:
+        type: string
+    type: object
+  obs.IngestRequest:
+    properties:
+      name:
+        type: string
+      tags:
+        additionalProperties:
+          type: string
+        type: object
+      timestamp:
+        type: string
+      value:
+        type: number
+    type: object
+  obs.IngestResponse:
+    properties:
+      message:
+        type: string
+      metric_id:
+        type: string
+      success:
+        type: boolean
+    type: object
+  obs.MetricData:
+    properties:
+      name:
+        type: string
+      tags:
+        additionalProperties:
+          type: string
+        type: object
+      timestamp:
+        type: string
+      value:
+        type: number
+    type: object
+  obs.MetricPoint:
+    properties:
+      name:
+        type: string
+      tags:
+        additionalProperties:
+          type: string
+        type: object
+      timestamp:
+        type: string
+      value:
+        type: number
+    type: object
   obs.PerformanceMetrics:
     properties:
       api_error_rate:
@@ -399,6 +476,21 @@ definitions:
         description: milliseconds
         type: number
       timestamp:
+        type: string
+    type: object
+  obs.QueryResponse:
+    properties:
+      count:
+        type: integer
+      end:
+        type: string
+      has_more:
+        type: boolean
+      metrics:
+        items:
+          $ref: '#/definitions/obs.MetricData'
+        type: array
+      start:
         type: string
     type: object
   obs.SystemMetrics:
@@ -1298,6 +1390,16 @@ paths:
           description: Missing key parameter or deletion failed
           schema:
             $ref: '#/definitions/response.Response'
+        "401":
+          description: Unauthorized - missing or invalid JWT token
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: Forbidden - insufficient permissions (requires platform:config:write)
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
       summary: Delete configuration item
       tags:
       - config
@@ -1323,10 +1425,20 @@ paths:
           description: Missing key parameter
           schema:
             $ref: '#/definitions/response.Response'
+        "401":
+          description: Unauthorized - missing or invalid JWT token
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: Forbidden - insufficient permissions
+          schema:
+            $ref: '#/definitions/response.Response'
         "404":
           description: Configuration not found
           schema:
             $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
       summary: Get configuration item
       tags:
       - config
@@ -1355,6 +1467,16 @@ paths:
           description: Invalid request or config not allowed to store in database
           schema:
             $ref: '#/definitions/response.Response'
+        "401":
+          description: Unauthorized - missing or invalid JWT token
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: Forbidden - insufficient permissions (requires platform:config:write)
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
       summary: Update configuration item
       tags:
       - config
@@ -1374,6 +1496,16 @@ paths:
           schema:
             additionalProperties: true
             type: object
+        "401":
+          description: Unauthorized - missing or invalid JWT token
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: Forbidden - insufficient permissions
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
       summary: Get allowed configuration keys
       tags:
       - config
@@ -1392,10 +1524,20 @@ paths:
           description: Configuration list
           schema:
             $ref: '#/definitions/config.ListConfigsResponse'
+        "401":
+          description: Unauthorized - missing or invalid JWT token
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: Forbidden - insufficient permissions
+          schema:
+            $ref: '#/definitions/response.Response'
         "500":
           description: Internal server error
           schema:
             $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
       summary: List dynamic configurations
       tags:
       - config
@@ -1452,8 +1594,68 @@ paths:
           schema:
             $ref: '#/definitions/response.Response'
       security:
-      - Bearer: []
+      - BearerAuth: []
       summary: Get All Metrics
+      tags:
+      - metrics
+  /api/metrics/history:
+    get:
+      description: Get historical metrics data from storage (Story 9.1 - Storage integration)
+      parameters:
+      - description: Metric name (e.g., user_count_total, system_cpu_percent)
+        in: query
+        name: name
+        required: true
+        type: string
+      - default: 24h
+        description: Time range duration (e.g., 1h, 24h, 7d)
+        in: query
+        name: duration
+        type: string
+      - description: Start time (RFC3339 format)
+        in: query
+        name: start
+        type: string
+      - description: End time (RFC3339 format)
+        in: query
+        name: end
+        type: string
+      - default: 1000
+        description: Maximum results to return
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/obs.HistoryResponse'
+              type: object
+        "400":
+          description: Bad Request - Missing metric name
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: Forbidden - requires platform_admin role
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Get Historical Metrics
       tags:
       - metrics
   /api/metrics/performance:
@@ -1485,7 +1687,7 @@ paths:
           schema:
             $ref: '#/definitions/response.Response'
       security:
-      - Bearer: []
+      - BearerAuth: []
       summary: Get Performance Metrics
       tags:
       - metrics
@@ -1517,7 +1719,7 @@ paths:
           schema:
             $ref: '#/definitions/response.Response'
       security:
-      - Bearer: []
+      - BearerAuth: []
       summary: Get System Metrics
       tags:
       - metrics
@@ -1550,10 +1752,146 @@ paths:
           schema:
             $ref: '#/definitions/response.Response'
       security:
-      - Bearer: []
+      - BearerAuth: []
       summary: Get User Metrics
       tags:
       - metrics
+  /api/observability/metrics/health:
+    get:
+      description: Check the health status of the metrics storage backend
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Healthy
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/obs.HealthResponse'
+              type: object
+        "503":
+          description: Unhealthy
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/obs.HealthResponse'
+              type: object
+      summary: Storage Health Check
+      tags:
+      - observability
+  /api/observability/metrics/ingest:
+    post:
+      consumes:
+      - application/json
+      description: Store a metric with optional tags and timestamp
+      parameters:
+      - description: Metric data
+        in: body
+        name: metric
+        required: true
+        schema:
+          $ref: '#/definitions/obs.IngestRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/obs.IngestResponse'
+              type: object
+        "400":
+          description: Bad Request - Invalid metric format
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: Forbidden - requires admin role
+          schema:
+            $ref: '#/definitions/response.Response'
+        "429":
+          description: Too Many Requests
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Ingest Metric
+      tags:
+      - observability
+  /api/observability/metrics/query:
+    get:
+      description: Retrieve metrics by name and time range
+      parameters:
+      - description: Metric name
+        in: query
+        name: name
+        required: true
+        type: string
+      - default: 24h
+        description: Time range (e.g., 1h, 24h)
+        in: query
+        name: duration
+        type: string
+      - description: Start timestamp (RFC3339)
+        in: query
+        name: start
+        type: string
+      - description: End timestamp (RFC3339)
+        in: query
+        name: end
+        type: string
+      - default: 1000
+        description: Max results
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/obs.QueryResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: Forbidden - requires admin role
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Query Metrics
+      tags:
+      - observability
   /api/profile:
     get:
       description: Retrieve the complete profile of the authenticated user

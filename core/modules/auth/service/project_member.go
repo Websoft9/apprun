@@ -74,8 +74,8 @@ func (s *ProjectMemberService) AddMember(ctx context.Context, projectID, userID 
 		return nil, errors.Wrap(err, errors.ErrCodeAuthPermCheckError, "Failed to add role to RBAC")
 	}
 
-	// Save Casbin policies
-	if err := enforcer.SavePolicy(); err != nil {
+	// Save Casbin policies (no-op if using in-memory mode)
+	if err := rbac.SavePolicyIfNeeded(); err != nil {
 		// Rollback
 		if rollbackErr := s.memberRepo.RemoveMember(ctx, member.ID); rollbackErr != nil {
 			logger.Warn("Rollback failed when removing member",
@@ -149,8 +149,8 @@ func (s *ProjectMemberService) UpdateMemberRole(ctx context.Context, memberID in
 		return nil, errors.Wrap(err, errors.ErrCodeAuthPermCheckError, "Failed to add new role to RBAC")
 	}
 
-	// Save policies and clear cache
-	if err := enforcer.SavePolicy(); err != nil {
+	// Save policies and clear cache (no-op if using in-memory mode)
+	if err := rbac.SavePolicyIfNeeded(); err != nil {
 		return nil, errors.Wrap(err, errors.ErrCodeAuthPermCheckError, "Failed to save RBAC policies")
 	}
 	rbac.ClearUserCache(member.UserID, member.ProjectID)
@@ -183,8 +183,8 @@ func (s *ProjectMemberService) RemoveMember(ctx context.Context, memberID int64)
 			logger.Field{Key: "role", Value: member.Role})
 	}
 
-	// Save policies and clear cache
-	if err := enforcer.SavePolicy(); err != nil {
+	// Save policies and clear cache (no-op if using in-memory mode)
+	if err := rbac.SavePolicyIfNeeded(); err != nil {
 		logger.Warn("Failed to save RBAC policies after member removal",
 			logger.Field{Key: "error", Value: err})
 	}

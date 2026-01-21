@@ -313,8 +313,46 @@ auth:
   
   casbin:
     # model 已内嵌到 core/internal/rbac/model.conf
-    policy_path: "./config/casbin_policy.csv"
+    # 策略存储方式 (已迁移到数据库)
+    adapter: database                    # database | file (默认 database)
+    # file_policy_path: "./config/casbin_policy.csv"  # 仅 adapter=file 时使用
 ```
+
+### 2.7 架构决策记录 (ADR)
+
+#### ADR-001: 权限机制统一到 Casbin 数据库存储
+
+**状态**: 已采纳 (2026-01-19)
+
+**背景**:
+系统曾存在两个并行的权限验证机制：
+1. **数据库角色验证** (`RequirePlatformAdmin`): 查询 `users.role` 字段
+2. **Casbin RBAC** (`RequirePermission`): 检查 CSV 文件中的策略
+
+这导致以下问题：
+- 两套机制可能产生不一致的权限判断
+- CSV 文件不支持动态权限管理
+- 权限变更需要重启服务或手动 reload
+
+**决策**:
+采用 **"角色即身份，Casbin 即执行"** 原则，统一为单一权限数据源：
+
+| 组件 | 职责 | 存储位置 |
+|-----|------|---------|
+| `users.role` | 用户身份标识 (UI 显示用) | PostgreSQL `users` 表 |
+| `casbin_rule` | 权限执行引擎 | PostgreSQL `casbin_rule` 表 |
+
+**实现要点**:
+1. **废弃 CSV 文件策略**: 从 `config/casbin_policy.csv` 迁移到 `casbin_rule` 表
+2. **使用 Ent Adapter**: 通过 `ent-adapter` 直接复用现有数据库连接
+3. **角色同步**: 用户角色变更时，自动同步到 Casbin 策略
+4. **废弃 RequirePlatformAdmin**: 统一使用 `RequirePermission` 中间件
+
+**后果**:
+- ✅ 单一数据源，避免不一致
+- ✅ 支持动态权限管理 (无需重启)
+- ✅ 权限配置可通过 API 管理
+- ⚠️ 需要数据库迁移 (Story 5-5-3)
 
 ---
 

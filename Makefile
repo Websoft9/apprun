@@ -54,7 +54,10 @@ help:
 	@echo "🧪 Testing:"
 	@echo "  make test          - Run all tests"
 	@echo "  make test-unit     - Unit tests only"
-	@echo "  make test-integration - Integration tests"
+	@echo "  make test-integration - All integration tests"
+	@echo "  make test-integration m=auth - Auth module integration tests"
+	@echo "  make test-integration m=api  - API module integration tests"
+	@echo "  make test-integration-cover - Integration tests with coverage"
 	@echo "  make test-cover    - Generate coverage report"
 	@echo ""
 	@echo "✨ Code Quality:"
@@ -326,12 +329,46 @@ test-unit-cover:
 test-cover: test-unit-cover
 
 # Run integration tests (new test framework)
+# Usage: make test-integration [m=MODULE]
+# Examples:
+#   make test-integration           # Run all integration tests
+#   make test-integration m=auth    # Run auth module tests only
+#   make test-integration m=api     # Run api module tests only
 test-integration-new:
+ifdef m
+	@echo "🧪 Running $(m) integration tests..."
+	@if [ ! -d "tests/integration/$(m)" ]; then \
+		echo "❌ Module '$(m)' not found in tests/integration/"; \
+		echo "Available modules:"; \
+		ls -d tests/integration/*/ 2>/dev/null | xargs -n1 basename || echo "  (none)"; \
+		exit 1; \
+	fi
+	@export TEST_API_URL="http://localhost:8080" && \
+	cd tests/integration/$(m) && go test -v -timeout 3m ./...
+	@echo "✅ $(m) integration tests passed"
+else
 	@echo "🧪 Running integration tests (new framework)..."
 	@echo "⚙️  Setting up test database..."
 	@export TEST_DATABASE_URL="postgresql://postgres:postgres@localhost:5432/apprun_test?sslmode=disable" && \
 	cd tests && go test -v -timeout 5m ./integration/...
 	@echo "✅ Integration tests passed"
+endif
+
+# Deprecated: Use 'make test-integration m=auth' instead
+test-integration-auth:
+	@echo "⚠️  Deprecated: Use 'make test-integration m=auth' instead"
+	@$(MAKE) test-integration m=auth
+
+# Run integration tests with coverage
+test-integration-cover:
+	@echo "🧪 Running integration tests with coverage..."
+	@export TEST_DATABASE_URL="postgresql://postgres:postgres@localhost:5432/apprun_test?sslmode=disable" && \
+	cd tests && go test -v -timeout 5m -coverprofile=coverage-integration.out ./integration/...
+	@echo ""
+	@echo "📊 Generating HTML coverage report..."
+	@cd tests && go tool cover -html=coverage-integration.out -o coverage-integration.html
+	@echo "✅ Coverage report: tests/coverage-integration.html"
+	@cd tests && go tool cover -func=coverage-integration.out | grep total
 
 # Run integration tests (legacy shell scripts)
 test-integration-legacy:

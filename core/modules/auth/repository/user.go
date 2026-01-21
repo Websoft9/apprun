@@ -168,6 +168,27 @@ func (r *UserRepository) UpdatePassword(ctx context.Context, userID int64, passw
 		Exec(ctx)
 }
 
+// UpdateRole updates a user's platform role.
+func (r *UserRepository) UpdateRole(ctx context.Context, userID int64, role string) error {
+	return r.client.User.UpdateOneID(userID).
+		SetRole(role).
+		Exec(ctx)
+}
+
+// GetSystemUser retrieves the system user (is_system=true).
+func (r *UserRepository) GetSystemUser(ctx context.Context) (*ent.User, error) {
+	userRecord, err := r.client.User.Query().
+		Where(user.IsSystemEQ(true)).
+		Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, ErrUserNotFound
+		}
+		return nil, err
+	}
+	return userRecord, nil
+}
+
 // CreateUserParams holds parameters for user creation.
 type CreateUserParams struct {
 	UUID         *uuid.UUID // Optional: for system user with fixed UUID

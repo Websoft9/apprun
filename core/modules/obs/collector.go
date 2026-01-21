@@ -9,6 +9,8 @@ import (
 	"apprun/ent"
 	"apprun/ent/user"
 	"apprun/pkg/errors"
+	"apprun/pkg/logger"
+	"apprun/pkg/metrics"
 
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/disk"
@@ -19,12 +21,16 @@ var startTime = time.Now()
 // MetricsCollector collects various system and application metrics
 type MetricsCollector struct {
 	entClient *ent.Client
+	repo      *metrics.Repository // Story 9.1: Storage integration
+	logger    logger.Logger
 }
 
 // NewMetricsCollector creates a new metrics collector instance
-func NewMetricsCollector(client *ent.Client) *MetricsCollector {
+func NewMetricsCollector(client *ent.Client, repo *metrics.Repository) *MetricsCollector {
 	return &MetricsCollector{
 		entClient: client,
+		repo:      repo,
+		logger:    logger.L(),
 	}
 }
 
@@ -78,7 +84,7 @@ func (c *MetricsCollector) CollectUserMetrics(ctx context.Context) (*UserMetrics
 		return nil, errors.Wrap(err, errors.ErrCodeInternalError, "failed to count user registrations last 7 days")
 	}
 
-	return &UserMetrics{
+	metrics := &UserMetrics{
 		TotalUsers:                 totalUsers,
 		ActiveUsers:                activeUsers,
 		AdminUsers:                 adminUsers,
@@ -86,7 +92,14 @@ func (c *MetricsCollector) CollectUserMetrics(ctx context.Context) (*UserMetrics
 		NewUsersToday:              newUsersToday,
 		UserRegistrationsLast7Days: registrationsLast7Days,
 		Timestamp:                  time.Now(),
-	}, nil
+	}
+
+	// Story 9.1: Async persist to storage (non-blocking)
+	if c.repo != nil {
+		go c.persistUserMetrics(context.Background(), metrics)
+	}
+
+	return metrics, nil
 }
 
 // CollectSystemMetrics collects system health metrics
@@ -120,14 +133,21 @@ func (c *MetricsCollector) CollectSystemMetrics(ctx context.Context) (*SystemMet
 	// Goroutines
 	goroutines := runtime.NumGoroutine()
 
-	return &SystemMetrics{
+	metrics := &SystemMetrics{
 		UptimeSeconds:    uptime,
 		MemoryUsageMB:    memoryUsageMB,
 		CPUUsagePercent:  cpuPercent[0],
 		DiskUsagePercent: diskUsagePercent,
 		Goroutines:       goroutines,
 		Timestamp:        time.Now(),
-	}, nil
+	}
+
+	// Story 9.1: Async persist to storage (non-blocking)
+	if c.repo != nil {
+		go c.persistSystemMetrics(context.Background(), metrics)
+	}
+
+	return metrics, nil
 }
 
 // CollectAuthMetrics collects authentication metrics
@@ -200,4 +220,40 @@ func (c *MetricsCollector) CollectAllMetrics(ctx context.Context) (*AllMetrics, 
 		DiskUsagePercent:           systemMetrics.DiskUsagePercent,
 		Timestamp:                  time.Now(),
 	}, nil
+}
+
+// persistUserMetrics writes user metrics to storage asynchronously
+// Errors are logged but don't affect the real-time response (degradation strategy)
+func (c *MetricsCollector) persistUserMetrics(ctx context.Context, m *UserMetrics) {
+	if err := c.repo.RecordMetric(ctx, MetricNameUserTotal, float64(m.TotalUsers), nil); err != nil {
+		c.logger.Warn("Failed to persist user_count_total", logger.Field{Key: "error", Value: err})
+	}
+	if err := c.repo.RecordMetric(ctx, MetricNameUserActive, float64(m.ActiveUsers), nil); err != nil {
+		c.logger.Warn("Failed to persist user_count_active", logger.Field{Key: "error", Value: err})
+	}
+	if err := c.repo.RecordMetric(ctx, MetricNameUserAdmin, float64(m.AdminUsers), nil); err != nil {
+		c.logger.Warn("Failed to persist user_count_admin", logger.Field{Key: "error", Value: err})
+	}
+	if err := c.repo.RecordMetric(ctx, MetricNameUserBanned, float64(m.BannedUsers), nil); err != nil {
+		c.logger.Warn("Failed to persist user_count_banned", logger.Field{Key: "error", Value: err})
+	}
+	if err := c.repo.RecordMetric(ctx, MetricNameUserNewToday, float64(m.NewUsersToday), nil); err != nil {
+		c.logger.Warn("Failed to persist user_count_new_today", logger.Field{Key: "error", Value: err})
+	}
+}
+
+// persistSystemMetrics writes system metrics to storage asynchronously
+func (c *MetricsCollector) persistSystemMetrics(ctx context.Context, m *SystemMetrics) {
+	if err := c.repo.RecordMetric(ctx, MetricNameSystemMemory, float64(m.MemoryUsageMB), nil); err != nil {
+		c.logger.Warn("Failed to persist system_memory_mb", logger.Field{Key: "error", Value: err})
+	}
+	if err := c.repo.RecordMetric(ctx, MetricNameSystemCPU, m.CPUUsagePercent, nil); err != nil {
+		c.logger.Warn("Failed to persist system_cpu_percent", logger.Field{Key: "error", Value: err})
+	}
+	if err := c.repo.RecordMetric(ctx, MetricNameSystemDisk, m.DiskUsagePercent, nil); err != nil {
+		c.logger.Warn("Failed to persist system_disk_percent", logger.Field{Key: "error", Value: err})
+	}
+	if err := c.repo.RecordMetric(ctx, MetricNameSystemUptime, float64(m.UptimeSeconds), nil); err != nil {
+		c.logger.Warn("Failed to persist system_uptime_seconds", logger.Field{Key: "error", Value: err})
+	}
 }

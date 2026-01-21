@@ -10,6 +10,7 @@ import (
 	"apprun/ent/schema"
 	"apprun/internal/jwt"
 	"apprun/internal/password"
+	"apprun/internal/rbac"
 	authmod "apprun/modules/auth"
 	"apprun/modules/auth/repository"
 	"apprun/pkg/errors"
@@ -337,6 +338,22 @@ func (s *AuthService) Login(ctx context.Context, req *LoginRequest, clientIP str
 		return nil, errors.Wrap(err, errors.ErrCodeInternalError, "Failed to generate tokens")
 	}
 
+	// 5.1 Sync user role to RBAC enforcer (Story 9.1 fix)
+	// This ensures CheckPermission works for platform-level permissions
+	if user.Role != "" {
+		if err := rbac.AddUserRole(user.ID, 0, user.Role); err != nil {
+			// Log warning but don't fail login - RBAC sync is best-effort
+			logger.Warn("Failed to sync user role to RBAC",
+				logger.Field{Key: "user_id", Value: user.ID},
+				logger.Field{Key: "role", Value: user.Role},
+				logger.Field{Key: "error", Value: err.Error()})
+		} else {
+			logger.Debug("Synced user role to RBAC",
+				logger.Field{Key: "user_id", Value: user.ID},
+				logger.Field{Key: "role", Value: user.Role})
+		}
+	}
+
 	// 6. Update login history (non-blocking)
 	go s.updateLoginHistory(context.Background(), user.ID, clientIP)
 
@@ -437,11 +454,23 @@ func (s *AuthService) GetOrCreateSuperAdmin(ctx context.Context, initConfig auth
 	user, err := s.userRepo.GetByEmail(ctx, initConfig.Email)
 	if err == nil {
 		log.Info("Super admin already exists", logger.Field{Key: "user_id", Value: user.ID})
+		// Ensure the user has platform_admin role
+		if user.Role != "platform_admin" {
+			log.Info("Updating super admin role to platform_admin",
+				logger.Field{Key: "user_id", Value: user.ID},
+				logger.Field{Key: "old_role", Value: user.Role})
+			if updateErr := s.userRepo.UpdateRole(ctx, user.ID, "platform_admin"); updateErr != nil {
+				log.Error("Failed to update super admin role", logger.Field{Key: "error", Value: updateErr.Error()})
+				return nil, "", errors.Wrap(updateErr, errors.ErrCodeInternalError, "Failed to update super admin role")
+			}
+			user.Role = "platform_admin" // Update in-memory object
+			log.Info("Super admin role updated to platform_admin", logger.Field{Key: "user_id", Value: user.ID})
+		}
 		return user, "", nil
 	}
 
 	// If not found error, try to create
-	if !ent.IsNotFound(err) {
+	if err != repository.ErrUserNotFound {
 		log.Error("Failed to query super admin", logger.Field{Key: "error", Value: err.Error()})
 		return nil, "", errors.Wrap(err, errors.ErrCodeInternalError, "Failed to query super admin")
 	}
@@ -473,10 +502,12 @@ func (s *AuthService) GetOrCreateSuperAdmin(ctx context.Context, initConfig auth
 		return nil, "", errors.Wrap(err, errors.ErrCodeInternalError, "Failed to hash admin password")
 	}
 
+	platformAdminRole := "platform_admin"
 	user, err = s.userRepo.CreateUser(ctx, &repository.CreateUserParams{
 		Email:        initConfig.Email,
 		Username:     &initConfig.Username,
 		PasswordHash: passwordHash,
+		Role:         &platformAdminRole, // Set platform_admin role in database
 	})
 	if err != nil {
 		log.Error("Failed to create super admin", logger.Field{Key: "error", Value: err.Error()})
@@ -492,4 +523,51 @@ func (s *AuthService) GetOrCreateSuperAdmin(ctx context.Context, initConfig auth
 		return user, passwordToUse, nil
 	}
 	return user, "", nil
+}
+
+// GetOrCreateSystemUser ensures the system user (is_system=true) exists.
+// The system user is used for platform-level operations and cannot log in.
+// This method is idempotent and safe to call multiple times.
+//
+// Returns:
+//   - *ent.User: system user
+//   - error: database or creation error
+func (s *AuthService) GetOrCreateSystemUser(ctx context.Context) (*ent.User, error) {
+	log := logger.L()
+
+	// Try to find existing system user by is_system=true
+	user, err := s.userRepo.GetSystemUser(ctx)
+	if err == nil {
+		log.Info("System user already exists", logger.Field{Key: "user_id", Value: user.ID})
+		return user, nil
+	}
+
+	// If not found, create system user
+	if err != repository.ErrUserNotFound {
+		log.Error("Failed to query system user", logger.Field{Key: "error", Value: err.Error()})
+		return nil, errors.Wrap(err, errors.ErrCodeInternalError, "Failed to query system user")
+	}
+
+	// Create system user
+	log.Info("Creating system user")
+
+	systemUsername := "system"
+	isSystem := true
+	platformAdminRole := "platform_admin" // System user needs admin role for platform operations
+
+	// Note: System user has empty password_hash (cannot login)
+	user, err = s.userRepo.CreateUser(ctx, &repository.CreateUserParams{
+		Email:        "system@internal",
+		Username:     &systemUsername,
+		PasswordHash: "", // Empty hash - system user cannot login
+		IsSystem:     &isSystem,
+		Role:         &platformAdminRole,
+	})
+	if err != nil {
+		log.Error("Failed to create system user", logger.Field{Key: "error", Value: err.Error()})
+		return nil, errors.Wrap(err, errors.ErrCodeInternalError, "Failed to create system user")
+	}
+
+	log.Info("System user created successfully", logger.Field{Key: "user_id", Value: user.ID})
+	return user, nil
 }

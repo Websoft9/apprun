@@ -46,6 +46,24 @@ func (s *TokenService) GenerateToken(userID int64, userClaims map[string]interfa
 	}
 	expiresAt := time.Now().Add(expiresIn)
 
+	return s.generateTokenWithExpiry(userID, userClaims, expiresAt)
+}
+
+// GenerateTokenWithExpiry generates a JWT token with custom expiration time.
+// This is useful for testing expired tokens.
+// Returns the token string, expiration time, and any error.
+func (s *TokenService) GenerateTokenWithExpiry(userID int64, userClaims map[string]interface{}, customExpiry time.Duration) (string, time.Time, error) {
+	expiresAt := time.Now().Add(customExpiry)
+	return s.generateTokenWithExpiry(userID, userClaims, expiresAt)
+}
+
+// generateTokenWithExpiry is the internal implementation for token generation.
+func (s *TokenService) generateTokenWithExpiry(userID int64, userClaims map[string]interface{}, expiresAt time.Time) (string, time.Time, error) {
+	secret := s.config.GetString("jwt.secret")
+	if secret == "" {
+		return "", time.Time{}, ErrMissingSecret
+	}
+
 	// Type assertions are intentionally unchecked - empty strings on failure
 	//nolint:errcheck // Type assertion failure is acceptable, defaults to empty string
 	username, _ := userClaims["username"].(string)
@@ -252,6 +270,14 @@ func ValidateToken(tokenString string) (*CustomClaims, error) {
 // Deprecated: Use TokenService.GenerateTokenPair instead.
 func GenerateTokenPair(userID int64, userClaims map[string]interface{}) (string, string, time.Time, error) {
 	return getOrInitGlobalService().GenerateTokenPair(userID, userClaims)
+}
+
+// GenerateTokenWithExpiry is a backward-compatible package-level function.
+// This is useful for testing expired tokens.
+//
+// Deprecated: Use TokenService.GenerateTokenWithExpiry instead.
+func GenerateTokenWithExpiry(userID int64, userClaims map[string]interface{}, customExpiry time.Duration) (string, time.Time, error) {
+	return getOrInitGlobalService().GenerateTokenWithExpiry(userID, userClaims, customExpiry)
 }
 
 // ValidateRefreshToken is a backward-compatible package-level function.

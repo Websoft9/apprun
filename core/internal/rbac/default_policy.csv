@@ -4,6 +4,12 @@
 # Platform-level policies (global permissions)
 p, platform_admin, *, *
 
+# Platform admin policies (Story 5.5.4 - Unified middleware)
+p, platform_admin, platform:user, manage
+p, platform_admin, platform:audit, read
+p, platform_admin, platform:metrics, read
+p, platform_admin, platform:rbac, manage
+
 # Project-level policies (role definitions)
 
 ## Owner (all permissions)

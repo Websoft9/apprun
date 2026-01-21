@@ -2,14 +2,18 @@
 # Sprint 3: Observability & Monitoring (Epic 9)
 
 **Priority**: P1  
-**Effort**: 3 天  
+**Effort**: 4 天 (Updated after SM review)  
 **Owner**: Backend Dev  
 **Dependencies**: 
 - Story 1.16 (Redis Cache Package) - ✅ Complete
 - Story 5.7 (Platform User Management) - ✅ Complete
+- **Story 9.2 (Metrics Storage ACL)** - ✅ Complete (核心依赖)
+- **Story 9.3 (BadgerDB Backend)** - ✅ Complete (核心依赖)
 - Story 5.9 (Audit Logging) - Optional (for auth metrics)
 
-**Status**: 📝 Ready for Dev  
+**Status**: ✅ Ready for Dev (基于 Storage 架构)  
+**Updated**: 2026-01-21  
+**Reviewed By**: Bob (Scrum Master)  
 **Module**: Metrics  
 **Epic**: [observability-epic](../../epics/9-observability-epic.md)  
 **Related PRD**: [FR-MON-001](../../prd.md#fr-mon-001-system-monitoring--metrics)  
@@ -19,24 +23,47 @@
 
 ## User Story
 
-作为 **平台管理员 (platform_admin)**，我希望能通过 API 查看系统运行指标（用户统计、系统健康、API性能），以便监控平台健康状态并做出运维决策。
+作为 **平台管理员 (platform_admin)**，我希望能通过 API 查看系统运行指标（实时 + 历史数据），以便监控平台健康状态、分析趋势并做出运维决策。
+
+### 架构变化 (基于 Story 9.2 + 9.3)
+
+**原设计**: 实时计算 API（每次请求查询数据库）  
+**新设计**: **Storage 层查询** + 实时计算混合模式
+
+- **历史指标**（trends）：从 BadgerDB 查询存储的时间序列数据
+- **实时指标**（current）：实时计算数据库统计
+- **性能提升**：减少数据库查询，利用持久化指标
 
 ---
 
 ## Acceptance Criteria
 
 ### 功能验收
-- [ ] 实现 `GET /api/metrics` - 获取所有指标
+- [ ] 实现 `GET /api/metrics` - 获取所有指标（实时快照）
 - [ ] 实现 `GET /api/metrics/users` - 获取用户指标
 - [ ] 实现 `GET /api/metrics/system` - 获取系统健康指标
 - [ ] 实现 `GET /api/metrics/performance` - 获取性能指标
-- [ ] 支持4类指标：User, Auth, Performance, System Health
+- [ ] 实现 `GET /api/metrics/history` - 获取历史趋势（复用 Storage Query）
+- [ ] 支持时间范围查询 (`?duration=1h`, `?start=...&end=...`)
+- [ ] 集成 `pkg/metrics/Repository` 查询持久化指标
+
+### Storage 集成验收（关键新增）
+- [ ] 实时指标自动写入 BadgerDB（每次采集触发）
+- [ ] 指标名称标准化定义：
+  - `user_count_total` - 总用户数
+  - `user_count_active` - 活跃用户数
+  - `api_requests_total` - API 请求总数
+  - `system_memory_mb` - 内存使用
+  - `system_cpu_percent` - CPU 使用率
+- [ ] Storage 写入延迟 < 10ms (p95)
+- [ ] 历史查询验证：返回正确时间范围数据
+- [ ] 降级测试：Storage 不可用时仅返回实时数据（不报错）
 
 ### 性能验收
-- [ ] 启用缓存时响应时间 < 200ms
-- [ ] 未命中缓存时响应时间 < 1s
-- [ ] Redis 缓存 TTL = 5 分钟
-- [ ] 数据库查询使用索引（users表、audit_logs表）
+- [ ] 实时指标响应时间 < 200ms（Redis 缓存）
+- [ ] 历史指标响应时间 < 100ms（Storage 层查询）
+- [ ] Redis 缓存 TTL = 1 分钟（平衡实时性与性能）
+- [ ] Storage 层查询使用时间范围索引
 
 ### 安全验收
 - [ ] 所有端点仅限 `platform_admin` 角色访问
@@ -52,18 +79,47 @@
 
 ## Technical Design
 
-### 1. Module Structure
+### 1. Architecture
 
 ```
-core/modules/metrics/
-├── handler.go           # NEW: Metrics endpoints
-├── service.go           # NEW: Metrics business logic
-├── collector.go         # NEW: Data collection logic
-├── types.go             # NEW: Metrics DTOs
-└── config.go            # NEW: Metrics constants
+┌────────────────────────────────────────────────────┐
+│         GET /api/metrics/* (统一 API)              │
+└───────────────────┬────────────────────────────────┘
+                    │
+                    v
+┌────────────────────────────────────────────────────┐
+│  modules/obs/handler.go (扩展 MetricsHandler)      │
+│  ┌─────────────────────────────────────────────┐  │
+│  │ 已存在 (Story 9.3)       │ 新增 (Story 9.1) │  │
+│  │ - Ingest()    (POST)    │ - GetAll()        │  │
+│  │ - Query()     (GET)     │ - GetUsers()      │  │
+│  │ - Health()    (GET)     │ - GetSystem()     │  │
+│  │                         │ - GetPerformance()│  │
+│  └─────────────────────────────────────────────┘  │
+└───────────────────┬────────────────────────────────┘
+                    │
+         ┌──────────┴───────────┐
+         │                      │
+         v                      v
+┌──────────────────┐   ┌─────────────────────┐
+│ collector.go     │   │ pkg/metrics/Repo    │
+│ (实时采集 + 写入) │──>│ (Storage 查询/写入) │
+│ [NEW]            │   │ [Story 9.2]         │
+└──────────────────┘   └──────────┬──────────┘
+                                  │
+                                  v
+                        ┌──────────────────┐
+                        │ BadgerDB         │
+                        │ (时间序列数据)    │
+                        │ [Story 9.3]      │
+                        └──────────────────┘
 ```
 
-**Design Decision**: Metrics is an independent module, not part of admin. Admin operations (user CRUD) live in `core/modules/admin/`, while metrics (read-only resource) has its own module.
+**关键架构决策**:
+1. **统一 API 路由**: `/api/metrics/*` (不再分离 `/api/observability/metrics/`)
+2. **复用 `modules/obs/`**: 扩展 Story 9.3 已创建的文件，不创建新模块
+3. **自动持久化**: 实时采集时自动写入 Storage，供历史查询
+4. **降级策略**: Storage 不可用时，仅返回实时数据（不报错）
 
 ### 2. API Endpoints
 
@@ -172,6 +228,46 @@ core/modules/metrics/
 }
 ```
 
+#### 2.5 GET /api/metrics/history (NEW - 复用 Storage Query)
+**描述**: 获取历史趋势数据（时间序列），复用 Story 9.3 的 Storage Query 逻辑  
+**认证**: JWT + `platform_admin`  
+**查询参数**: 
+- `name` (required): 指标名称 (如 `user_count_total`, `api_requests_total`)
+- `duration` (optional): 时间范围 (如 `1h`, `24h`, `7d`，默认 24h)
+- `start` / `end` (optional): 精确时间范围 (RFC3339)
+- `limit` (optional): 最大返回数据点数（默认 1000）
+
+**示例请求**:
+```
+GET /api/metrics/history?name=user_count_total&duration=24h
+```
+
+**响应 (200 OK)**:
+```json
+{
+  "success": true,
+  "data": {
+    "metrics": [
+      {
+        "name": "user_count_total",
+        "value": 1200,
+        "timestamp": "2026-01-20T00:00:00Z"
+      },
+      {
+        "name": "user_count_total",
+        "value": 1205,
+        "timestamp": "2026-01-20T01:00:00Z"
+      }
+    ],
+    "count": 24,
+    "start": "2026-01-20T00:00:00Z",
+    "end": "2026-01-21T00:00:00Z",
+    "has_more": false
+  }
+}
+
+**注意**: 此端点直接调用 `Repository.GetMetrics()`，与 Story 9.3 保持一致
+
 ---
 
 ### 3. Data Types (types.go)
@@ -231,52 +327,83 @@ type AuthMetrics struct {
 
 ### 4. Metrics Collection Logic
 
-#### 4.1 User Metrics (metrics_collector.go)
+#### 4.1 实时采集 + 自动持久化 (modules/obs/collector.go - NEW)
 ```go
-// Data Sources:
-// - users table: total_users, active_users, admin_users, banned_users
-// - Filter: created_at for new_users_today and last_7_days
+package obs
 
+import (
+    "context"
+    "time"
+    "apprun/pkg/metrics"
+)
+
+type MetricsCollector struct {
+    entClient *ent.Client
+    repo      *metrics.Repository // Storage 层
+}
+
+// CollectUserMetrics - 实时计算 + 自动写入 Storage
 func (c *MetricsCollector) CollectUserMetrics(ctx context.Context) (*UserMetrics, error) {
-    // Query 1: Total users
-    totalUsers, err := c.entClient.User.Query().Count(ctx)
+    // 1. 数据库实时查询
+    totalUsers, _ := c.entClient.User.Query().Count(ctx)
+    activeUsers, _ := c.entClient.User.Query().Where(user.IsActive(true)).Count(ctx)
     
-    // Query 2: Active users (is_active = true)
-    activeUsers, err := c.entClient.User.Query().
-        Where(user.IsActive(true)).
-        Count(ctx)
-    
-    // Query 3: Admin users (role = platform_admin)
-    adminUsers, err := c.entClient.User.Query().
-        Where(user.Role("platform_admin")).
-        Count(ctx)
-    
-    // Query 4: Banned users (status = banned)
-    bannedUsers, err := c.entClient.User.Query().
-        Where(user.Status("banned")).
-        Count(ctx)
-    
-    // Query 5: New users today (created_at >= today 00:00:00)
-    today := time.Now().Truncate(24 * time.Hour)
-    newUsersToday, err := c.entClient.User.Query().
-        Where(user.CreatedAtGTE(today)).
-        Count(ctx)
-    
-    // Query 6: Registrations last 7 days
-    sevenDaysAgo := time.Now().AddDate(0, 0, -7)
-    registrationsLast7Days, err := c.entClient.User.Query().
-        Where(user.CreatedAtGTE(sevenDaysAgo)).
-        Count(ctx)
+    // 2. 异步持久化到 Storage（不阻塞响应）
+    go c.persistMetrics(context.Background(), map[string]float64{
+        "user_count_total":  float64(totalUsers),
+        "user_count_active": float64(activeUsers),
+    })
     
     return &UserMetrics{
-        TotalUsers:                totalUsers,
-        ActiveUsers:               activeUsers,
-        AdminUsers:                adminUsers,
-        BannedUsers:               bannedUsers,
-        NewUsersToday:             newUsersToday,
-        UserRegistrationsLast7Days: registrationsLast7Days,
-        Timestamp:                 time.Now(),
+        TotalUsers:  totalUsers,
+        ActiveUsers: activeUsers,
+        Timestamp:   time.Now(),
     }, nil
+}
+
+// persistMetrics - 批量写入 Storage
+func (c *MetricsCollector) persistMetrics(ctx context.Context, data map[string]float64) {
+    for name, value := range data {
+        // 忽略错误，降级处理
+        _ = c.repo.RecordMetric(ctx, metrics.Metric{
+            Name:      name,
+            Value:     value,
+            Timestamp: time.Now(),
+        })
+    }
+}
+```
+
+#### 4.2 历史查询 - 复用 Repository (modules/obs/handler.go - 扩展)
+```go
+// GetHistory - 复用 Story 9.3 的 Query 逻辑
+func (h *MetricsHandler) GetHistory(w http.ResponseWriter, r *http.Request) {
+    name := r.URL.Query().Get("name")
+    if name == "" {
+        response.ErrorWithRequest(w, r, 400, "INVALID_REQUEST", "name is required")
+        return
+    }
+    
+    // 解析时间范围（默认 24h）
+    duration := r.URL.Query().Get("duration")
+    end := time.Now()
+    start := end.Add(-parseDuration(duration, 24*time.Hour))
+    
+    // 查询 Storage 层（BadgerDB）
+    results, err := h.repo.GetMetrics(r.Context(), name, start, end)
+    if err != nil {
+        // 降级：Storage 不可用，返回空数组而不是错误
+        logger.Warn("Storage unavailable, returning empty history", "error", err)
+        results = []metrics.Metric{}
+    }
+    
+    response.SuccessWithRequest(w, r, map[string]interface{}{
+        "metrics":  results,
+        "count":    len(results),
+        "start":    start,
+        "end":      end,
+        "has_more": false,
+    })
 }
 ```
 
@@ -388,11 +515,20 @@ func (c *MetricsCollector) CollectPerformanceMetrics(ctx context.Context) (*Perf
 
 ---
 
-### 5. Caching Strategy (metrics_service.go)
+### 5. Caching Strategy (modules/obs/service.go - NEW)
 
 ```go
+package obs
+
+import (
+    "context"
+    "encoding/json"
+    "time"
+    "github.com/redis/go-redis/v9"
+)
+
 const (
-    MetricsCacheTTL       = 5 * time.Minute
+    MetricsCacheTTL       = 1 * time.Minute  // 1分钟：平衡实时性与性能
     MetricsCacheKeyPrefix = "metrics:"
 )
 
@@ -455,59 +591,66 @@ var messages = map[string]string{
 ### 7. Routing (routes/router.go)
 
 ```go
-// Admin routes (user management)
-adminGroup := r.Group("/api/admin")
-adminGroup.Use(middleware.RequirePlatformAdmin())
-{
-    adminGroup.GET("/users", adminHandlers.ListUsers)
-    adminGroup.POST("/users", adminHandlers.CreateUser)
-    // ... other admin CRUD operations
-}
-
-// Metrics routes (read-only resource, admin-only access)
+// Metrics API - 统一命名空间 (合并 Story 9.1 + 9.3)
 metricsGroup := r.Group("/api/metrics")
 metricsGroup.Use(middleware.RequirePlatformAdmin())
 {
-    metricsGroup.GET("", metricsHandlers.GetAll)
-    metricsGroup.GET("/users", metricsHandlers.GetUsers)
-    metricsGroup.GET("/system", metricsHandlers.GetSystem)
-    metricsGroup.GET("/performance", metricsHandlers.GetPerformance)
+    // 实时指标暴露 (Story 9.1)
+    metricsGroup.GET("", metricsHandler.GetAll)              // 所有指标快照
+    metricsGroup.GET("/users", metricsHandler.GetUsers)      // 用户指标
+    metricsGroup.GET("/system", metricsHandler.GetSystem)    // 系统指标
+    metricsGroup.GET("/performance", metricsHandler.GetPerformance) // 性能指标
+    metricsGroup.GET("/history", metricsHandler.GetHistory)  // 历史查询
+    
+    // Storage 操作 (Story 9.3 - 可选保留)
+    metricsGroup.POST("", metricsHandler.Ingest)             // 手动写入指标
+    metricsGroup.GET("/health", metricsHandler.Health)       // Storage 健康
 }
 ```
 
-**Key Design Principle**: 
-- `/api/admin/*` for **management operations** (CRUD on users, projects, etc.)
-- `/api/metrics/*` for **read-only resources** (system observability)
-- Both use `RequirePlatformAdmin()` middleware for access control
-- URL path represents resource type, not permission level
+**架构决策 - 统一 API 路由**:
+- ✅ **单一命名空间**: `/api/metrics/*` 统一管理所有指标相关功能
+- ✅ **RESTful 设计**: GET 查询，POST 写入，符合语义
+- ✅ **向后兼容**: Story 9.3 的 Ingest/Health 端点保留（可选使用）
+- ✅ **权限统一**: 全部使用 `RequirePlatformAdmin()` 中间件
+- ❌ **废弃**: `/api/observability/metrics/*` 不再使用
 
 ---
 
 ## Implementation Checklist
 
-### Phase 1: Foundation (Day 1)
-- [ ] Create `core/modules/metrics/` directory
-- [ ] Create `collector.go` with data collection logic
-- [ ] Create `service.go` with caching logic
-- [ ] Create `types.go` with metrics DTOs
-- [ ] Create `config.go` with constants
-- [ ] Add error codes to `pkg/errors/codes.go`
-- [ ] Install dependency: `go get github.com/shirou/gopsutil/v3`
+### Day 1: Storage 集成 + 实时采集
+- [ ] **复用** `modules/obs/` 目录（不创建新 modules/metrics/）
+- [ ] 新增 `modules/obs/collector.go` - 实时采集逻辑
+- [ ] 新增 `modules/obs/service.go` - 缓存服务层
+- [ ] 扩展 `modules/obs/types.go` - 新增 UserMetrics, SystemMetrics 等类型
+- [ ] 实现 Collector 方法 + 自动写入 Storage
+- [ ] 单元测试：验证 Storage 自动写入（异步）
+- [ ] 安装依赖: `go get github.com/shirou/gopsutil/v3`
 
-### Phase 2: Endpoints (Day 2)
-- [ ] Create `handler.go` with all metrics endpoints
-- [ ] Implement `GetAll` handler
-- [ ] Implement `GetUsers` handler
-- [ ] Implement `GetSystem` handler
-- [ ] Implement `GetPerformance` handler (stub)
-- [ ] Register independent metrics routes in `router.go`
+### Day 2: 实时指标端点
+- [ ] 扩展 `modules/obs/handler.go` (不创建新文件)
+- [ ] 实现 `GetAll()`, `GetUsers()`, `GetSystem()`, `GetPerformance()`
+- [ ] 集成 Redis 缓存（TTL = 1 分钟）
+- [ ] 集成 MetricsCollector 实时采集
+- [ ] 更新 `routes/router.go` - 统一到 `/api/metrics/*`
+- [ ] 单元测试：各端点逻辑 + 缓存命中/未命中
 
-### Phase 3: Testing (Day 3)
-- [ ] Unit tests for `metrics_collector.go`
-- [ ] Unit tests for `metrics_service.go` (cache scenarios)
-- [ ] Integration tests for endpoints
-- [ ] Test permission enforcement (admin vs non-admin)
-- [ ] Performance test (cache hit vs miss)
+### Day 3: 历史查询 + 集成测试
+- [ ] 实现 `GetHistory()` 端点（复用 Repository.GetMetrics）
+- [ ] 实现降级策略：Storage 不可用时返回空数组
+- [ ] 集成测试：实时 + 历史混合查询
+- [ ] 集成测试：权限校验（admin vs non-admin）
+- [ ] 集成测试：Storage 降级场景
+- [ ] 性能测试：缓存效果验证
+
+### Day 4: 故障测试 + 文档
+- [ ] 并发测试：100+ 请求同时访问
+- [ ] Storage 写入压力测试：验证异步写入不阻塞
+- [ ] 端到端测试：采集 → 持久化 → 历史查询
+- [ ] 更新 API 文档 (docs/api.md)
+- [ ] 更新 Swagger spec (core/docs/swagger.yaml)
+- [ ] 代码审查 + 合并
 
 ---
 
@@ -600,15 +743,46 @@ CREATE INDEX idx_audit_logs_action ON audit_logs(action);
 
 ---
 
+## Fault Tolerance & Degradation
+
+### Storage 降级策略
+```go
+// 场景 1: Storage 写入失败
+// 行为：忽略错误，继续返回实时数据（日志记录）
+if err := repo.RecordMetric(ctx, metric); err != nil {
+    logger.Warn("Failed to persist metric, continuing", "error", err)
+    // 不影响实时查询响应
+}
+
+// 场景 2: Storage 查询失败 (历史数据)
+// 行为：返回空数组，不报 500 错误
+results, err := repo.GetMetrics(ctx, name, start, end)
+if err != nil {
+    logger.Warn("Storage unavailable, returning empty history", "error", err)
+    results = []Metric{} // 降级为空数据
+}
+```
+
+### Redis 降级策略
+```go
+// 场景：Redis 不可用
+// 行为：跳过缓存，直接返回实时计算结果
+cached, err := redis.Get(ctx, key).Result()
+if err != nil {
+    // Cache miss or Redis down - fallback to real-time
+    return collector.CollectUserMetrics(ctx)
+}
+```
+
+---
+
 ## Out of Scope
 
 ### Not Included in This Story
 - ❌ Real-time performance metrics collection (requires middleware instrumentation)
-- ❌ Historical trends and time-series data
 - ❌ Prometheus exporter integration
 - ❌ Custom alerting rules
 - ❌ Metrics dashboard UI
-- ❌ Cache invalidation on user events (accept 5-min delay)
 
 ### Future Enhancements
 - Story 1.21: HTTP Middleware Instrumentation (for real-time performance metrics)
@@ -653,18 +827,28 @@ CREATE INDEX idx_audit_logs_action ON audit_logs(action);
 ## Notes
 
 **Architecture Rationale**:
-1. **Why `/api/metrics` not `/api/admin/metrics`?**
-   - URL path represents **resource type**, not **permission level**
-   - `/api/admin/*` is for **management operations** (user CRUD, config changes)
-   - `/api/metrics/*` is for **read-only resources** (observability data)
-   - Permission control via middleware, not URL naming
-   - Future extensibility: can add `/api/projects/:id/metrics` for project-level metrics
 
-2. **Why independent `metrics` module?**
-   - Metrics collection is distinct from user management logic
-   - Avoids bloating the admin module with unrelated code
-   - Follows single responsibility principle
-   - Easier to test and maintain independently
+1. **为什么统一到 `/api/metrics`？**
+   - 原 Story 9.3 使用 `/api/observability/metrics/*` 太冗长
+   - 统一命名空间更符合 RESTful 设计
+   - 避免用户困惑（两套 API 路径）
+   - 权限通过中间件控制，不依赖 URL 路径
+
+2. **为什么复用 `modules/obs/` 而不创建新模块？**
+   - Story 9.3 已创建 `modules/obs/` (Observability 模块)
+   - 避免模块碎片化（metrics 属于 observability 子集）
+   - 减少重复代码（共享 types, config）
+   - 符合单一职责原则（Observability 统一管理）
+
+3. **为什么缓存 TTL 选择 1 分钟？**
+   - 5 分钟过长，实时性不足（用户看到过时数据）
+   - 1 分钟平衡实时性与数据库压力
+   - 管理员查看指标频率不高（非高频 API）
+
+4. **为什么 Storage 写入采用异步？**
+   - 避免阻塞实时指标响应（用户体验优先）
+   - Storage 失败不影响实时查询功能
+   - 降级策略：持久化是增强功能，不是核心功能
 
 **Design Decisions**:
 1. **Cache-First Strategy**: Prioritizes response time over real-time accuracy (5-min delay acceptable)

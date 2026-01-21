@@ -73,3 +73,20 @@ type AllMetrics struct {
 	Timestamp                  time.Time `json:"timestamp"`
 	CacheHit                   bool      `json:"cache_hit,omitempty"`
 }
+
+// MetricPoint represents a single metric data point in time series (Story 9.1)
+type MetricPoint struct {
+	Name      string            `json:"name"`
+	Value     float64           `json:"value"`
+	Tags      map[string]string `json:"tags,omitempty"`
+	Timestamp time.Time         `json:"timestamp"`
+}
+
+// HistoryResponse represents the response for historical metrics query (Story 9.1)
+type HistoryResponse struct {
+	Metrics []MetricPoint `json:"metrics"`
+	Count   int           `json:"count"`
+	Start   time.Time     `json:"start"`
+	End     time.Time     `json:"end"`
+	HasMore bool          `json:"has_more"`
+}

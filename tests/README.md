@@ -37,13 +37,14 @@ apprun使用**Go原生测试框架**，配合以下工具：
 ```
 tests/
 ├── unit/          # 单元测试 (40%) - 业务逻辑
-├── integration/   # 集成测试 (50%) - API + 数据库
+├── integration/   # 黑盒集成测试 (50%) - API + 数据库
 ├── e2e/           # 端到端测试 (10%) - 完整流程
 ├── performance/   # 性能测试 (k6脚本)
 ├── fixtures/      # 测试数据工厂
 └── testutils/     # 测试工具函数
 ```
 
+> 模块的代码侧存放的是白盒集成测试
 ---
 
 ## Quick Start

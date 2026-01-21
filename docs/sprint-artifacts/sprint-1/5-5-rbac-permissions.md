@@ -138,16 +138,20 @@ userID := jwt.GetUserID(r.Context())
 │  3. RequirePermission(resource, action)  │  ← 本 Story 实现
 ├──────────────────────────────────────────┤
 │  Casbin Enforcer                          │  ← 权限引擎
-│  - Model: RBAC with domains               │
-│  - Policy: CSV/Database                   │
-│  - Adapter: File/Database                 │
+│  - Model: RBAC with domains (内嵌)        │
+│  - Policy: Database (casbin_rule 表)      │  ← ✨ ADR-001: 统一到数据库
+│  - Adapter: Ent Adapter                   │
 ├──────────────────────────────────────────┤
 │  Permission Cache Layer                   │  ← sync.Map (MVP) / Redis
 ├──────────────────────────────────────────┤
 │  Database (Ent ORM)                       │
 │  - projects table                         │
 │  - project_members table                  │
-│  - casbin_rule table (optional)           │
+│  - casbin_rule table                      │  ← ✨ 必需，非可选
+└──────────────────────────────────────────┘
+```
+
+> 📖 **架构决策**: 参见 [ADR-001](../../epics/5-auth-epic.md#adr-001-权限机制统一到-casbin-数据库存储)
 └──────────────────────────────────────────┘
 ```
 
@@ -324,7 +328,9 @@ func (ProjectMember) Indexes() []ent.Index {
 }
 ```
 
-#### 3. CasbinRule Schema (可选 - Database Adapter)
+#### 3. CasbinRule Schema (必需 - Database Adapter)
+
+> ⚠️ **ADR-001 决策**: `casbin_rule` 表为必需组件，不再是可选。详见 [ADR-001](../../epics/5-auth-epic.md#adr-001-权限机制统一到-casbin-数据库存储)
 
 ```go
 // core/ent/schema/casbin_rule.go
@@ -343,10 +349,10 @@ type CasbinRule struct {
 func (CasbinRule) Fields() []ent.Field {
     return []ent.Field{
         field.Int64("id"),
-        field.String("ptype").MaxLen(100),  // p, g
-        field.String("v0").MaxLen(100).Optional(),  // sub
-        field.String("v1").MaxLen(100).Optional(),  // dom (project_id)
-        field.String("v2").MaxLen(100).Optional(),  // obj (resource)
+        field.String("ptype").MaxLen(100),  // p, g, g2
+        field.String("v0").MaxLen(100).Optional(),  // sub (user/role)
+        field.String("v1").MaxLen(100).Optional(),  // dom/obj (project_id/resource)
+        field.String("v2").MaxLen(100).Optional(),  // obj/act (resource/action)
         field.String("v3").MaxLen(100).Optional(),  // act (action)
         field.String("v4").MaxLen(100).Optional(),
         field.String("v5").MaxLen(100).Optional(),
@@ -445,8 +451,10 @@ const (
 
 ### Default Policy Configuration
 
+> ⚠️ **ADR-001 变更**: 以下策略配置将通过 **数据库迁移** 或 **Bootstrap 初始化** 导入到 `casbin_rule` 表，不再使用 CSV 文件。详见 [Story 5-5-3](5-5-3-casbin-db-migration.md)
+
 ```csv
-# config/casbin_policy.csv
+# 默认策略定义 (将导入到 casbin_rule 表)
 
 # Platform-level policies (平台级权限)
 # 平台管理员拥有无限权限，包括管理平台资源
@@ -549,13 +557,13 @@ package rbac
 
 import (
     "github.com/casbin/casbin/v2"
-    fileadapter "github.com/casbin/casbin/v2/persist/file-adapter"
+    entadapter "github.com/casbin/ent-adapter"  // ✨ 使用 Ent Adapter
 )
 
 type Config struct {
     ModelPath   string
-    PolicyPath  string
-    UseDatabase bool  // MVP: false (使用文件), Production: true (使用 DB)
+    DatabaseURL string  // ✨ 数据库连接字符串
+    // PolicyPath  string  // 已废弃 - 不再使用 CSV 文件
 }
 
 // 全局单例
@@ -565,25 +573,31 @@ var (
 )
 ```
 
+> ⚠️ **ADR-001 变更**: 
+> - 废弃 `PolicyPath` 配置，不再从 CSV 文件加载策略
+> - 新增 `DatabaseURL` 配置，使用 `ent-adapter` 连接数据库
+> - 策略数据存储在 `casbin_rule` 表中
+```
+
 **关键函数：**
-- `InitEnforcer(cfg Config) error` - 启动时初始化（加载 model + policy）
+- `InitEnforcer(cfg Config) error` - 启动时初始化（加载 model，连接数据库 adapter）
 - `CheckPermission(userID, projectID int64, resource, action string) (bool, error)` - 集中权限检查（无缓存）
 - `AddUserRole(userID, projectID int64, role string) error` - 分配角色
 - `RemoveUserRole(userID, projectID int64, role string) error` - 移除角色
 - `GetUserRoles(userID, projectID int64) ([]string, error)` - 查询角色
-- `ReloadPolicies() error` - 显式重新加载策略（清除 Casbin 内部缓存）
+- `ReloadPolicies() error` - 显式重新加载策略（从数据库刷新到内存）
 
 **实现要点：**
 1. 使用 `sync.Once` 确保单例初始化
-2. 请求格式：`(sub, dom, obj, act)` = `("user:123", "project:1", "config", "read")`
+2. 请求格式：`(sub, dom, obj, act)` = `("u:123", "project:1", "config", "read")`
 3. **MVP 不做权限结果缓存**（后续 Story 5.5.1 可选）
-4. 角色变更后调用 `ReloadPolicies()` 清除 Casbin 内部状态
-5. 从 Config Center 加载 model/policy 路径（Story 3.2）
+4. 角色变更通过 Adapter 直接写入数据库，调用 `ReloadPolicies()` 刷新内存
+5. Model 从内嵌资源加载，Policy 从数据库 adapter 加载
 
 **动态 Reload 策略**：
 - 通过管理 API 触发：`POST /api/admin/rbac/reload`（需要 platform_admin 权限）
-- 调用 `enforcer.LoadPolicy()` 从文件/DB 重新加载
-- 后续可扩展：文件监听（fsnotify）或定时轮询
+- 调用 `enforcer.LoadPolicy()` 从数据库重新加载到内存
+- 数据库存储天然支持多实例同步（通过共享数据库）
 
 ### 2. Permission Cache Layer
 

@@ -21,6 +21,9 @@ import (
 	configModule "apprun/modules/config"
 	"apprun/modules/obs"
 	"apprun/pkg/cache"
+	"apprun/pkg/logger"
+	"apprun/pkg/metrics"
+	"apprun/pkg/metrics/storage"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -129,10 +132,9 @@ func SetupRoutes(dbClient *ent.Client, configService *configModule.Service, cach
 			RegisterAuditRoutes(r, dbClient, auditSvc)
 		}
 
-		// feature/config routes (如果提供了配置服务)
+		// Config routes with RBAC protection (Story 3-2-1)
 		if configService != nil {
-			configHandler := configModule.NewHandler(configService)
-			configHandler.RegisterRoutes(r)
+			RegisterConfigRoutes(r, configService)
 		}
 
 		// Swagger documentation routes
@@ -263,15 +265,12 @@ func RegisterAuditRoutes(r chi.Router, dbClient *ent.Client, auditSvc *auditServ
 	// JWT middleware with DB client for token version validation
 	jwtMiddleware := internalMiddleware.NewJWTMiddlewareWithDB(dbClient)
 
-	// Platform admin middleware
-	platformAdminMw := internalMiddleware.NewRequirePlatformAdminMiddleware(dbClient)
-
 	// Admin audit routes (platform_admin only)
 	r.Route("/admin/audit-logs", func(r chi.Router) {
 		// Require authentication
 		r.Use(jwtMiddleware.JWTAuth)
-		// Require platform_admin role (Story 5.7)
-		r.Use(platformAdminMw.RequirePlatformAdmin)
+		// Require platform:audit:read permission (Story 5.5.4)
+		r.Use(internalMiddleware.RequirePermission("platform:audit", "read"))
 
 		// Query audit logs
 		r.Get("/", auditHdl.QueryLogs)
@@ -287,15 +286,12 @@ func RegisterAdminUserRoutes(r chi.Router, dbClient *ent.Client) {
 	// JWT middleware with DB client for token version validation (Story 5.7)
 	jwtMiddleware := internalMiddleware.NewJWTMiddlewareWithDB(dbClient)
 
-	// Platform admin middleware (Story 5.7)
-	platformAdminMw := internalMiddleware.NewRequirePlatformAdminMiddleware(dbClient)
-
 	// Admin user management routes
 	r.Route("/admin/users", func(r chi.Router) {
 		// All routes require authentication
 		r.Use(jwtMiddleware.JWTAuth)
-		// All routes require platform_admin role
-		r.Use(platformAdminMw.RequirePlatformAdmin)
+		// All routes require platform:user:manage permission (Story 5.5.4)
+		r.Use(internalMiddleware.RequirePermission("platform:user", "manage"))
 
 		// Rate limit admin user management to 60 requests per minute per IP
 		r.Use(middleware.Throttle(60))
@@ -325,15 +321,30 @@ func RegisterAdminUserRoutes(r chi.Router, dbClient *ent.Client) {
 
 // RegisterMetricsRoutes registers metrics routes (Story 9.1 - Observability)
 func RegisterMetricsRoutes(r chi.Router, dbClient *ent.Client, cacheClient cache.Client) {
-	// Initialize metrics dependencies
-	metricsService := obs.NewMetricsService(dbClient, cacheClient)
+	// Initialize metrics storage repository (Story 9.1 - Storage integration)
+	metricsCfg, err := metrics.LoadConfig()
+	if err != nil {
+		// Log error but continue - metrics will work without persistence
+		logger.L().Warn("Failed to load metrics config, persistence disabled", logger.Field{Key: "error", Value: err})
+		metricsCfg = nil
+	}
+
+	var metricsRepo *metrics.Repository
+	if metricsCfg != nil {
+		storageBackend, err := storage.NewStorage(metricsCfg.ToStorageConfig())
+		if err != nil {
+			logger.L().Warn("Failed to initialize metrics storage, persistence disabled", logger.Field{Key: "error", Value: err})
+		} else {
+			metricsRepo = metrics.NewRepository(storageBackend, metricsCfg)
+		}
+	}
+
+	// Initialize metrics service with repository
+	metricsService := obs.NewMetricsService(dbClient, cacheClient, metricsRepo)
 	metricsHandler := obs.NewMetricsHandler(metricsService)
 
 	// JWT middleware with DB client for token version validation
 	jwtMiddleware := internalMiddleware.NewJWTMiddlewareWithDB(dbClient)
-
-	// Platform admin middleware
-	platformAdminMw := internalMiddleware.NewRequirePlatformAdminMiddleware(dbClient)
 
 	// Metrics routes (platform_admin only)
 	r.Route("/metrics", func(r chi.Router) {
@@ -342,15 +353,39 @@ func RegisterMetricsRoutes(r chi.Router, dbClient *ent.Client, cacheClient cache
 
 		// Require authentication
 		r.Use(jwtMiddleware.JWTAuth)
-		// Require platform_admin role
-		r.Use(platformAdminMw.RequirePlatformAdmin)
+		// Require platform:metrics:read permission (Story 9.1)
+		r.Use(internalMiddleware.RequirePermission("platform:metrics", "read"))
 
-		// Get all metrics
+		// Real-time metrics endpoints (Story 9.1)
 		r.Get("/", metricsHandler.GetAll)
-
-		// Get specific metric categories
 		r.Get("/users", metricsHandler.GetUsers)
 		r.Get("/system", metricsHandler.GetSystem)
 		r.Get("/performance", metricsHandler.GetPerformance)
+
+		// Historical metrics endpoint (Story 9.1 - Storage integration)
+		r.Get("/history", metricsHandler.GetHistory)
+	})
+}
+
+// RegisterConfigRoutes registers configuration management routes with RBAC protection (Story 3-2-1)
+func RegisterConfigRoutes(r chi.Router, configService *configModule.Service) {
+	configHandler := configModule.NewHandler(configService)
+
+	// JWT middleware for authentication
+	jwtMiddleware := internalMiddleware.NewJWTMiddleware()
+
+	// Config routes - Platform-level permissions (projectID = 0)
+	r.Route("/config", func(r chi.Router) {
+		// Apply JWT authentication
+		r.Use(jwtMiddleware.JWTAuth)
+
+		// Read operations - require platform:config:read permission
+		r.With(internalMiddleware.RequirePermission("platform:config", "read")).Get("/", configHandler.GetConfig)
+		r.With(internalMiddleware.RequirePermission("platform:config", "read")).Get("/list", configHandler.ListConfigs)
+		r.With(internalMiddleware.RequirePermission("platform:config", "read")).Get("/allowed", configHandler.GetAllowedKeys)
+
+		// Write operations - require platform:config:write permission
+		r.With(internalMiddleware.RequirePermission("platform:config", "write")).Put("/", configHandler.UpdateConfig)
+		r.With(internalMiddleware.RequirePermission("platform:config", "write")).Delete("/", configHandler.DeleteConfig)
 	})
 }

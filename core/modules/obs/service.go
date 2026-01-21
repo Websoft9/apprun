@@ -3,23 +3,27 @@ package obs
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"apprun/ent"
 	"apprun/pkg/cache"
 	"apprun/pkg/errors"
+	"apprun/pkg/metrics"
 )
 
 // MetricsService provides metrics with caching support
 type MetricsService struct {
 	collector *MetricsCollector
 	cache     cache.Client
+	repo      *metrics.Repository // Story 9.1: For history queries
 }
 
 // NewMetricsService creates a new metrics service instance
-func NewMetricsService(entClient *ent.Client, cacheClient cache.Client) *MetricsService {
+func NewMetricsService(entClient *ent.Client, cacheClient cache.Client, repo *metrics.Repository) *MetricsService {
 	return &MetricsService{
-		collector: NewMetricsCollector(entClient),
+		collector: NewMetricsCollector(entClient, repo),
 		cache:     cacheClient,
+		repo:      repo,
 	}
 }
 
@@ -131,4 +135,36 @@ func (s *MetricsService) GetAllMetrics(ctx context.Context) (*AllMetrics, error)
 
 	metrics.CacheHit = false
 	return metrics, nil
+}
+
+// GetMetricsHistory retrieves historical metrics from storage (Story 9.1)
+func (s *MetricsService) GetMetricsHistory(ctx context.Context, name string, start, end time.Time, limit int) (*HistoryResponse, error) {
+	// Query storage layer (BadgerDB)
+	if s.repo == nil {
+		return nil, errors.New(errors.ErrCodeInternalError, "metrics repository not initialized")
+	}
+
+	results, err := s.repo.GetMetricsByRange(ctx, name, start, end, limit)
+	if err != nil {
+		return nil, errors.Wrap(err, errors.ErrCodeInternalError, "failed to query metrics history")
+	}
+
+	// Convert storage.Metric to MetricPoint
+	points := make([]MetricPoint, len(results))
+	for i, m := range results {
+		points[i] = MetricPoint{
+			Name:      m.Name,
+			Value:     m.Value,
+			Tags:      m.Tags,
+			Timestamp: m.Timestamp,
+		}
+	}
+
+	return &HistoryResponse{
+		Metrics: points,
+		Count:   len(points),
+		Start:   start,
+		End:     end,
+		HasMore: len(points) >= limit, // Simple pagination indicator
+	}, nil
 }

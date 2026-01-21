@@ -2,10 +2,15 @@
 package config
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
+	"apprun/ent"
+	jwtpkg "apprun/internal/jwt"
 	apperrors "apprun/pkg/errors"
+	"apprun/pkg/logger"
 	"apprun/pkg/response"
 
 	"github.com/go-chi/chi/v5"
@@ -13,12 +18,16 @@ import (
 
 // Handler 配置管理 HTTP 处理器
 type Handler struct {
-	service *Service
+	service  *Service
+	dbClient *ent.Client
 }
 
 // NewHandler 创建处理器实例
 func NewHandler(service *Service) *Handler {
-	return &Handler{service: service}
+	return &Handler{
+		service:  service,
+		dbClient: service.provider.(*Repository).client,
+	}
 }
 
 // RegisterRoutes 注册路由到 chi.Router
@@ -43,7 +52,10 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 //	@Param			key	query		string				true	"Configuration key, e.g. app.name"
 //	@Success		200	{object}	GetConfigResponse	"Configuration retrieved successfully"
 //	@Failure		400	{object}	response.Response	"Missing key parameter"
+//	@Failure		401	{object}	response.Response	"Unauthorized - missing or invalid JWT token"
+//	@Failure		403	{object}	response.Response	"Forbidden - insufficient permissions"
 //	@Failure		404	{object}	response.Response	"Configuration not found"
+//	@Security		BearerAuth
 //	@Router			/api/config [get]
 func (h *Handler) GetConfig(w http.ResponseWriter, r *http.Request) {
 	key := r.URL.Query().Get("key")
@@ -84,8 +96,12 @@ func (h *Handler) GetConfig(w http.ResponseWriter, r *http.Request) {
 //	@Param			request	body		UpdateConfigRequest		true	"Configuration update request"	example({"key":"poc.enabled","value":"true"})
 //	@Success		200		{object}	UpdateConfigResponse	"Configuration updated successfully"
 //	@Failure		400		{object}	response.Response		"Invalid request or config not allowed to store in database"
+//	@Failure		401		{object}	response.Response		"Unauthorized - missing or invalid JWT token"
+//	@Failure		403		{object}	response.Response		"Forbidden - insufficient permissions (requires platform:config:write)"
+//	@Security		BearerAuth
 //	@Router			/api/config [put]
 func (h *Handler) UpdateConfig(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	var req UpdateConfigRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.AppErrorWithRequest(w, r, apperrors.New(apperrors.ErrCodeConfigInvalidKey, "Invalid request body"))
@@ -102,11 +118,20 @@ func (h *Handler) UpdateConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// 获取用户ID用于审计日志
+	userID := jwtpkg.GetUserID(ctx)
+
+	// 获取旧值用于审计日志
+	oldValue, _, _ := h.service.GetConfigValue(ctx, req.Key)
+
 	// 更新配置
-	if err := h.service.UpdateConfig(r.Context(), req.Key, req.Value); err != nil {
+	if err := h.service.UpdateConfig(ctx, req.Key, req.Value); err != nil {
 		response.AppErrorWithRequest(w, r, err)
 		return
 	}
+
+	// 记录审计日志 (Story 3-2-1)
+	h.createAuditLog(ctx, userID, "update", req.Key, oldValue, req.Value, r.RemoteAddr, r.UserAgent())
 
 	resp := UpdateConfigResponse(req)
 
@@ -123,7 +148,10 @@ func (h *Handler) UpdateConfig(w http.ResponseWriter, r *http.Request) {
 //	@Accept			json
 //	@Produce		json
 //	@Success		200	{object}	ListConfigsResponse	"Configuration list"
+//	@Failure		401	{object}	response.Response	"Unauthorized - missing or invalid JWT token"
+//	@Failure		403	{object}	response.Response	"Forbidden - insufficient permissions"
 //	@Failure		500	{object}	response.Response	"Internal server error"
+//	@Security		BearerAuth
 //	@Router			/api/config/list [get]
 func (h *Handler) ListConfigs(w http.ResponseWriter, r *http.Request) {
 	configs, err := h.service.ListDynamicConfigs(r.Context())
@@ -152,18 +180,31 @@ func (h *Handler) ListConfigs(w http.ResponseWriter, r *http.Request) {
 //	@Param			key	query		string					true	"Configuration key"	example(poc.enabled)
 //	@Success		200	{object}	map[string]interface{}	"Deletion successful"
 //	@Failure		400	{object}	response.Response		"Missing key parameter or deletion failed"
+//	@Failure		401	{object}	response.Response		"Unauthorized - missing or invalid JWT token"
+//	@Failure		403	{object}	response.Response		"Forbidden - insufficient permissions (requires platform:config:write)"
+//	@Security		BearerAuth
 //	@Router			/api/config [delete]
 func (h *Handler) DeleteConfig(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	key := r.URL.Query().Get("key")
 	if key == "" {
 		response.ValidationErrorWithRequest(w, r, "key", "missing 'key' query parameter")
 		return
 	}
 
-	if err := h.service.DeleteDynamicConfig(r.Context(), key); err != nil {
+	// 获取用户ID用于审计日志
+	userID := jwtpkg.GetUserID(ctx)
+
+	// 获取旧值用于审计日志
+	oldValue, _, _ := h.service.GetConfigValue(ctx, key)
+
+	if err := h.service.DeleteDynamicConfig(ctx, key); err != nil {
 		response.AppErrorWithRequest(w, r, err)
 		return
 	}
+
+	// 记录审计日志 (Story 3-2-1)
+	h.createAuditLog(ctx, userID, "delete", key, oldValue, "", r.RemoteAddr, r.UserAgent())
 
 	response.SuccessWithRequest(w, r, map[string]interface{}{
 		"key": key,
@@ -180,6 +221,9 @@ func (h *Handler) DeleteConfig(w http.ResponseWriter, r *http.Request) {
 //	@Accept			json
 //	@Produce		json
 //	@Success		200	{object}	map[string]interface{}	"List of allowed configuration keys"
+//	@Failure		401	{object}	response.Response	"Unauthorized - missing or invalid JWT token"
+//	@Failure		403	{object}	response.Response	"Forbidden - insufficient permissions"
+//	@Security		BearerAuth
 //	@Router			/api/config/allowed [get]
 func (h *Handler) GetAllowedKeys(w http.ResponseWriter, r *http.Request) {
 	keys := h.service.GetAllowedDynamicKeys()
@@ -188,4 +232,40 @@ func (h *Handler) GetAllowedKeys(w http.ResponseWriter, r *http.Request) {
 		"allowed_keys": keys,
 		"count":        len(keys),
 	})
+}
+
+// createAuditLog creates an audit log entry for configuration changes (Story 3-2-1)
+// This function is non-blocking - audit log failures don't block config operations
+func (h *Handler) createAuditLog(ctx context.Context, userID int64, action, key, oldValue, newValue, ipAddress, userAgent string) {
+	// Build changes JSON
+	changes := map[string]interface{}{
+		"key": key,
+	}
+	if action == "update" {
+		changes["old_value"] = oldValue
+		changes["new_value"] = newValue
+	} else if action == "delete" {
+		changes["old_value"] = oldValue
+	}
+
+	// Create audit log entry using the current schema
+	_, err := h.dbClient.AuditLog.Create().
+		SetAction(fmt.Sprintf("config.%s", action)).
+		SetTargetID(key).
+		SetTargetType("config").
+		SetChanges(changes).
+		SetIPAddress(ipAddress).
+		SetUserAgent(userAgent).
+		SetStatusCode(200).
+		Save(ctx)
+
+	if err != nil {
+		// Log error but don't fail the config operation
+		logger.Error("Failed to create audit log for config change",
+			logger.Field{Key: "user_id", Value: userID},
+			logger.Field{Key: "action", Value: action},
+			logger.Field{Key: "key", Value: key},
+			logger.Field{Key: "error", Value: err.Error()},
+		)
+	}
 }
