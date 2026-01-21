@@ -46,15 +46,21 @@ func NewUsersHandler(userMgmtSvc *adminService.UserMgmtService) *UsersHandler {
 // @Router /api/admin/users [get]
 func (h *UsersHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	// Parse query parameters
-	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
-	pageSize, _ := strconv.Atoi(r.URL.Query().Get("page_size"))
+	page, err := strconv.Atoi(r.URL.Query().Get("page"))
+	if err != nil {
+		page = 1
+	}
+	pageSize, err := strconv.Atoi(r.URL.Query().Get("page_size"))
+	if err != nil {
+		pageSize = 20
+	}
 	search := r.URL.Query().Get("search")
 	role := r.URL.Query().Get("role")
 
 	var status *int8
 	if statusStr := r.URL.Query().Get("status"); statusStr != "" {
-		statusVal, err := strconv.ParseInt(statusStr, 10, 8)
-		if err == nil {
+		statusVal, parseErr := strconv.ParseInt(statusStr, 10, 8)
+		if parseErr == nil {
 			statusInt8 := int8(statusVal)
 			status = &statusInt8
 		}
@@ -136,11 +142,12 @@ func (h *UsersHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	user, generatedPassword, err := h.userMgmtSvc.CreateUser(r.Context(), &req)
 	if err != nil {
-		if errors.Is(err, pkgErrors.ErrAdminEmailExists) {
+		switch {
+		case errors.Is(err, pkgErrors.ErrAdminEmailExists):
 			response.Error(w, http.StatusConflict, pkgErrors.ErrCodeAdminEmailExists, err.Error())
-		} else if pkgErrors.IsValidation(err) {
+		case pkgErrors.IsValidation(err):
 			response.Error(w, http.StatusBadRequest, pkgErrors.ErrCodeInvalidParam, err.Error())
-		} else {
+		default:
 			response.Error(w, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
 		}
 		return
@@ -179,6 +186,8 @@ func (h *UsersHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} response.Response "User not found"
 // @Failure 500 {object} response.Response "Internal server error"
 // @Router /api/admin/users/{id}/role [put]
+//
+//nolint:dupl // Similar structure but different business logic (role vs status)
 func (h *UsersHandler) ChangeUserRole(w http.ResponseWriter, r *http.Request) {
 	userIDStr := chi.URLParam(r, "id")
 	userID, err := strconv.ParseInt(userIDStr, 10, 64)
@@ -188,7 +197,7 @@ func (h *UsersHandler) ChangeUserRole(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req adminService.ChangeUserRoleRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if decodeErr := json.NewDecoder(r.Body).Decode(&req); decodeErr != nil {
 		response.Error(w, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request body")
 		return
 	}
@@ -196,15 +205,16 @@ func (h *UsersHandler) ChangeUserRole(w http.ResponseWriter, r *http.Request) {
 	operatorID := jwt.GetUserID(r.Context())
 	user, err := h.userMgmtSvc.ChangeUserRole(r.Context(), userID, operatorID, req.Role)
 	if err != nil {
-		if pkgErrors.IsNotFound(err) {
+		switch {
+		case pkgErrors.IsNotFound(err):
 			response.Error(w, http.StatusNotFound, "USER_NOT_FOUND", err.Error())
-		} else if pkgErrors.IsValidation(err) {
+		case pkgErrors.IsValidation(err):
 			response.Error(w, http.StatusBadRequest, pkgErrors.ErrCodeInvalidParam, err.Error())
-		} else if errors.Is(err, pkgErrors.ErrAdminCannotDemoteLastAdmin) {
+		case errors.Is(err, pkgErrors.ErrAdminCannotDemoteLastAdmin):
 			response.Error(w, http.StatusForbidden, pkgErrors.ErrCodeAdminCannotDemoteLastAdmin, err.Error())
-		} else if errors.Is(err, pkgErrors.ErrAdminCannotModifySystem) {
+		case errors.Is(err, pkgErrors.ErrAdminCannotModifySystem):
 			response.Error(w, http.StatusForbidden, pkgErrors.ErrCodeAdminCannotModifySystem, err.Error())
-		} else {
+		default:
 			response.Error(w, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
 		}
 		return
@@ -229,6 +239,8 @@ func (h *UsersHandler) ChangeUserRole(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} response.Response "User not found"
 // @Failure 500 {object} response.Response "Internal server error"
 // @Router /api/admin/users/{id}/status [put]
+//
+//nolint:dupl // Similar structure but different business logic (status vs role)
 func (h *UsersHandler) ChangeUserStatus(w http.ResponseWriter, r *http.Request) {
 	userIDStr := chi.URLParam(r, "id")
 	userID, err := strconv.ParseInt(userIDStr, 10, 64)
@@ -238,7 +250,7 @@ func (h *UsersHandler) ChangeUserStatus(w http.ResponseWriter, r *http.Request) 
 	}
 
 	var req adminService.ChangeUserStatusRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if decodeErr := json.NewDecoder(r.Body).Decode(&req); decodeErr != nil {
 		response.Error(w, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request body")
 		return
 	}
@@ -246,15 +258,16 @@ func (h *UsersHandler) ChangeUserStatus(w http.ResponseWriter, r *http.Request) 
 	operatorID := jwt.GetUserID(r.Context())
 	user, err := h.userMgmtSvc.ChangeUserStatus(r.Context(), userID, operatorID, req.Status)
 	if err != nil {
-		if pkgErrors.IsNotFound(err) {
+		switch {
+		case pkgErrors.IsNotFound(err):
 			response.Error(w, http.StatusNotFound, "USER_NOT_FOUND", err.Error())
-		} else if pkgErrors.IsValidation(err) {
+		case pkgErrors.IsValidation(err):
 			response.Error(w, http.StatusBadRequest, pkgErrors.ErrCodeInvalidParam, err.Error())
-		} else if errors.Is(err, pkgErrors.ErrAdminCannotDisableSelf) {
+		case errors.Is(err, pkgErrors.ErrAdminCannotDisableSelf):
 			response.Error(w, http.StatusForbidden, pkgErrors.ErrCodeAdminCannotDisableSelf, err.Error())
-		} else if errors.Is(err, pkgErrors.ErrAdminCannotModifySystem) {
+		case errors.Is(err, pkgErrors.ErrAdminCannotModifySystem):
 			response.Error(w, http.StatusForbidden, pkgErrors.ErrCodeAdminCannotModifySystem, err.Error())
-		} else {
+		default:
 			response.Error(w, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
 		}
 		return
@@ -289,15 +302,16 @@ func (h *UsersHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	operatorID := jwt.GetUserID(r.Context())
 	err = h.userMgmtSvc.DeleteUser(r.Context(), userID, operatorID)
 	if err != nil {
-		if pkgErrors.IsNotFound(err) {
+		switch {
+		case pkgErrors.IsNotFound(err):
 			response.Error(w, http.StatusNotFound, "USER_NOT_FOUND", err.Error())
-		} else if errors.Is(err, pkgErrors.ErrAdminCannotDeleteSelf) {
+		case errors.Is(err, pkgErrors.ErrAdminCannotDeleteSelf):
 			response.Error(w, http.StatusForbidden, pkgErrors.ErrCodeAdminCannotDeleteSelf, err.Error())
-		} else if errors.Is(err, pkgErrors.ErrAdminCannotDeleteLastAdmin) {
+		case errors.Is(err, pkgErrors.ErrAdminCannotDeleteLastAdmin):
 			response.Error(w, http.StatusForbidden, pkgErrors.ErrCodeAdminCannotDeleteLastAdmin, err.Error())
-		} else if errors.Is(err, pkgErrors.ErrAdminCannotModifySystem) {
+		case errors.Is(err, pkgErrors.ErrAdminCannotModifySystem):
 			response.Error(w, http.StatusForbidden, pkgErrors.ErrCodeAdminCannotModifySystem, err.Error())
-		} else {
+		default:
 			response.Error(w, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
 		}
 		return

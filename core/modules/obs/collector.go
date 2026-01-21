@@ -1,3 +1,4 @@
+// Package obs provides observability features including metrics collection and exposure.
 package obs
 
 import (

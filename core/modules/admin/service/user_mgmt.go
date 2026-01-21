@@ -190,19 +190,19 @@ func (s *UserMgmtService) CreateUser(ctx context.Context, req *CreateUserRequest
 	var generatedPassword string
 	pwd := req.Password
 	if pwd == "" {
-		var err error
-		pwd, err = password.GenerateRandomPassword(16)
-		if err != nil {
+		var genErr error
+		pwd, genErr = password.GenerateRandomPassword(16)
+		if genErr != nil {
 			logger.Error("Failed to generate password",
-				logger.Field{Key: "error", Value: err.Error()})
-			return nil, "", errors.Wrap(err, errors.ErrCodeInternalError, "Failed to generate password")
+				logger.Field{Key: "error", Value: genErr.Error()})
+			return nil, "", errors.Wrap(genErr, errors.ErrCodeInternalError, "Failed to generate password")
 		}
 		generatedPassword = pwd // Save for return
 	}
 
 	// Validate password strength
-	if err := password.Validate(pwd); err != nil {
-		return nil, "", errors.Wrap(err, errors.ErrCodeInvalidParam, "Password does not meet requirements")
+	if validateErr := password.Validate(pwd); validateErr != nil {
+		return nil, "", errors.Wrap(validateErr, errors.ErrCodeInvalidParam, "Password does not meet requirements")
 	}
 
 	// Hash password
@@ -263,7 +263,7 @@ func (s *UserMgmtService) ChangeUserRole(ctx context.Context, targetUserID, oper
 	}
 	defer func() {
 		if r := recover(); r != nil {
-			tx.Rollback()
+			_ = tx.Rollback() //nolint:errcheck // Rollback on panic is best-effort
 			panic(r)
 		}
 	}()
@@ -273,7 +273,7 @@ func (s *UserMgmtService) ChangeUserRole(ctx context.Context, targetUserID, oper
 		Where(user.ID(targetUserID), user.DeletedAtIsNil()).
 		Only(ctx)
 	if err != nil {
-		tx.Rollback()
+		tx.Rollback() //nolint:errcheck // Error already being returned
 		if ent.IsNotFound(err) {
 			return nil, errors.New(errors.ErrCodeNotFound, "User not found")
 		}
@@ -285,24 +285,24 @@ func (s *UserMgmtService) ChangeUserRole(ctx context.Context, targetUserID, oper
 
 	// Prevent modifying system users
 	if targetUser.IsSystem {
-		tx.Rollback()
+		tx.Rollback() //nolint:errcheck // Error already being returned
 		return nil, errors.ErrAdminCannotModifySystem
 	}
 
 	// If demoting from platform_admin, check if this is the last admin
 	if targetUser.Role == admin.RolePlatformAdmin && newRole != admin.RolePlatformAdmin {
-		adminCount, err := tx.User.Query().
+		adminCount, countErr := tx.User.Query().
 			Where(user.RoleEQ(admin.RolePlatformAdmin), user.DeletedAtIsNil()).
 			Count(ctx)
-		if err != nil {
-			tx.Rollback()
+		if countErr != nil {
+			tx.Rollback() //nolint:errcheck // Error already being returned
 			logger.Error("Failed to count platform admins",
-				logger.Field{Key: "error", Value: err.Error()})
-			return nil, errors.Wrap(err, errors.ErrCodeInternalError, "Failed to verify admin count")
+				logger.Field{Key: "error", Value: countErr.Error()})
+			return nil, errors.Wrap(countErr, errors.ErrCodeInternalError, "Failed to verify admin count")
 		}
 
 		if adminCount <= 1 {
-			tx.Rollback()
+			tx.Rollback() //nolint:errcheck // Error already being returned
 			return nil, errors.ErrAdminCannotDemoteLastAdmin
 		}
 	}
@@ -313,7 +313,7 @@ func (s *UserMgmtService) ChangeUserRole(ctx context.Context, targetUserID, oper
 		AddTokenVersion(1).
 		Save(ctx)
 	if err != nil {
-		tx.Rollback()
+		tx.Rollback() //nolint:errcheck // Error already being returned
 		logger.Error("Failed to update user role",
 			logger.Field{Key: "user_id", Value: targetUserID},
 			logger.Field{Key: "new_role", Value: newRole},
@@ -405,7 +405,7 @@ func (s *UserMgmtService) DeleteUser(ctx context.Context, targetUserID, operator
 	}
 	defer func() {
 		if r := recover(); r != nil {
-			tx.Rollback()
+			_ = tx.Rollback() //nolint:errcheck // Rollback on panic is best-effort
 			panic(r)
 		}
 	}()
@@ -415,7 +415,7 @@ func (s *UserMgmtService) DeleteUser(ctx context.Context, targetUserID, operator
 		Where(user.ID(targetUserID), user.DeletedAtIsNil()).
 		Only(ctx)
 	if err != nil {
-		tx.Rollback()
+		tx.Rollback() //nolint:errcheck // Error already being returned
 		if ent.IsNotFound(err) {
 			return errors.New(errors.ErrCodeNotFound, "User not found")
 		}
@@ -427,24 +427,24 @@ func (s *UserMgmtService) DeleteUser(ctx context.Context, targetUserID, operator
 
 	// Prevent deleting system users
 	if targetUser.IsSystem {
-		tx.Rollback()
+		tx.Rollback() //nolint:errcheck // Error already being returned
 		return errors.ErrAdminCannotModifySystem
 	}
 
 	// If deleting a platform_admin, check if this is the last admin
 	if targetUser.Role == admin.RolePlatformAdmin {
-		adminCount, err := tx.User.Query().
+		countResult, countErr := tx.User.Query().
 			Where(user.RoleEQ(admin.RolePlatformAdmin), user.DeletedAtIsNil()).
 			Count(ctx)
-		if err != nil {
-			tx.Rollback()
+		if countErr != nil {
+			tx.Rollback() //nolint:errcheck // Error already being returned
 			logger.Error("Failed to count platform admins",
-				logger.Field{Key: "error", Value: err.Error()})
-			return errors.Wrap(err, errors.ErrCodeInternalError, "Failed to verify admin count")
+				logger.Field{Key: "error", Value: countErr.Error()})
+			return errors.Wrap(countErr, errors.ErrCodeInternalError, "Failed to verify admin count")
 		}
 
-		if adminCount <= 1 {
-			tx.Rollback()
+		if countResult <= 1 {
+			tx.Rollback() //nolint:errcheck // Error already being returned
 			return errors.ErrAdminCannotDeleteLastAdmin
 		}
 	}
@@ -457,7 +457,7 @@ func (s *UserMgmtService) DeleteUser(ctx context.Context, targetUserID, operator
 		AddTokenVersion(1).
 		Save(ctx)
 	if err != nil {
-		tx.Rollback()
+		tx.Rollback() //nolint:errcheck // Error already being returned
 		logger.Error("Failed to delete user",
 			logger.Field{Key: "user_id", Value: targetUserID},
 			logger.Field{Key: "error", Value: err.Error()})

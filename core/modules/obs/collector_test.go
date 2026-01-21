@@ -38,18 +38,20 @@ func TestMetricsCollector_CollectUserMetrics(t *testing.T) {
 			SetStatus(1) // active
 
 		// Set different roles
-		if i < 2 {
+		switch {
+		case i < 2:
 			builder = builder.SetRole("platform_admin")
-		} else {
+		default:
 			builder = builder.SetRole("platform_user")
 		}
 
 		// Set creation times
-		if i < 3 {
+		switch {
+		case i < 3:
 			builder = builder.SetCreatedAt(today) // today
-		} else if i < 8 {
+		case i < 8:
 			builder = builder.SetCreatedAt(sevenDaysAgo.Add(time.Hour * 24)) // within 7 days
-		} else {
+		default:
 			builder = builder.SetCreatedAt(sevenDaysAgo.Add(-time.Hour * 48)) // older
 		}
 

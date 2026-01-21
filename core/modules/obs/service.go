@@ -41,8 +41,9 @@ func (s *MetricsService) GetUserMetrics(ctx context.Context) (*UserMetrics, erro
 	}
 
 	// Store in cache
-	if data, err := json.Marshal(metrics); err == nil {
-		_ = s.cache.Set(ctx, CacheKeyUserMetrics, string(data), MetricsCacheTTL)
+	if data, marshalErr := json.Marshal(metrics); marshalErr == nil {
+		// Ignore cache write errors - cache is optional
+		_ = s.cache.Set(ctx, CacheKeyUserMetrics, string(data), MetricsCacheTTL) //nolint:errcheck // Cache write is best-effort
 	}
 
 	metrics.CacheHit = false
@@ -72,8 +73,8 @@ func (s *MetricsService) GetAuthMetrics(ctx context.Context) (*AuthMetrics, erro
 	}
 
 	// Store in cache
-	if data, err := json.Marshal(metrics); err == nil {
-		_ = s.cache.Set(ctx, CacheKeyAuthMetrics, string(data), MetricsCacheTTL)
+	if data, marshalErr := json.Marshal(metrics); marshalErr == nil {
+		_ = s.cache.Set(ctx, CacheKeyAuthMetrics, string(data), MetricsCacheTTL) //nolint:errcheck // Cache write is best-effort
 	}
 
 	metrics.CacheHit = false
@@ -98,8 +99,8 @@ func (s *MetricsService) GetPerformanceMetrics(ctx context.Context) (*Performanc
 	}
 
 	// Store in cache
-	if data, err := json.Marshal(metrics); err == nil {
-		_ = s.cache.Set(ctx, CacheKeyPerfMetrics, string(data), MetricsCacheTTL)
+	if data, marshalErr := json.Marshal(metrics); marshalErr == nil {
+		_ = s.cache.Set(ctx, CacheKeyPerfMetrics, string(data), MetricsCacheTTL) //nolint:errcheck // Cache write is best-effort
 	}
 
 	metrics.CacheHit = false
@@ -124,8 +125,8 @@ func (s *MetricsService) GetAllMetrics(ctx context.Context) (*AllMetrics, error)
 	}
 
 	// Store in cache
-	if data, err := json.Marshal(metrics); err == nil {
-		_ = s.cache.Set(ctx, CacheKeyAllMetrics, string(data), MetricsCacheTTL)
+	if data, marshalErr := json.Marshal(metrics); marshalErr == nil {
+		_ = s.cache.Set(ctx, CacheKeyAllMetrics, string(data), MetricsCacheTTL) //nolint:errcheck // Cache write is best-effort
 	}
 
 	metrics.CacheHit = false
