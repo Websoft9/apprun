@@ -1,0 +1,77 @@
+# Metrics Storage Configuration
+# This file configures the metrics collection and storage backend
+
+storage:
+  # Backend type: "mock", "badger", or "prometheus"
+  # - mock: In-memory storage for testing (no persistence)
+  # - badger: Embedded key-value store for lightweight deployments
+  # - prometheus: Enterprise-grade time-series database (requires external Prometheus)
+  backend: badger
+  
+  # Operation timeout for storage operations
+  # Format: duration string (e.g., "5s", "10s", "1m")
+  timeout: 5s
+  
+  # Retention period for metrics (BadgerDB only)
+  # Metrics older than this will be automatically purged to prevent disk space issues
+  # Format: duration string (e.g., "24h", "7d", "168h")
+  # Default: 24h (1 day)
+  # Warning: Values > 7d may consume significant disk space
+  retention: 24h
+  
+  # Retry configuration for failed operations
+  retry:
+    # Enable automatic retry on transient failures
+    enabled: true
+    
+    # Maximum number of retry attempts
+    max_attempts: 3
+    
+    # Backoff strategy: "exponential" or "linear"
+    # - exponential: 1s, 2s, 4s, 8s... (recommended for rate-limited APIs)
+    # - linear: 1s, 2s, 3s, 4s... (simpler, predictable delays)
+    backoff: exponential
+  
+  # Backend-specific settings (optional)
+  # These settings are passed directly to the storage backend
+  
+  # BadgerDB settings:
+  path: ./data/metrics              # Directory for BadgerDB files
+  sync_writes: false                # Sync writes to disk (slower but safer)
+  
+  # Prometheus settings (when backend: prometheus):
+  # url: "http://prometheus:9090"   # Prometheus server URL
+  # username: ""                    # Basic auth username (optional)
+  # password: ""                    # Basic auth password (optional)
+
+# Environment Variable Overrides:
+# You can override these settings using environment variables:
+#
+# METRICS_STORAGE_BACKEND=badger     # Override backend type
+# METRICS_STORAGE_TIMEOUT=10s        # Override timeout
+# METRICS_STORAGE_RETENTION=48h      # Override retention period
+#
+# Example:
+#   export METRICS_STORAGE_BACKEND=prometheus
+#   export METRICS_STORAGE_RETENTION=7d
+
+# Configuration Priority:
+# 1. Environment variables (highest)
+# 2. This config file
+# 3. Built-in defaults (lowest)
+
+# Recommendations by Deployment Type:
+#
+# Development/Testing:
+#   backend: mock
+#   retention: 1h
+#
+# Small Production (<1000 users):
+#   backend: badger
+#   retention: 24h
+#   path: /var/lib/apprun/metrics
+#
+# Large Production (>1000 users):
+#   backend: prometheus
+#   url: http://prometheus:9090
+#   retention: 15d (configured in Prometheus)

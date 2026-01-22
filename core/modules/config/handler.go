@@ -24,9 +24,13 @@ type Handler struct {
 
 // NewHandler 创建处理器实例
 func NewHandler(service *Service) *Handler {
+	var dbClient *ent.Client
+	if repo, ok := service.provider.(*Repository); ok {
+		dbClient = repo.client
+	}
 	return &Handler{
 		service:  service,
-		dbClient: service.provider.(*Repository).client,
+		dbClient: dbClient,
 	}
 }
 
@@ -122,7 +126,7 @@ func (h *Handler) UpdateConfig(w http.ResponseWriter, r *http.Request) {
 	userID := jwtpkg.GetUserID(ctx)
 
 	// 获取旧值用于审计日志
-	oldValue, _, _ := h.service.GetConfigValue(ctx, req.Key)
+	oldValue, _, _ := h.service.GetConfigValue(ctx, req.Key) //nolint:errcheck // Old value is optional for audit
 
 	// 更新配置
 	if err := h.service.UpdateConfig(ctx, req.Key, req.Value); err != nil {
@@ -196,7 +200,7 @@ func (h *Handler) DeleteConfig(w http.ResponseWriter, r *http.Request) {
 	userID := jwtpkg.GetUserID(ctx)
 
 	// 获取旧值用于审计日志
-	oldValue, _, _ := h.service.GetConfigValue(ctx, key)
+	oldValue, _, _ := h.service.GetConfigValue(ctx, key) //nolint:errcheck // Old value is optional for audit
 
 	if err := h.service.DeleteDynamicConfig(ctx, key); err != nil {
 		response.AppErrorWithRequest(w, r, err)
@@ -241,10 +245,11 @@ func (h *Handler) createAuditLog(ctx context.Context, userID int64, action, key,
 	changes := map[string]interface{}{
 		"key": key,
 	}
-	if action == "update" {
+	switch action {
+	case "update":
 		changes["old_value"] = oldValue
 		changes["new_value"] = newValue
-	} else if action == "delete" {
+	case "delete":
 		changes["old_value"] = oldValue
 	}
 

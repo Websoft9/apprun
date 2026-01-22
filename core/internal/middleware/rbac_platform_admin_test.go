@@ -87,29 +87,29 @@ func TestStory554PermissionEnforcement(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("Admin has platform:user:manage", func(t *testing.T) {
-		allowed, err := rbac.CheckPermission(adminUser.ID, 0, "platform:user", "manage")
+		allowed, err := rbac.CheckPermission(adminUser.ID, 0, "platform:user", "manage") //nolint:govet // Shadow in test is acceptable
 		require.NoError(t, err)
 		assert.True(t, allowed)
 		t.Log("✅ Admin has platform:user:manage permission")
 	})
 
 	t.Run("Admin has platform:audit:read", func(t *testing.T) {
-		allowed, err := rbac.CheckPermission(adminUser.ID, 0, "platform:audit", "read")
+		allowed, err := rbac.CheckPermission(adminUser.ID, 0, "platform:audit", "read") //nolint:govet // Shadow in test is acceptable
 		require.NoError(t, err)
 		assert.True(t, allowed)
 		t.Log("✅ Admin has platform:audit:read permission")
 	})
 
 	t.Run("Admin has platform:rbac:manage", func(t *testing.T) {
-		allowed, err := rbac.CheckPermission(adminUser.ID, 0, "platform:rbac", "manage")
+		allowed, err := rbac.CheckPermission(adminUser.ID, 0, "platform:rbac", "manage") //nolint:govet // Shadow in test is acceptable
 		require.NoError(t, err)
 		assert.True(t, allowed)
 		t.Log("✅ Admin has platform:rbac:manage permission")
 	})
 
 	t.Run("Admin has wildcard access", func(t *testing.T) {
-		allowed, err := rbac.CheckPermission(adminUser.ID, 0, "any_resource", "any_action")
-		require.NoError(t, err)
+		allowed, err2 := rbac.CheckPermission(adminUser.ID, 0, "any_resource", "any_action")
+		require.NoError(t, err2)
 		assert.True(t, allowed)
 		t.Log("✅ Wildcard access works")
 	})

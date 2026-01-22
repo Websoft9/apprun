@@ -20,8 +20,8 @@
 ## 🎯 Acceptance Criteria
 
 ### Core Requirements
-- [x] Storage abstraction interface defined in `pkg/metrics/storage/interface.go`
-- [x] Repository pattern implemented in `pkg/metrics/repository.go`
+- [x] Storage abstraction interface defined in `pkg/metricstore/storage/interface.go`
+- [x] Repository pattern implemented in `pkg/metricstore/repository.go`
 - [x] Factory function `NewStorage()` creates correct adapter: BadgerDB when `backend='badger'`, Prometheus when `backend='prometheus'`
 - [x] Configuration loaded from `config/metrics.yaml` with env var override `METRICS_STORAGE_BACKEND`
 - [x] Mock backend passes all interface method tests (Store, Query, Delete, Health, Close)
@@ -41,7 +41,7 @@
 
 ### Documentation
 - [x] Architecture decision record (ADR) for anti-corruption layer design in `docs/architecture/adr/`
-- [x] Interface documentation with usage examples in `pkg/metrics/storage/README.md`
+- [x] Interface documentation with usage examples in `pkg/metricstore/storage/README.md`
 - [x] Backend adapter implementation guide
 - [x] Migration strategy documented for switching backends
 
@@ -119,7 +119,7 @@ metrics:
 
 ### Storage Interface
 ```go
-// filepath: pkg/metrics/storage/interface.go
+// filepath: pkg/metricstore/storage/interface.go
 package storage
 
 import (
@@ -163,7 +163,7 @@ func NewStorage(cfg Config) (Storage, error) {
 
 ### Repository Pattern
 ```go
-// filepath: pkg/metrics/repository.go
+// filepath: pkg/metricstore/repository.go
 package metrics
 
 type Repository struct {
@@ -205,7 +205,7 @@ metrics:
 ## 🔧 Implementation Steps
 
 1. **Define Storage Interface** (1 SP)
-   - Create interface in `pkg/metrics/storage/interface.go`
+   - Create interface in `pkg/metricstore/storage/interface.go`
    - Define Metric struct and Storage interface methods
    - Add factory function for backend selection
 
@@ -220,7 +220,7 @@ metrics:
    - Environment variable overrides
 
 4. **Create Repository Layer** (1 SP)
-   - Implement repository pattern in `pkg/metrics/repository.go`
+   - Implement repository pattern in `pkg/metricstore/repository.go`
    - Add business logic methods
    - Error handling and retry logic
 
@@ -234,8 +234,8 @@ metrics:
 ## ✅ Tasks/Subtasks
 
 ### Task 1: Define Storage Interface (1 SP)
-- [x] Create `core/pkg/metrics/storage/` directory
-- [x] Create `core/pkg/metrics/storage/interface.go`
+- [x] Create `core/pkg/metricstore/storage/` directory
+- [x] Create `core/pkg/metricstore/storage/interface.go`
 - [x] Define `Metric` struct with Name, Value, Tags, Timestamp fields
 - [x] Define `Storage` interface with 5 methods: Store, Query, Delete, Health, Close
 - [x] Add `Config` struct for backend configuration
@@ -248,13 +248,13 @@ metrics:
   - `ErrCodeMetricsStorageUnavailable`
   - `ErrCodeMetricsStorageInvalidConfig`
   - `ErrCodeMetricsStorageTimeout`
-- [x] Create helper functions in `core/pkg/metrics/storage/errors.go`:
+- [x] Create helper functions in `core/pkg/metricstore/storage/errors.go`:
   - `ErrNotFound(key string) error`
   - `ErrUnavailable(backend string, cause error) error`
   - `ErrInvalidConfig(field string, reason string) error`
 
 ### Task 3: Implement Mock Backend (1 SP)
-- [x] Create `core/pkg/metrics/storage/mock/mock.go` (implemented as `mock.go` directly)
+- [x] Create `core/pkg/metricstore/storage/mock/mock.go` (implemented as `mock.go` directly)
 - [x] Implement in-memory storage using `sync.RWMutex` for thread-safety
 - [x] Implement all `Storage` interface methods
 - [x] Support time-range queries in `Query()` method
@@ -263,7 +263,7 @@ metrics:
 
 ### Task 4: Add Configuration Support (1 SP)
 - [x] Create `core/config/metrics.yaml` with backend configuration
-- [x] Create `core/pkg/metrics/config.go` with Config struct
+- [x] Create `core/pkg/metricstore/config.go` with Config struct
 - [x] Implement config loading with defaults
 - [x] Support environment variable override `METRICS_STORAGE_BACKEND`
 - [x] Register config with `pkg/config` registry under namespace "metrics" (Viper integration)
@@ -271,7 +271,7 @@ metrics:
 - [x] Add config loading tests
 
 ### Task 5: Implement Repository Layer (1 SP)
-- [x] Create `core/pkg/metrics/repository.go`
+- [x] Create `core/pkg/metricstore/repository.go`
 - [x] Define `Repository` struct with `storage.Storage` field
 - [x] Implement `NewRepository(storage storage.Storage) *Repository`
 - [x] Implement `RecordMetric()` method (wraps `Store()`)
@@ -289,7 +289,7 @@ metrics:
 - [x] Write factory tests with mock backend
 
 ### Task 7: Documentation (1 SP)
-- [x] Write `core/pkg/metrics/storage/README.md` with:
+- [x] Write `core/pkg/metricstore/storage/README.md` with:
   - Package overview
   - Interface documentation
   - Usage examples (with mock)
@@ -425,7 +425,7 @@ func TestStorageInterface(t *testing.T) {
 - [ ] Error codes registered in `pkg/errors/codes.go`
 
 ### Documentation
-- [ ] `pkg/metrics/storage/README.md` complete with examples
+- [ ] `pkg/metricstore/storage/README.md` complete with examples
 - [ ] ADR published: `docs/architecture/adr/009-metrics-storage-acl.md`
 - [ ] Godoc comments for all exported types (100% coverage)
 - [ ] Configuration schema documented in README

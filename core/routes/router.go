@@ -19,11 +19,11 @@ import (
 	authRepository "apprun/modules/auth/repository"
 	authService "apprun/modules/auth/service"
 	configModule "apprun/modules/config"
-	"apprun/modules/obs"
+	"apprun/modules/metrics"
 	"apprun/pkg/cache"
 	"apprun/pkg/logger"
-	"apprun/pkg/metrics"
-	"apprun/pkg/metrics/storage"
+	"apprun/pkg/metricstore"
+	"apprun/pkg/metricstore/storage"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -72,7 +72,9 @@ func SetupRoutes(dbClient *ent.Client, configService *configModule.Service, cach
 	}
 
 	// Health check at root (documented in Swagger)
-	r.Get("/health", handlers.HealthHandler)
+	// Initialize comprehensive health handler with all dependencies
+	healthHandler := handlers.NewHealthHandler(dbClient, cacheClient, true) //nolint:gocritic // Comment is informative
+	r.Get("/health", healthHandler.Check)
 
 	// Prometheus metrics endpoint
 	r.Handle("/metrics", promhttp.Handler())
@@ -322,26 +324,26 @@ func RegisterAdminUserRoutes(r chi.Router, dbClient *ent.Client) {
 // RegisterMetricsRoutes registers metrics routes (Story 9.1 - Observability)
 func RegisterMetricsRoutes(r chi.Router, dbClient *ent.Client, cacheClient cache.Client) {
 	// Initialize metrics storage repository (Story 9.1 - Storage integration)
-	metricsCfg, err := metrics.LoadConfig()
+	metricsCfg, err := metricstore.LoadConfig()
 	if err != nil {
 		// Log error but continue - metrics will work without persistence
 		logger.L().Warn("Failed to load metrics config, persistence disabled", logger.Field{Key: "error", Value: err})
 		metricsCfg = nil
 	}
 
-	var metricsRepo *metrics.Repository
+	var metricsRepo *metricstore.Repository
 	if metricsCfg != nil {
 		storageBackend, err := storage.NewStorage(metricsCfg.ToStorageConfig())
 		if err != nil {
 			logger.L().Warn("Failed to initialize metrics storage, persistence disabled", logger.Field{Key: "error", Value: err})
 		} else {
-			metricsRepo = metrics.NewRepository(storageBackend, metricsCfg)
+			metricsRepo = metricstore.NewRepository(storageBackend, metricsCfg)
 		}
 	}
 
-	// Initialize metrics service with repository
-	metricsService := obs.NewMetricsService(dbClient, cacheClient, metricsRepo)
-	metricsHandler := obs.NewMetricsHandler(metricsService)
+	// Initialize metrics service and handlers
+	metricsService := metrics.NewMetricsService(dbClient, cacheClient, metricsRepo)
+	metricsHandler := metrics.NewMetricsHandler(metricsService)
 
 	// JWT middleware with DB client for token version validation
 	jwtMiddleware := internalMiddleware.NewJWTMiddlewareWithDB(dbClient)
@@ -349,21 +351,21 @@ func RegisterMetricsRoutes(r chi.Router, dbClient *ent.Client, cacheClient cache
 	// Metrics routes (platform_admin only)
 	r.Route("/metrics", func(r chi.Router) {
 		// Apply rate limiting: 100 requests per minute
-		r.Use(middleware.Throttle(int(obs.MetricsRateLimitRequests)))
+		r.Use(middleware.Throttle(int(metrics.MetricsRateLimitRequests)))
 
 		// Require authentication
 		r.Use(jwtMiddleware.JWTAuth)
-		// Require platform:metrics:read permission (Story 9.1)
+		// Require platform:metrics:read permission
 		r.Use(internalMiddleware.RequirePermission("platform:metrics", "read"))
 
-		// Real-time metrics endpoints (Story 9.1)
-		r.Get("/", metricsHandler.GetAll)
-		r.Get("/users", metricsHandler.GetUsers)
-		r.Get("/system", metricsHandler.GetSystem)
-		r.Get("/performance", metricsHandler.GetPerformance)
+		// Core data endpoints (Refactored API)
+		r.Get("/snapshot", metricsHandler.GetSnapshot)                                                                   // Replaces: /, /users, /system, /performance
+		r.Get("/history", metricsHandler.GetHistory)                                                                     // Unchanged
+		r.With(internalMiddleware.RequirePermission("platform:metrics", "write")).Post("/ingest", metricsHandler.Ingest) // Moved from /storage/ingest
 
-		// Historical metrics endpoint (Story 9.1 - Storage integration)
-		r.Get("/history", metricsHandler.GetHistory)
+		// Discovery & metadata endpoints (NEW)
+		r.Get("/keys", metricsHandler.GetKeys)     // NEW: List available metric names
+		r.Get("/scopes", metricsHandler.GetScopes) // NEW: List available snapshot scopes
 	})
 }
 

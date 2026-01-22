@@ -32,7 +32,7 @@ return nil, errors.Wrap(err, errors.ErrCodeInternalError, "failed to count total
 ```
 
 **Files Modified**:
-- `core/modules/obs/collector.go` - All 9 error returns now use `errors.Wrap()`
+- `core/modules/metrics/collector.go` - All 9 error returns now use `errors.Wrap()`
 
 **Verification**:
 ```bash
@@ -62,7 +62,7 @@ response.SuccessWithRequest(w, r, metrics)
 ```
 
 **Files Modified**:
-- `core/modules/obs/handler.go` - GetAll() handler updated
+- `core/modules/metrics/handler.go` - GetAll() handler updated
 
 **Verification**:
 ```bash
@@ -93,7 +93,7 @@ r.Use(middleware.Throttle(int(obs.MetricsRateLimitRequests)))
 ```
 
 **Files Modified**:
-- `core/modules/obs/config.go` - Added rate limit constants
+- `core/modules/metrics/config.go` - Added rate limit constants
 - `core/routes/router.go` - Applied Throttle middleware
 
 **Configuration**:
@@ -134,7 +134,7 @@ func (h *MetricsHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 ```
 
 **Files Modified**:
-- `core/modules/obs/handler.go` - Added annotations to all 4 handlers
+- `core/modules/metrics/handler.go` - Added annotations to all 4 handlers
 
 **Documentation Generated**:
 - `core/docs/swagger.json` - JSON spec with metrics endpoints
@@ -163,7 +163,7 @@ func (h *MetricsHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 - `TestMetricsHandler_GetPerformance` - Tests GET /api/metrics/performance endpoint
 - `TestMetricsHandler_Caching` - Tests cache hit/miss behavior
 
-**File**: `core/modules/obs/handler_test.go`
+**File**: `core/modules/metrics/handler_test.go`
 
 **Coverage Impact**:
 - Before: 61.6%

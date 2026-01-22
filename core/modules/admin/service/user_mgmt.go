@@ -9,7 +9,7 @@ import (
 	"apprun/ent/user"
 	"apprun/internal/password"
 	admin "apprun/modules/admin"
-	"apprun/modules/obs"
+	"apprun/modules/metrics"
 	"apprun/pkg/errors"
 	"apprun/pkg/logger"
 )
@@ -241,7 +241,7 @@ func (s *UserMgmtService) CreateUser(ctx context.Context, req *CreateUserRequest
 		logger.Field{Key: "role", Value: newUser.Role})
 
 	// Metrics
-	obs.UserCreationCounter.Inc()
+	metrics.UserCreationCounter.Inc()
 
 	return newUser, generatedPassword, nil
 }
@@ -335,7 +335,7 @@ func (s *UserMgmtService) ChangeUserRole(ctx context.Context, targetUserID, oper
 		logger.Field{Key: "operator_id", Value: operatorUserID})
 
 	// Metrics: token revoked due to role change
-	obs.TokenRevocationCounter.WithLabelValues("role_change").Inc()
+	metrics.TokenRevocationCounter.WithLabelValues("role_change").Inc()
 
 	return updatedUser, nil
 }
@@ -383,7 +383,7 @@ func (s *UserMgmtService) ChangeUserStatus(ctx context.Context, targetUserID, op
 		logger.Field{Key: "operator_id", Value: operatorUserID})
 
 	// Metrics: token revoked due to status change
-	obs.TokenRevocationCounter.WithLabelValues("status_change").Inc()
+	metrics.TokenRevocationCounter.WithLabelValues("status_change").Inc()
 
 	return updatedUser, nil
 }
@@ -476,8 +476,8 @@ func (s *UserMgmtService) DeleteUser(ctx context.Context, targetUserID, operator
 		logger.Field{Key: "operator_id", Value: operatorUserID})
 
 	// Metrics
-	obs.UserDeletionCounter.WithLabelValues("soft_delete").Inc()
-	obs.TokenRevocationCounter.WithLabelValues("deletion").Inc()
+	metrics.UserDeletionCounter.WithLabelValues("soft_delete").Inc()
+	metrics.TokenRevocationCounter.WithLabelValues("deletion").Inc()
 
 	return nil
 }

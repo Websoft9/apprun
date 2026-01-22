@@ -582,7 +582,18 @@ docker-compose restart apprun
 ```bash
 # 服务健康检查端点
 curl http://localhost:8080/health
-# Response: {"status":"ok","database":"connected","redis":"connected"}
+# Response 示例（所有组件健康）:
+# {
+#   "status": "healthy",
+#   "timestamp": "2026-01-22T10:30:00Z",
+#   "service": "apprun",
+#   "version": "1.0.0",
+#   "components": {
+#     "database": {"status": "healthy", "latency_ms": 5, "message": "Connected to PostgreSQL"},
+#     "cache": {"status": "healthy", "latency_ms": 2, "message": "Connected to Redis"},
+#     "metrics_storage": {"status": "healthy", "latency_ms": 1, "message": "Metrics storage operational"}
+#   }
+# }
 
 # Prometheus 指标
 curl http://localhost:8080/metrics

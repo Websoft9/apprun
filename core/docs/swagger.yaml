@@ -333,57 +333,52 @@ definitions:
     required:
     - role
     type: object
-  handlers.HealthResponse:
+  health.ComponentHealth:
     properties:
+      latency_ms:
+        example: 5
+        type: integer
+      message:
+        example: Connected to PostgreSQL
+        type: string
+      status:
+        allOf:
+        - $ref: '#/definitions/health.Status'
+        example: healthy
+    type: object
+  health.HealthReport:
+    properties:
+      components:
+        additionalProperties:
+          $ref: '#/definitions/health.ComponentHealth'
+        type: object
       service:
         example: apprun
         type: string
       status:
-        example: ok
-        type: string
-    type: object
-  obs.AllMetrics:
-    properties:
-      active_users:
-        type: integer
-      admin_users:
-        type: integer
-      api_error_rate:
-        type: number
-      api_requests_total:
-        type: integer
-      api_response_time_p95:
-        type: integer
-      banned_users:
-        type: integer
-      cache_hit:
-        type: boolean
-      cpu_usage_percent:
-        type: number
-      disk_usage_percent:
-        type: number
-      failed_login_attempts:
-        type: integer
-      login_attempts_total:
-        type: integer
-      login_success_rate:
-        type: number
-      memory_usage_mb:
-        type: integer
-      new_users_today:
-        type: integer
+        allOf:
+        - $ref: '#/definitions/health.Status'
+        example: healthy
       timestamp:
+        example: "2026-01-22T10:30:00Z"
         type: string
-      token_issued_total:
-        type: integer
-      total_users:
-        type: integer
-      uptime_seconds:
-        type: integer
-      user_registrations_last_7_days:
-        type: integer
+      version:
+        example: 1.0.0
+        type: string
     type: object
-  obs.HealthResponse:
+  health.Status:
+    enum:
+    - healthy
+    - degraded
+    - unhealthy
+    - unknown
+    type: string
+    x-enum-varnames:
+    - StatusHealthy
+    - StatusDegraded
+    - StatusUnhealthy
+    - StatusUnknown
+  metrics.HealthResponse:
     properties:
       backend:
         type: string
@@ -397,7 +392,7 @@ definitions:
       status:
         type: string
     type: object
-  obs.HistoryResponse:
+  metrics.HistoryResponse:
     properties:
       count:
         type: integer
@@ -407,12 +402,27 @@ definitions:
         type: boolean
       metrics:
         items:
-          $ref: '#/definitions/obs.MetricPoint'
+          $ref: '#/definitions/metrics.MetricPoint'
         type: array
       start:
         type: string
     type: object
-  obs.IngestRequest:
+  metrics.IngestBatchResponse:
+    properties:
+      failed:
+        type: integer
+      failed_metrics:
+        items:
+          type: string
+        type: array
+      ingested:
+        type: integer
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+  metrics.IngestRequest:
     properties:
       name:
         type: string
@@ -425,7 +435,7 @@ definitions:
       value:
         type: number
     type: object
-  obs.IngestResponse:
+  metrics.IngestResponse:
     properties:
       message:
         type: string
@@ -434,7 +444,16 @@ definitions:
       success:
         type: boolean
     type: object
-  obs.MetricData:
+  metrics.KeysResponse:
+    properties:
+      count:
+        type: integer
+      keys:
+        items:
+          $ref: '#/definitions/metrics.MetricKey'
+        type: array
+    type: object
+  metrics.MetricData:
     properties:
       name:
         type: string
@@ -447,7 +466,22 @@ definitions:
       value:
         type: number
     type: object
-  obs.MetricPoint:
+  metrics.MetricKey:
+    properties:
+      description:
+        description: Human-readable description
+        type: string
+      name:
+        description: e.g., "user_count_total"
+        type: string
+      source:
+        description: '"system" or "user"'
+        type: string
+      unit:
+        description: e.g., "count", "percent", "bytes"
+        type: string
+    type: object
+  metrics.MetricPoint:
     properties:
       name:
         type: string
@@ -460,25 +494,7 @@ definitions:
       value:
         type: number
     type: object
-  obs.PerformanceMetrics:
-    properties:
-      api_error_rate:
-        description: percentage
-        type: number
-      api_requests_total:
-        type: integer
-      api_response_time_p95:
-        description: milliseconds
-        type: integer
-      cache_hit:
-        type: boolean
-      database_query_duration_avg:
-        description: milliseconds
-        type: number
-      timestamp:
-        type: string
-    type: object
-  obs.QueryResponse:
+  metrics.QueryResponse:
     properties:
       count:
         type: integer
@@ -488,44 +504,47 @@ definitions:
         type: boolean
       metrics:
         items:
-          $ref: '#/definitions/obs.MetricData'
+          $ref: '#/definitions/metrics.MetricData'
         type: array
       start:
         type: string
     type: object
-  obs.SystemMetrics:
+  metrics.ScopeDefinition:
     properties:
-      cpu_usage_percent:
-        type: number
-      disk_usage_percent:
-        type: number
-      goroutines:
-        type: integer
-      memory_usage_mb:
-        type: integer
-      timestamp:
+      description:
+        description: Human-readable description
         type: string
-      uptime_seconds:
-        type: integer
+      metrics:
+        description: Metric names included in this scope
+        items:
+          type: string
+        type: array
+      scope:
+        description: e.g., "system", "users"
+        type: string
     type: object
-  obs.UserMetrics:
+  metrics.ScopesResponse:
     properties:
-      active_users:
+      count:
         type: integer
-      admin_users:
-        type: integer
-      banned_users:
-        type: integer
+      scopes:
+        items:
+          $ref: '#/definitions/metrics.ScopeDefinition'
+        type: array
+    type: object
+  metrics.SnapshotResponse:
+    properties:
       cache_hit:
         type: boolean
-      new_users_today:
-        type: integer
+      metrics:
+        additionalProperties: true
+        description: Dynamic metrics based on scope
+        type: object
+      scope:
+        description: '"system", "users", "all"'
+        type: string
       timestamp:
         type: string
-      total_users:
-        type: integer
-      user_registrations_last_7_days:
-        type: integer
     type: object
   response.ErrorInfo:
     properties:
@@ -1566,38 +1585,6 @@ paths:
       summary: i18n Demo
       tags:
       - demo
-  /api/metrics:
-    get:
-      description: Get all platform metrics including users, system, auth, and performance
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Success
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  $ref: '#/definitions/obs.AllMetrics'
-              type: object
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.Response'
-        "403":
-          description: Forbidden - requires platform_admin role
-          schema:
-            $ref: '#/definitions/response.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/response.Response'
-      security:
-      - BearerAuth: []
-      summary: Get All Metrics
-      tags:
-      - metrics
   /api/metrics/history:
     get:
       description: Get historical metrics data from storage (Story 9.1 - Storage integration)
@@ -1635,7 +1622,7 @@ paths:
             - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/obs.HistoryResponse'
+                  $ref: '#/definitions/metrics.HistoryResponse'
               type: object
         "400":
           description: Bad Request - Missing metric name
@@ -1658,10 +1645,20 @@ paths:
       summary: Get Historical Metrics
       tags:
       - metrics
-  /api/metrics/performance:
-    get:
-      description: Get application performance metrics including response times and
-        throughput
+  /api/metrics/ingest:
+    post:
+      consumes:
+      - application/json
+      description: Batch ingest metrics with optional tags and timestamps
+      parameters:
+      - description: Array of metric data
+        in: body
+        name: metrics
+        required: true
+        schema:
+          items:
+            $ref: '#/definitions/metrics.IngestRequest'
+          type: array
       produces:
       - application/json
       responses:
@@ -1672,7 +1669,52 @@ paths:
             - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/obs.PerformanceMetrics'
+                  $ref: '#/definitions/metrics.IngestBatchResponse'
+              type: object
+        "400":
+          description: Bad Request - Invalid metrics format
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: Forbidden - requires write permission
+          schema:
+            $ref: '#/definitions/response.Response'
+        "429":
+          description: Too Many Requests
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Ingest Metrics
+      tags:
+      - metrics
+  /api/metrics/keys:
+    get:
+      description: List all available metric names for history queries
+      parameters:
+      - description: 'Filter by source: system or user'
+        in: query
+        name: source
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/metrics.KeysResponse'
               type: object
         "401":
           description: Unauthorized
@@ -1688,12 +1730,13 @@ paths:
             $ref: '#/definitions/response.Response'
       security:
       - BearerAuth: []
-      summary: Get Performance Metrics
+      summary: Get Metric Keys
       tags:
       - metrics
-  /api/metrics/system:
+  /api/metrics/scopes:
     get:
-      description: Get system health metrics including CPU, memory, and disk usage
+      description: List all available scopes for snapshot queries and their included
+        metrics
       produces:
       - application/json
       responses:
@@ -1704,7 +1747,7 @@ paths:
             - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/obs.SystemMetrics'
+                  $ref: '#/definitions/metrics.ScopesResponse'
               type: object
         "401":
           description: Unauthorized
@@ -1720,13 +1763,19 @@ paths:
             $ref: '#/definitions/response.Response'
       security:
       - BearerAuth: []
-      summary: Get System Metrics
+      summary: Get Snapshot Scopes
       tags:
       - metrics
-  /api/metrics/users:
+  /api/metrics/snapshot:
     get:
-      description: Get user statistics including total, active, admin, banned, and
-        registration metrics
+      description: Get aggregated metrics view for specific scope (system, users,
+        or all)
+      parameters:
+      - default: all
+        description: 'Scope filter: system, users, all'
+        in: query
+        name: scope
+        type: string
       produces:
       - application/json
       responses:
@@ -1737,8 +1786,12 @@ paths:
             - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/obs.UserMetrics'
+                  $ref: '#/definitions/metrics.SnapshotResponse'
               type: object
+        "400":
+          description: Bad Request - Invalid scope
+          schema:
+            $ref: '#/definitions/response.Response'
         "401":
           description: Unauthorized
           schema:
@@ -1753,10 +1806,10 @@ paths:
             $ref: '#/definitions/response.Response'
       security:
       - BearerAuth: []
-      summary: Get User Metrics
+      summary: Get Metrics Snapshot
       tags:
       - metrics
-  /api/observability/metrics/health:
+  /api/metrics/storage/health:
     get:
       description: Check the health status of the metrics storage backend
       produces:
@@ -1769,7 +1822,7 @@ paths:
             - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/obs.HealthResponse'
+                  $ref: '#/definitions/metrics.HealthResponse'
               type: object
         "503":
           description: Unhealthy
@@ -1778,12 +1831,12 @@ paths:
             - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/obs.HealthResponse'
+                  $ref: '#/definitions/metrics.HealthResponse'
               type: object
       summary: Storage Health Check
       tags:
-      - observability
-  /api/observability/metrics/ingest:
+      - metrics
+  /api/metrics/storage/ingest:
     post:
       consumes:
       - application/json
@@ -1794,7 +1847,7 @@ paths:
         name: metric
         required: true
         schema:
-          $ref: '#/definitions/obs.IngestRequest'
+          $ref: '#/definitions/metrics.IngestRequest'
       produces:
       - application/json
       responses:
@@ -1805,7 +1858,7 @@ paths:
             - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/obs.IngestResponse'
+                  $ref: '#/definitions/metrics.IngestResponse'
               type: object
         "400":
           description: Bad Request - Invalid metric format
@@ -1831,8 +1884,8 @@ paths:
       - BearerAuth: []
       summary: Ingest Metric
       tags:
-      - observability
-  /api/observability/metrics/query:
+      - metrics
+  /api/metrics/storage/query:
     get:
       description: Retrieve metrics by name and time range
       parameters:
@@ -1869,7 +1922,7 @@ paths:
             - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/obs.QueryResponse'
+                  $ref: '#/definitions/metrics.QueryResponse'
               type: object
         "400":
           description: Bad Request
@@ -1891,7 +1944,7 @@ paths:
       - BearerAuth: []
       summary: Query Metrics
       tags:
-      - observability
+      - metrics
   /api/profile:
     get:
       description: Retrieve the complete profile of the authenticated user
@@ -2452,15 +2505,24 @@ paths:
       - rbac
   /health:
     get:
-      description: Check if the service is running
+      description: Check the health of apprun service and all its dependencies (database,
+        cache, metrics storage)
       produces:
       - application/json
       responses:
         "200":
-          description: OK
+          description: All components healthy
           schema:
-            $ref: '#/definitions/handlers.HealthResponse'
-      summary: Health Check
+            $ref: '#/definitions/health.HealthReport'
+        "207":
+          description: System degraded (non-critical component unhealthy)
+          schema:
+            $ref: '#/definitions/health.HealthReport'
+        "503":
+          description: System unhealthy (critical component failed)
+          schema:
+            $ref: '#/definitions/health.HealthReport'
+      summary: Comprehensive Health Check
       tags:
       - system
 schemes:

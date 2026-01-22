@@ -1175,61 +1175,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/metrics": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Get all platform metrics including users, system, auth, and performance",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "metrics"
-                ],
-                "summary": "Get All Metrics",
-                "responses": {
-                    "200": {
-                        "description": "Success",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/obs.AllMetrics"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden - requires platform_admin role",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    }
-                }
-            }
-        },
         "/api/metrics/history": {
             "get": {
                 "security": [
@@ -1292,7 +1237,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/obs.HistoryResponse"
+                                            "$ref": "#/definitions/metrics.HistoryResponse"
                                         }
                                     }
                                 }
@@ -1326,21 +1271,38 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/metrics/performance": {
-            "get": {
+        "/api/metrics/ingest": {
+            "post": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Get application performance metrics including response times and throughput",
+                "description": "Batch ingest metrics with optional tags and timestamps",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "metrics"
                 ],
-                "summary": "Get Performance Metrics",
+                "summary": "Ingest Metrics",
+                "parameters": [
+                    {
+                        "description": "Array of metric data",
+                        "name": "metrics",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/metrics.IngestRequest"
+                            }
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -1353,7 +1315,82 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/obs.PerformanceMetrics"
+                                            "$ref": "#/definitions/metrics.IngestBatchResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Invalid metrics format",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - requires write permission",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "429": {
+                        "description": "Too Many Requests",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/metrics/keys": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List all available metric names for history queries",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "metrics"
+                ],
+                "summary": "Get Metric Keys",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by source: system or user",
+                        "name": "source",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/metrics.KeysResponse"
                                         }
                                     }
                                 }
@@ -1381,21 +1418,21 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/metrics/system": {
+        "/api/metrics/scopes": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Get system health metrics including CPU, memory, and disk usage",
+                "description": "List all available scopes for snapshot queries and their included metrics",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "metrics"
                 ],
-                "summary": "Get System Metrics",
+                "summary": "Get Snapshot Scopes",
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -1408,7 +1445,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/obs.SystemMetrics"
+                                            "$ref": "#/definitions/metrics.ScopesResponse"
                                         }
                                     }
                                 }
@@ -1436,21 +1473,30 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/metrics/users": {
+        "/api/metrics/snapshot": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Get user statistics including total, active, admin, banned, and registration metrics",
+                "description": "Get aggregated metrics view for specific scope (system, users, or all)",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "metrics"
                 ],
-                "summary": "Get User Metrics",
+                "summary": "Get Metrics Snapshot",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "all",
+                        "description": "Scope filter: system, users, all",
+                        "name": "scope",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -1463,11 +1509,17 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/obs.UserMetrics"
+                                            "$ref": "#/definitions/metrics.SnapshotResponse"
                                         }
                                     }
                                 }
                             ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Invalid scope",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "401": {
@@ -1491,14 +1543,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/observability/metrics/health": {
+        "/api/metrics/storage/health": {
             "get": {
                 "description": "Check the health status of the metrics storage backend",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "observability"
+                    "metrics"
                 ],
                 "summary": "Storage Health Check",
                 "responses": {
@@ -1513,7 +1565,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/obs.HealthResponse"
+                                            "$ref": "#/definitions/metrics.HealthResponse"
                                         }
                                     }
                                 }
@@ -1531,7 +1583,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/obs.HealthResponse"
+                                            "$ref": "#/definitions/metrics.HealthResponse"
                                         }
                                     }
                                 }
@@ -1541,7 +1593,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/observability/metrics/ingest": {
+        "/api/metrics/storage/ingest": {
             "post": {
                 "security": [
                     {
@@ -1556,7 +1608,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "observability"
+                    "metrics"
                 ],
                 "summary": "Ingest Metric",
                 "parameters": [
@@ -1566,7 +1618,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/obs.IngestRequest"
+                            "$ref": "#/definitions/metrics.IngestRequest"
                         }
                     }
                 ],
@@ -1582,7 +1634,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/obs.IngestResponse"
+                                            "$ref": "#/definitions/metrics.IngestResponse"
                                         }
                                     }
                                 }
@@ -1622,7 +1674,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/observability/metrics/query": {
+        "/api/metrics/storage/query": {
             "get": {
                 "security": [
                     {
@@ -1634,7 +1686,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "observability"
+                    "metrics"
                 ],
                 "summary": "Query Metrics",
                 "parameters": [
@@ -1684,7 +1736,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/obs.QueryResponse"
+                                            "$ref": "#/definitions/metrics.QueryResponse"
                                         }
                                     }
                                 }
@@ -2641,19 +2693,31 @@ const docTemplate = `{
         },
         "/health": {
             "get": {
-                "description": "Check if the service is running",
+                "description": "Check the health of apprun service and all its dependencies (database, cache, metrics storage)",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "system"
                 ],
-                "summary": "Health Check",
+                "summary": "Comprehensive Health Check",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "All components healthy",
                         "schema": {
-                            "$ref": "#/definitions/handlers.HealthResponse"
+                            "$ref": "#/definitions/health.HealthReport"
+                        }
+                    },
+                    "207": {
+                        "description": "System degraded (non-critical component unhealthy)",
+                        "schema": {
+                            "$ref": "#/definitions/health.HealthReport"
+                        }
+                    },
+                    "503": {
+                        "description": "System unhealthy (critical component failed)",
+                        "schema": {
+                            "$ref": "#/definitions/health.HealthReport"
                         }
                     }
                 }
@@ -3136,82 +3200,74 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.HealthResponse": {
+        "health.ComponentHealth": {
             "type": "object",
             "properties": {
+                "latency_ms": {
+                    "type": "integer",
+                    "example": 5
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Connected to PostgreSQL"
+                },
+                "status": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/health.Status"
+                        }
+                    ],
+                    "example": "healthy"
+                }
+            }
+        },
+        "health.HealthReport": {
+            "type": "object",
+            "properties": {
+                "components": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/health.ComponentHealth"
+                    }
+                },
                 "service": {
                     "type": "string",
                     "example": "apprun"
                 },
                 "status": {
-                    "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
-        "obs.AllMetrics": {
-            "type": "object",
-            "properties": {
-                "active_users": {
-                    "type": "integer"
-                },
-                "admin_users": {
-                    "type": "integer"
-                },
-                "api_error_rate": {
-                    "type": "number"
-                },
-                "api_requests_total": {
-                    "type": "integer"
-                },
-                "api_response_time_p95": {
-                    "type": "integer"
-                },
-                "banned_users": {
-                    "type": "integer"
-                },
-                "cache_hit": {
-                    "type": "boolean"
-                },
-                "cpu_usage_percent": {
-                    "type": "number"
-                },
-                "disk_usage_percent": {
-                    "type": "number"
-                },
-                "failed_login_attempts": {
-                    "type": "integer"
-                },
-                "login_attempts_total": {
-                    "type": "integer"
-                },
-                "login_success_rate": {
-                    "type": "number"
-                },
-                "memory_usage_mb": {
-                    "type": "integer"
-                },
-                "new_users_today": {
-                    "type": "integer"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/health.Status"
+                        }
+                    ],
+                    "example": "healthy"
                 },
                 "timestamp": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "2026-01-22T10:30:00Z"
                 },
-                "token_issued_total": {
-                    "type": "integer"
-                },
-                "total_users": {
-                    "type": "integer"
-                },
-                "uptime_seconds": {
-                    "type": "integer"
-                },
-                "user_registrations_last_7_days": {
-                    "type": "integer"
+                "version": {
+                    "type": "string",
+                    "example": "1.0.0"
                 }
             }
         },
-        "obs.HealthResponse": {
+        "health.Status": {
+            "type": "string",
+            "enum": [
+                "healthy",
+                "degraded",
+                "unhealthy",
+                "unknown"
+            ],
+            "x-enum-varnames": [
+                "StatusHealthy",
+                "StatusDegraded",
+                "StatusUnhealthy",
+                "StatusUnknown"
+            ]
+        },
+        "metrics.HealthResponse": {
             "type": "object",
             "properties": {
                 "backend": {
@@ -3232,7 +3288,7 @@ const docTemplate = `{
                 }
             }
         },
-        "obs.HistoryResponse": {
+        "metrics.HistoryResponse": {
             "type": "object",
             "properties": {
                 "count": {
@@ -3247,7 +3303,7 @@ const docTemplate = `{
                 "metrics": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/obs.MetricPoint"
+                        "$ref": "#/definitions/metrics.MetricPoint"
                     }
                 },
                 "start": {
@@ -3255,7 +3311,30 @@ const docTemplate = `{
                 }
             }
         },
-        "obs.IngestRequest": {
+        "metrics.IngestBatchResponse": {
+            "type": "object",
+            "properties": {
+                "failed": {
+                    "type": "integer"
+                },
+                "failed_metrics": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "ingested": {
+                    "type": "integer"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "metrics.IngestRequest": {
             "type": "object",
             "properties": {
                 "name": {
@@ -3275,7 +3354,7 @@ const docTemplate = `{
                 }
             }
         },
-        "obs.IngestResponse": {
+        "metrics.IngestResponse": {
             "type": "object",
             "properties": {
                 "message": {
@@ -3289,7 +3368,21 @@ const docTemplate = `{
                 }
             }
         },
-        "obs.MetricData": {
+        "metrics.KeysResponse": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "keys": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/metrics.MetricKey"
+                    }
+                }
+            }
+        },
+        "metrics.MetricData": {
             "type": "object",
             "properties": {
                 "name": {
@@ -3309,7 +3402,28 @@ const docTemplate = `{
                 }
             }
         },
-        "obs.MetricPoint": {
+        "metrics.MetricKey": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "description": "Human-readable description",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "e.g., \"user_count_total\"",
+                    "type": "string"
+                },
+                "source": {
+                    "description": "\"system\" or \"user\"",
+                    "type": "string"
+                },
+                "unit": {
+                    "description": "e.g., \"count\", \"percent\", \"bytes\"",
+                    "type": "string"
+                }
+            }
+        },
+        "metrics.MetricPoint": {
             "type": "object",
             "properties": {
                 "name": {
@@ -3329,33 +3443,7 @@ const docTemplate = `{
                 }
             }
         },
-        "obs.PerformanceMetrics": {
-            "type": "object",
-            "properties": {
-                "api_error_rate": {
-                    "description": "percentage",
-                    "type": "number"
-                },
-                "api_requests_total": {
-                    "type": "integer"
-                },
-                "api_response_time_p95": {
-                    "description": "milliseconds",
-                    "type": "integer"
-                },
-                "cache_hit": {
-                    "type": "boolean"
-                },
-                "database_query_duration_avg": {
-                    "description": "milliseconds",
-                    "type": "number"
-                },
-                "timestamp": {
-                    "type": "string"
-                }
-            }
-        },
-        "obs.QueryResponse": {
+        "metrics.QueryResponse": {
             "type": "object",
             "properties": {
                 "count": {
@@ -3370,7 +3458,7 @@ const docTemplate = `{
                 "metrics": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/obs.MetricData"
+                        "$ref": "#/definitions/metrics.MetricData"
                     }
                 },
                 "start": {
@@ -3378,55 +3466,57 @@ const docTemplate = `{
                 }
             }
         },
-        "obs.SystemMetrics": {
+        "metrics.ScopeDefinition": {
             "type": "object",
             "properties": {
-                "cpu_usage_percent": {
-                    "type": "number"
-                },
-                "disk_usage_percent": {
-                    "type": "number"
-                },
-                "goroutines": {
-                    "type": "integer"
-                },
-                "memory_usage_mb": {
-                    "type": "integer"
-                },
-                "timestamp": {
+                "description": {
+                    "description": "Human-readable description",
                     "type": "string"
                 },
-                "uptime_seconds": {
-                    "type": "integer"
+                "metrics": {
+                    "description": "Metric names included in this scope",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "scope": {
+                    "description": "e.g., \"system\", \"users\"",
+                    "type": "string"
                 }
             }
         },
-        "obs.UserMetrics": {
+        "metrics.ScopesResponse": {
             "type": "object",
             "properties": {
-                "active_users": {
+                "count": {
                     "type": "integer"
                 },
-                "admin_users": {
-                    "type": "integer"
-                },
-                "banned_users": {
-                    "type": "integer"
-                },
+                "scopes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/metrics.ScopeDefinition"
+                    }
+                }
+            }
+        },
+        "metrics.SnapshotResponse": {
+            "type": "object",
+            "properties": {
                 "cache_hit": {
                     "type": "boolean"
                 },
-                "new_users_today": {
-                    "type": "integer"
+                "metrics": {
+                    "description": "Dynamic metrics based on scope",
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "scope": {
+                    "description": "\"system\", \"users\", \"all\"",
+                    "type": "string"
                 },
                 "timestamp": {
                     "type": "string"
-                },
-                "total_users": {
-                    "type": "integer"
-                },
-                "user_registrations_last_7_days": {
-                    "type": "integer"
                 }
             }
         },

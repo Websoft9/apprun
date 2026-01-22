@@ -1,0 +1,10 @@
+--- pkg/metricstore/storage/badger_test.go
++++ pkg/metricstore/storage/badger_test.go
+@@ -389,6 +389,6 @@ func TestBadgerStorage_Concurrency(t *testing.T) {
+ }
+ 
+ // Cleanup helper
+-func cleanupTestDB //nolint:unused // Helper function for manual cleanup(path string) {
++func cleanupTestDB(path string) { //nolint:unused // Helper function for manual cleanup
+ os.RemoveAll(path)
+ }

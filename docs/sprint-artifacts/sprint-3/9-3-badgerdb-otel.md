@@ -42,9 +42,9 @@
 - [x] Disk usage with compression enabled
 
 ### API Endpoints
-- [x] `POST /api/observability/metrics/ingest` - Store metrics
-- [x] `GET /api/observability/metrics/query` - Query by name and time range
-- [x] `GET /api/observability/metrics/health` - Storage health check
+- [x] `POST /api/metrics/storage/ingest` - Store metrics
+- [x] `GET /api/metrics/storage/query` - Query by name and time range
+- [x] `GET /api/metrics/storage/health` - Storage health check
 
 ### Security Requirements
 - [x] API endpoints require authentication (admin role, reuse Story 9.1 auth)
@@ -67,7 +67,7 @@
 
 ### API Specification
 
-#### POST /api/observability/metrics/ingest
+#### POST /api/metrics/storage/ingest
 **Authentication**: Required (admin role)
 
 **Request**:
@@ -99,7 +99,7 @@
 - `429 Too Many Requests`: Rate limit exceeded
 - `500 Internal Server Error`: Storage failure
 
-#### GET /api/observability/metrics/query
+#### GET /api/metrics/storage/query
 **Authentication**: Required (admin role)
 
 **Query Parameters**:
@@ -111,7 +111,7 @@
 
 **Example**:
 ```
-GET /api/observability/metrics/query?name=http_requests_total&duration=1h&limit=100
+GET /api/metrics/storage/query?name=http_requests_total&duration=1h&limit=100
 ```
 
 **Response (200 OK)**:
@@ -132,7 +132,7 @@ GET /api/observability/metrics/query?name=http_requests_total&duration=1h&limit=
 }
 ```
 
-#### GET /api/observability/metrics/health
+#### GET /api/metrics/storage/health
 **Authentication**: Optional (public or admin)
 
 **Response (200 OK)**:
@@ -156,7 +156,7 @@ GET /api/observability/metrics/query?name=http_requests_total&duration=1h&limit=
 
 ### BadgerDB Adapter Implementation
 ```go
-// filepath: pkg/metrics/storage/badger/adapter.go
+// filepath: pkg/metricstore/storage/badger/adapter.go
 package badger
 
 import (
@@ -166,7 +166,7 @@ import (
     "time"
     
     "github.com/dgraph-io/badger/v3"
-    "apprun/pkg/metrics/storage"
+    "apprun/pkg/metricstore/storage"
 )
 
 type BadgerStorage struct {
@@ -287,14 +287,14 @@ func (s *BadgerStorage) runGC() {
 
 ### OTEL Integration
 ```go
-// filepath: pkg/metrics/otel/exporter.go
+// filepath: pkg/metricstore/otel/exporter.go
 package otel
 
 import (
     "context"
     
     "go.opentelemetry.io/otel/sdk/metric"
-    "apprun/pkg/metrics/storage"
+    "apprun/pkg/metricstore/storage"
 )
 
 type BadgerExporter struct {
@@ -353,7 +353,7 @@ import (
     "net/http"
     "time"
     
-    "apprun/pkg/metrics/storage"
+    "apprun/pkg/metricstore/storage"
 )
 
 type MetricsHandler struct {
@@ -486,7 +486,7 @@ func BenchmarkStore(b *testing.B) {
 ### Blocking Dependencies
 - **Story 9.2**: Metrics Storage ACL (must complete first)
   - **Required Deliverables**:
-    - `pkg/metrics/storage/interface.go` - Storage interface definition
+    - `pkg/metricstore/storage/interface.go` - Storage interface definition
     - `storage.Storage` interface frozen (no breaking changes)
     - `storage.Metric` struct definition complete
     - Mock implementation for testing

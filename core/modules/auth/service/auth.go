@@ -3,6 +3,7 @@ package service
 
 import (
 	"context"
+	stdErrors "errors"
 	"strings"
 	"time"
 
@@ -470,7 +471,7 @@ func (s *AuthService) GetOrCreateSuperAdmin(ctx context.Context, initConfig auth
 	}
 
 	// If not found error, try to create
-	if err != repository.ErrUserNotFound {
+	if !stdErrors.Is(err, repository.ErrUserNotFound) {
 		log.Error("Failed to query super admin", logger.Field{Key: "error", Value: err.Error()})
 		return nil, "", errors.Wrap(err, errors.ErrCodeInternalError, "Failed to query super admin")
 	}
@@ -543,7 +544,7 @@ func (s *AuthService) GetOrCreateSystemUser(ctx context.Context) (*ent.User, err
 	}
 
 	// If not found, create system user
-	if err != repository.ErrUserNotFound {
+	if !stdErrors.Is(err, repository.ErrUserNotFound) {
 		log.Error("Failed to query system user", logger.Field{Key: "error", Value: err.Error()})
 		return nil, errors.Wrap(err, errors.ErrCodeInternalError, "Failed to query system user")
 	}

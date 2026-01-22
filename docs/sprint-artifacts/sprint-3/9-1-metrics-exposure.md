@@ -45,7 +45,7 @@
 - [ ] 实现 `GET /api/metrics/performance` - 获取性能指标
 - [ ] 实现 `GET /api/metrics/history` - 获取历史趋势（复用 Storage Query）
 - [ ] 支持时间范围查询 (`?duration=1h`, `?start=...&end=...`)
-- [ ] 集成 `pkg/metrics/Repository` 查询持久化指标
+- [ ] 集成 `pkg/metricstore/Repository` 查询持久化指标
 
 ### Storage 集成验收（关键新增）
 - [ ] 实时指标自动写入 BadgerDB（每次采集触发）
@@ -88,7 +88,7 @@
                     │
                     v
 ┌────────────────────────────────────────────────────┐
-│  modules/obs/handler.go (扩展 MetricsHandler)      │
+│  modules/metrics/handler.go (扩展 MetricsHandler)      │
 │  ┌─────────────────────────────────────────────┐  │
 │  │ 已存在 (Story 9.3)       │ 新增 (Story 9.1) │  │
 │  │ - Ingest()    (POST)    │ - GetAll()        │  │
@@ -102,7 +102,7 @@
          │                      │
          v                      v
 ┌──────────────────┐   ┌─────────────────────┐
-│ collector.go     │   │ pkg/metrics/Repo    │
+│ collector.go     │   │ pkg/metricstore/Repo    │
 │ (实时采集 + 写入) │──>│ (Storage 查询/写入) │
 │ [NEW]            │   │ [Story 9.2]         │
 └──────────────────┘   └──────────┬──────────┘
@@ -116,8 +116,8 @@
 ```
 
 **关键架构决策**:
-1. **统一 API 路由**: `/api/metrics/*` (不再分离 `/api/observability/metrics/`)
-2. **复用 `modules/obs/`**: 扩展 Story 9.3 已创建的文件，不创建新模块
+1. **统一 API 路由**: `/api/metrics/*` (不再分离 `/api/metrics/storage/`)
+2. **复用 `modules/metrics/`**: 扩展 Story 9.3 已创建的文件，不创建新模块
 3. **自动持久化**: 实时采集时自动写入 Storage，供历史查询
 4. **降级策略**: Storage 不可用时，仅返回实时数据（不报错）
 
@@ -327,14 +327,14 @@ type AuthMetrics struct {
 
 ### 4. Metrics Collection Logic
 
-#### 4.1 实时采集 + 自动持久化 (modules/obs/collector.go - NEW)
+#### 4.1 实时采集 + 自动持久化 (modules/metrics/collector.go - NEW)
 ```go
 package obs
 
 import (
     "context"
     "time"
-    "apprun/pkg/metrics"
+    "apprun/pkg/metricstore"
 )
 
 type MetricsCollector struct {
@@ -374,7 +374,7 @@ func (c *MetricsCollector) persistMetrics(ctx context.Context, data map[string]f
 }
 ```
 
-#### 4.2 历史查询 - 复用 Repository (modules/obs/handler.go - 扩展)
+#### 4.2 历史查询 - 复用 Repository (modules/metrics/handler.go - 扩展)
 ```go
 // GetHistory - 复用 Story 9.3 的 Query 逻辑
 func (h *MetricsHandler) GetHistory(w http.ResponseWriter, r *http.Request) {
@@ -515,7 +515,7 @@ func (c *MetricsCollector) CollectPerformanceMetrics(ctx context.Context) (*Perf
 
 ---
 
-### 5. Caching Strategy (modules/obs/service.go - NEW)
+### 5. Caching Strategy (modules/metrics/service.go - NEW)
 
 ```go
 package obs
@@ -613,23 +613,23 @@ metricsGroup.Use(middleware.RequirePlatformAdmin())
 - ✅ **RESTful 设计**: GET 查询，POST 写入，符合语义
 - ✅ **向后兼容**: Story 9.3 的 Ingest/Health 端点保留（可选使用）
 - ✅ **权限统一**: 全部使用 `RequirePlatformAdmin()` 中间件
-- ❌ **废弃**: `/api/observability/metrics/*` 不再使用
+- ❌ **废弃**: `/api/metrics/storage/*` 不再使用
 
 ---
 
 ## Implementation Checklist
 
 ### Day 1: Storage 集成 + 实时采集
-- [ ] **复用** `modules/obs/` 目录（不创建新 modules/metrics/）
-- [ ] 新增 `modules/obs/collector.go` - 实时采集逻辑
-- [ ] 新增 `modules/obs/service.go` - 缓存服务层
-- [ ] 扩展 `modules/obs/types.go` - 新增 UserMetrics, SystemMetrics 等类型
+- [ ] **复用** `modules/metrics/` 目录（不创建新 modules/metrics/）
+- [ ] 新增 `modules/metrics/collector.go` - 实时采集逻辑
+- [ ] 新增 `modules/metrics/service.go` - 缓存服务层
+- [ ] 扩展 `modules/metrics/types.go` - 新增 UserMetrics, SystemMetrics 等类型
 - [ ] 实现 Collector 方法 + 自动写入 Storage
 - [ ] 单元测试：验证 Storage 自动写入（异步）
 - [ ] 安装依赖: `go get github.com/shirou/gopsutil/v3`
 
 ### Day 2: 实时指标端点
-- [ ] 扩展 `modules/obs/handler.go` (不创建新文件)
+- [ ] 扩展 `modules/metrics/handler.go` (不创建新文件)
 - [ ] 实现 `GetAll()`, `GetUsers()`, `GetSystem()`, `GetPerformance()`
 - [ ] 集成 Redis 缓存（TTL = 1 分钟）
 - [ ] 集成 MetricsCollector 实时采集
@@ -829,13 +829,13 @@ if err != nil {
 **Architecture Rationale**:
 
 1. **为什么统一到 `/api/metrics`？**
-   - 原 Story 9.3 使用 `/api/observability/metrics/*` 太冗长
+   - 原 Story 9.3 使用 `/api/metrics/storage/*` 太冗长
    - 统一命名空间更符合 RESTful 设计
    - 避免用户困惑（两套 API 路径）
    - 权限通过中间件控制，不依赖 URL 路径
 
-2. **为什么复用 `modules/obs/` 而不创建新模块？**
-   - Story 9.3 已创建 `modules/obs/` (Observability 模块)
+2. **为什么复用 `modules/metrics/` 而不创建新模块？**
+   - Story 9.3 已创建 `modules/metrics/` (Observability 模块)
    - 避免模块碎片化（metrics 属于 observability 子集）
    - 减少重复代码（共享 types, config）
    - 符合单一职责原则（Observability 统一管理）

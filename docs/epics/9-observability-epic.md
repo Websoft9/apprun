@@ -202,12 +202,19 @@ Build a comprehensive observability platform with a flexible storage backend to 
 
 - [Prometheus Documentation](https://prometheus.io/docs/)
 - [Grafana Best Practices](https://grafana.com/docs/)
-- [Metrics API Implementation](../../core/modules/admin/service/metrics.go)
+- [Metrics Implementation](../../core/modules/metrics/)
+- [Metrics Storage](../../core/pkg/metricstoretore/)
 
 ---
 
 ## Notes
 
+- **Package Structure**: 
+  - `modules/metrics`: Application-layer metrics handlers and services
+  - `pkg/metricstoretore`: Storage-layer repository and adapters (Anti-Corruption Layer)
+- **API Structure**:
+  - `/api/metrics/*`: Application metrics (users, system, performance)
+  - `/api/metrics/storage/*`: Storage operations (ingest, query, health)
 - **MVP First**: Start with BadgerDB for rapid validation, minimize external dependencies
 - **Anti-Corruption Layer**: Critical for future-proofing and backend flexibility
 - **Migration Strategy**: Document clear upgrade path from MVP to Enterprise

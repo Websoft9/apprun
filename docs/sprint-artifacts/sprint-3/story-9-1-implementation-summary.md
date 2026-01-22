@@ -6,7 +6,7 @@ Successfully refactored metrics exposure feature from `admin` module to a new de
 ## Changes Implemented
 
 ### 1. ✅ Module Refactoring
-- **Created new module**: `core/modules/obs/`
+- **Created new module**: `core/modules/metrics/`
 - **Files created**:
   - `collector.go` - Data collection layer with database and system metrics
   - `service.go` - Business logic layer with Redis caching
@@ -136,7 +136,7 @@ Collector (collector.go) ← Database/System
 
 ### Sample Test Run
 ```bash
-cd /data/cdl/apprun/core/modules/obs && go test -v
+cd /data/cdl/apprun/core/modules/metrics && go test -v
 
 === RUN   TestMetricsCollector_CollectUserMetrics
 --- PASS: TestMetricsCollector_CollectUserMetrics (0.02s)
@@ -147,7 +147,7 @@ cd /data/cdl/apprun/core/modules/obs && go test -v
 ...
 PASS
 coverage: 74.8% of statements
-ok      apprun/modules/obs      6.198s
+ok      apprun/modules/metrics      6.198s
 ```
 
 ## API Endpoints
@@ -254,7 +254,7 @@ cd /data/cdl/apprun/core && go build -o main
 - Includes request/response examples
 
 ### Module README
-- Location: `core/modules/obs/README.md`
+- Location: `core/modules/metrics/README.md`
 - Contains architecture overview, usage examples, and API documentation
 
 ## Code Quality

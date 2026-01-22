@@ -29,7 +29,7 @@ func NewEntAdapter(client *ent.Client) (*EntAdapter, error) {
 
 // LoadPolicy loads all policy rules from the storage.
 // Implements persist.Adapter interface.
-func (a *EntAdapter) LoadPolicy(model model.Model) error {
+func (a *EntAdapter) LoadPolicy(m model.Model) error {
 	ctx := context.Background()
 
 	rules, err := a.client.CasbinRule.Query().All(ctx)
@@ -38,7 +38,7 @@ func (a *EntAdapter) LoadPolicy(model model.Model) error {
 	}
 
 	for _, rule := range rules {
-		loadPolicyLine(rule, model)
+		loadPolicyLine(rule, m)
 	}
 
 	return nil
@@ -46,7 +46,7 @@ func (a *EntAdapter) LoadPolicy(model model.Model) error {
 
 // SavePolicy saves all policy rules to the storage.
 // Implements persist.Adapter interface.
-func (a *EntAdapter) SavePolicy(model model.Model) error {
+func (a *EntAdapter) SavePolicy(m model.Model) error {
 	ctx := context.Background()
 
 	// Start transaction
@@ -58,25 +58,25 @@ func (a *EntAdapter) SavePolicy(model model.Model) error {
 	// Delete all existing rules
 	_, err = tx.CasbinRule.Delete().Exec(ctx)
 	if err != nil {
-		_ = tx.Rollback()
+		_ = tx.Rollback() //nolint:errcheck // Rollback error is not critical here
 		return fmt.Errorf("failed to clear existing rules: %w", err)
 	}
 
 	// Save policy rules (p, p2, ...)
-	for ptype, ast := range model["p"] {
+	for ptype, ast := range m["p"] {
 		for _, rule := range ast.Policy {
 			if err := savePolicyLine(ctx, tx, ptype, rule); err != nil {
-				_ = tx.Rollback()
+				_ = tx.Rollback() //nolint:errcheck // Rollback error is not critical here
 				return err
 			}
 		}
 	}
 
 	// Save grouping rules (g, g2, ...)
-	for ptype, ast := range model["g"] {
+	for ptype, ast := range m["g"] {
 		for _, rule := range ast.Policy {
 			if err := savePolicyLine(ctx, tx, ptype, rule); err != nil {
-				_ = tx.Rollback()
+				_ = tx.Rollback() //nolint:errcheck // Rollback error is not critical here
 				return err
 			}
 		}
@@ -166,7 +166,7 @@ func (a *EntAdapter) RemoveFilteredPolicy(sec string, ptype string, fieldIndex i
 // Helper functions
 
 // loadPolicyLine loads a single policy rule into the Casbin model.
-func loadPolicyLine(rule *ent.CasbinRule, model model.Model) {
+func loadPolicyLine(rule *ent.CasbinRule, m model.Model) {
 	lineText := rule.Ptype
 
 	if rule.V0 != "" {
@@ -188,7 +188,7 @@ func loadPolicyLine(rule *ent.CasbinRule, model model.Model) {
 		lineText += ", " + rule.V5
 	}
 
-	persist.LoadPolicyLine(lineText, model)
+	_ = persist.LoadPolicyLine(lineText, m) //nolint:errcheck // Error is not critical
 }
 
 // savePolicyLine saves a single policy rule to the database.

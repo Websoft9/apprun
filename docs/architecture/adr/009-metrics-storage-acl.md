@@ -287,7 +287,7 @@ storage.ErrTimeout(op string, reason string) error
 ### Package Structure
 
 ```
-core/pkg/metrics/
+core/pkg/metricstore/
 ├── storage/
 │   ├── interface.go    # Storage interface + Metric struct + Config
 │   ├── errors.go       # Typed error codes + helpers

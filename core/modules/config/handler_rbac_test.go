@@ -5,10 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"net/httptest"
+	"net/http/httptest"
+	"strconv"
 	"testing"
 
 	"apprun/ent"
+	"apprun/ent/auditlog"
 	"apprun/ent/enttest"
 	"apprun/internal/jwt"
 	"apprun/internal/rbac"
@@ -54,21 +56,21 @@ func createTestUser(t *testing.T, client *ent.Client, isPlatformAdmin bool) stri
 		SetEmail("test@example.com").
 		SetUsername("testuser").
 		SetPasswordHash("hashed").
-		SetStatus("active").
+		SetStatus(1).
 		Save(context.Background())
 	require.NoError(t, err)
 
 	// Assign platform_admin role if requested
 	if isPlatformAdmin {
 		enforcer := rbac.GetEnforcer()
-		_, err := enforcer.AddRoleForUser(user.ID.String(), "platform_admin", "platform")
+		_, err := enforcer.AddRoleForUser(strconv.FormatInt(user.ID, 10), "platform_admin", "platform") //nolint:govet // Shadow in test is acceptable
 		require.NoError(t, err)
 	}
 
 	// Generate JWT token
-	token, err := jwt.GenerateToken(jwt.Claims{
-		UserID: user.ID.String(),
-		Email:  user.Email,
+	token, _, err := jwt.GenerateToken(user.ID, map[string]interface{}{
+		"username": user.Username,
+		"email":    user.Email,
 	})
 	require.NoError(t, err)
 
@@ -270,9 +272,7 @@ func TestConfigAPI_AuditLog_Created(t *testing.T) {
 	// Check audit log created
 	ctx := context.Background()
 	count, err := client.AuditLog.Query().
-		Where(func(s *ent.AuditLogQuery) {
-			s.Where(enttest.HasAction("config.update"))
-		}).
+		Where(auditlog.ActionEQ("config.update")).
 		Count(ctx)
 	require.NoError(t, err)
 	assert.Greater(t, count, 0, "Audit log should be created for config update")
@@ -300,9 +300,7 @@ func TestConfigAPI_AuditLog_Delete(t *testing.T) {
 
 	// Check audit log created
 	count, err := client.AuditLog.Query().
-		Where(func(s *ent.AuditLogQuery) {
-			s.Where(enttest.HasAction("config.delete"))
-		}).
+		Where(auditlog.ActionEQ("config.delete")).
 		Count(ctx)
 	require.NoError(t, err)
 	assert.Greater(t, count, 0, "Audit log should be created for config deletion")

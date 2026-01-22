@@ -28,7 +28,7 @@
 
 ## Key Stories
 
-### ✅ Completed (15/19)
+### ✅ Completed (15/20)
 - **Story 1.1**: Docker 开发部署环境
 - **Story 1.2**: 统一响应工具包
 - **Story 1.3**: 业务错误包装框架
@@ -43,14 +43,30 @@
 - **Story 1.15**: Go 1.25.5 升级
 - **Story 1.16**: Redis Cache Package
 
-### 🔄 In Progress (1/19)
+### 🔄 In Progress (1/20)
 - **Story 1.18**: CLI Generate - Unified Code Generation (统一代码生成工具) - [文件](../sprint-artifacts/sprint-1/1-18-cli-generate.md)
 
-### 📝 Pending (3/19)
+### 📝 Pending (3/20)
 - **Story 1.8**: 测试框架与工具集
 - **Story 1.9**: 重构现有 Handlers
 - **Story 1.11**: Request Package
 - **Story 1.17**: Platform Initialization (平台初始化)
+
+### ✅ Completed (16/20)
+- **Story 1.1**: Docker 开发部署环境
+- **Story 1.2**: 统一响应工具包
+- **Story 1.3**: 业务错误包装框架
+- **Story 1.4**: CI/CD 流水线与 Linter
+- **Story 1.5**: 数据库增量迁移
+- **Story 1.6**: Unified CLI Architecture (统一 CLI 命令架构)
+- **Story 1.7**: Makefile 标准与命令分组
+- **Story 1.10**: 日志防腐层
+- **Story 1.12**: HTTP Server Package
+- **Story 1.13**: Environment Variable Utility
+- **Story 1.14**: Database Anti-Corruption Layer
+- **Story 1.15**: Go 1.25.5 升级
+- **Story 1.16**: Redis Cache Package
+- **Story 1.20**: Health Check API - [文件](../sprint-artifacts/sprint-3/1-20-health-check-api.md) ✅ Done (2026-01-22)
 
 ---
 
@@ -104,4 +120,4 @@
 
 Infrastructure Epic 是平台的根基，**优先级最高**。所有上层功能都依赖这里的基础能力。
 
-当前进度：**79% 完成** (15/19 stories done, 1 in progress)
+当前进度：**75% 完成** (15/20 stories done, 1 in progress)
