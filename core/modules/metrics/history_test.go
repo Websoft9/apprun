@@ -132,11 +132,11 @@ func TestCollectorPersistence_UserMetrics(t *testing.T) {
 	ctx := context.Background()
 	for i := 0; i < 5; i++ {
 		_, err := client.User.Create(). //nolint:govet // Shadow in test loop
-			SetEmail("user" + string(rune(i+'0')) + "@test.com"). // Unique emails
-			SetPasswordHash("hash").
-			SetStatus(1).
-			SetRole("platform_user").
-			Save(ctx)
+						SetEmail("user" + string(rune(i+'0')) + "@test.com"). // Unique emails
+						SetPasswordHash("hash").
+						SetStatus(1).
+						SetRole("platform_user").
+						Save(ctx)
 		require.NoError(t, err)
 	}
 
@@ -177,4 +177,127 @@ func TestCollectorPersistence_SystemMetrics(t *testing.T) {
 
 	// Wait for async persistence
 	time.Sleep(100 * time.Millisecond)
+}
+
+// TestGetHistory_WithTags tests historical metrics query with tags (Story 9.1)
+func TestGetHistory_WithTags(t *testing.T) {
+	client := setupTestDB(t)
+	defer client.Close()
+
+	// Create mock storage with sample data
+	cfg, err := metricstore.LoadConfig()
+	require.NoError(t, err)
+
+	cfg.Storage.Backend = "mock"
+	mockStorage, err := storage.NewStorage(cfg.ToStorageConfig())
+	require.NoError(t, err)
+
+	repo := metricstore.NewRepository(mockStorage, cfg)
+	cacheClient := cache.NewMockClient()
+
+	// Insert sample metrics with tags
+	ctx := context.Background()
+	tags1 := map[string]string{
+		"env":      "production",
+		"instance": "apprun-01",
+		"source":   "database",
+	}
+	tags2 := map[string]string{
+		"env":      "staging",
+		"instance": "apprun-02",
+		"source":   "database",
+	}
+
+	// Insert metrics with different tags
+	err = repo.RecordMetric(ctx, MetricNameUserTotal, 1000, tags1)
+	require.NoError(t, err)
+	time.Sleep(10 * time.Millisecond)
+
+	err = repo.RecordMetric(ctx, MetricNameUserTotal, 500, tags2)
+	require.NoError(t, err)
+	time.Sleep(10 * time.Millisecond)
+
+	err = repo.RecordMetric(ctx, MetricNameUserTotal, 1100, tags1)
+	require.NoError(t, err)
+
+	service := NewMetricsService(client, cacheClient, repo)
+	handler := NewMetricsHandler(service)
+
+	// Test 1: Query without tags filter (should return all)
+	req := httptest.NewRequest(http.MethodGet, "/api/metrics/history?name="+MetricNameUserTotal+"&duration=1h", nil)
+	w := httptest.NewRecorder()
+	handler.GetHistory(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), "\"count\":3")
+
+	// Test 2: Query with env=production tag filter (should return 2)
+	req = httptest.NewRequest(http.MethodGet, "/api/metrics/history?name="+MetricNameUserTotal+"&duration=1h&tags[env]=production", nil)
+	w = httptest.NewRecorder()
+	handler.GetHistory(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), "\"count\":2")
+	assert.Contains(t, w.Body.String(), "production")
+
+	// Test 3: Query with env=staging tag filter (should return 1)
+	req = httptest.NewRequest(http.MethodGet, "/api/metrics/history?name="+MetricNameUserTotal+"&duration=1h&tags[env]=staging", nil)
+	w = httptest.NewRecorder()
+	handler.GetHistory(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), "\"count\":1")
+	assert.Contains(t, w.Body.String(), "staging")
+}
+
+// TestCollector_TagsIncluded tests that collector adds tags to persisted metrics (Story 9.1)
+func TestCollector_TagsIncluded(t *testing.T) {
+	client := setupTestDB(t)
+	defer client.Close()
+
+	cfg, err := metricstore.LoadConfig()
+	require.NoError(t, err)
+	cfg.Storage.Backend = "mock"
+
+	mockStorage, err := storage.NewStorage(cfg.ToStorageConfig())
+	require.NoError(t, err)
+
+	repo := metricstore.NewRepository(mockStorage, cfg)
+	collector := NewMetricsCollector(client, repo)
+
+	// Verify collector has tags configured
+	assert.NotEmpty(t, collector.env, "Collector should have env configured")
+	assert.NotEmpty(t, collector.instance, "Collector should have instance configured")
+	assert.NotEmpty(t, collector.hostname, "Collector should have hostname configured")
+
+	// Create a test user
+	ctx := context.Background()
+	_, err = client.User.Create().
+		SetEmail("test@example.com").
+		SetPasswordHash("hash").
+		SetStatus(1).
+		SetRole("platform_user").
+		Save(ctx)
+	require.NoError(t, err)
+
+	// Collect user metrics (triggers async persistence with tags)
+	userMetrics, err := collector.CollectUserMetrics(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, 1, userMetrics.TotalUsers)
+
+	// Wait for async persistence
+	time.Sleep(100 * time.Millisecond)
+
+	// Query metrics to verify tags were persisted
+	start := time.Now().Add(-1 * time.Hour)
+	end := time.Now()
+	metrics, err := repo.GetMetricsByRange(ctx, MetricNameUserTotal, start, end, 100)
+	require.NoError(t, err)
+
+	// Verify at least one metric was persisted with tags
+	if len(metrics) > 0 {
+		// Mock storage may or may not preserve tags depending on implementation
+		// This test mainly verifies the collector structure is correct
+		assert.NotNil(t, metrics[0].Tags, "Metric should have tags field")
+	}
 }

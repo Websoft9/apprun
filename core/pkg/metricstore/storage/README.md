@@ -477,7 +477,7 @@ store.Store(ctx, metric)
 
 ## Design Decisions (ADR Reference)
 
-See [ADR-009: Metrics Storage Anti-Corruption Layer](../../../docs/architecture/adr/009-metrics-storage-acl.md) for architectural decisions:
+See [ADR-009: Metrics Storage Anti-Corruption Layer](../../../specs/architecture/adr/009-metrics-storage-acl.md) for architectural decisions:
 
 - Why interface-based design
 - Backend selection criteria (MVP vs Enterprise)
@@ -505,5 +505,5 @@ When adding a new storage backend:
 ## Support
 
 For questions or issues:
-- Epic: [9-observability-epic.md](../../../docs/epics/9-observability-epic.md)
-- Story: [9-2-metrics-storage-acl.md](../../../docs/sprint-artifacts/sprint-3/9-2-metrics-storage-acl.md)
+- Epic: [9-observability-epic.md](../../../specs/epics/9-observability-epic.md)
+- Story: [9-2-metrics-storage-acl.md](../../../specs/sprint-artifacts/sprint-3/9-2-metrics-storage-acl.md)

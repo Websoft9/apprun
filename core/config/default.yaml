@@ -128,3 +128,39 @@ server:
   ssl_key_file: ""   # Path to SSL private key
   shutdown_timeout: "30s"
   enable_http_with_https: true  # Enable HTTP when HTTPS is active (for health checks)
+
+# Metric Storage Configuration (pkg/metricstore)
+# Handles metric data persistence and retrieval
+# Environment variable prefix: METRICSTORE_*
+metricstore:
+  storage:
+    backend: "badger"              # Storage backend: mock, badger, prometheus (db:"false")
+    timeout: 5s                    # Storage operation timeout (db:"true")
+    retention: 24h                 # Data retention period for BadgerDB (db:"true")
+    retry:
+      enabled: true                # Enable automatic retry (db:"true")
+      max_attempts: 3              # Maximum retry attempts (db:"true")
+      backoff: "exponential"       # Backoff strategy: exponential or linear (db:"true")
+    # Backend-specific settings (inline)
+    path: "./data/metrics"         # BadgerDB data directory (db:"true")
+    # url: "http://prometheus:9090"  # Prometheus URL when backend=prometheus (db:"true")
+
+# Metrics Collection Configuration (modules/metrics)
+# Handles application metric collection and HTTP API
+# Environment variable prefix: METRICS_*
+metrics:
+  collection:
+    enabled: true                  # Enable metric collection (db:"true")
+    interval: 15s                  # Collection frequency (db:"true")
+    include_runtime: true          # Include Go runtime metrics (db:"true")
+  cache:
+    enabled: true                  # Enable caching for performance (db:"true")
+    ttl: 1m                        # Cache expiration time (db:"true")
+    key_prefix: "metrics:"         # Redis key prefix (db:"false")
+  export:
+    enabled: true                  # Enable Prometheus export endpoint (db:"true")
+    path: "/metrics"               # Prometheus scraping endpoint (db:"true")
+  rate_limit:
+    enabled: true                  # Enable API rate limiting (db:"true")
+    requests: 100                  # Max requests per window (db:"true")
+    window: 1m                     # Rate limit time window (db:"true")

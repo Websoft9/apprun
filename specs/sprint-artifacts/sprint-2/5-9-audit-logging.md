@@ -297,7 +297,7 @@ audit:
   exclude_paths:
     - /health
     - /metrics
-    - /api/docs
+    - /api/apidocs
   sensitive_fields:
     - password
     - token

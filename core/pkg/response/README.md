@@ -259,9 +259,9 @@ Current coverage: **100%**
 ## Standards Compliance
 
 This package follows:
-- [API Design Standards § 4.1](../../docs/standards/api-design.md#41-统一响应格式)
-- [API Design Standards § 5.2](../../docs/standards/api-design.md#52-常用错误码)
-- [Go Coding Standards](../../docs/standards/coding-standards.md)
+- [API Design Standards § 4.1](../../specs/standards/api-design.md#41-统一响应格式)
+- [API Design Standards § 5.2](../../specs/standards/api-design.md#52-常用错误码)
+- [Go Coding Standards](../../specs/standards/coding-standards.md)
 
 ## License
 

@@ -1,0 +1,41 @@
+# Quickly todo
+
+增加一个统一的表前缀 w9_
+
+build 构建出三个镜像
+
+pr 的 ai  code review
+
+locals 文件生成问题。 ent orm 生成， docs 生成
+
+open api 3.0
+
+
+考虑支持从 Cookie 读取 token（参考 jwtauth 的 TokenFromCookie）
+
+admin/MC$A81mOAg6^rbd6
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozLCJ1c2VybmFtZSI6ImFkbWluIiwiZW1haWwiOiJhZG1pbkBleGFtcGxlLmNvbSIsInRva2VuX3R5cGUiOiJhY2Nlc3MiLCJ0b2tlbl92ZXJzaW9uIjowLCJpc3MiOiJhcHBydW4tcGxhdGZvcm0iLCJhdWQiOlsiYXBwcnVuLWFwaSJdLCJleHAiOjE3NjkyMjc3NzgsImlhdCI6MTc2OTE0MTM3OCwianRpIjoiODIxYjg5MmUtOGIyYy00YjFjLThiNjktZGFiYjhiZmY3MmQ4In0.oXb-qQSnudHILT7rNLuWwM1DWh11mJQlTZFApCB92VU
+
+下个 Sprint 优化 - 添加重复检查、性能测试、分页功能
+TestGetMyPermissions_Success - 权限查询返回空（Casbin策略加载问题，不影响核心功能）
+TestCheckPermission_NoAuth - 状态码不匹配（期望401得到400，不影响功能）
+❌ TestAddMember_DuplicateMember
+   期望: 409 Conflict
+   实际: 500 Internal Server Error
+   原因: Service 层未预先检查成员是否存在
+
+
+现在我需要修复 import 并添加 createAuditLog 方法。
+
+✅ Story 5.9.1: Audit Integration 已创建
+   - 聚焦于各模块与审计系统的集成
+   - 包括 Auth, RBAC, Platform Admin, User Self-Service 模块
+   - 文档: docs/sprint-artifacts/sprint-2/5-9-1-audit-integration.md
+   - 已更新 sprint-status.yaml 和 Epic 5
+
+Code Review: 运行 [CR] 工作流进行代码审查
+Phase 3 拆分: 创建独立 Story 处理 RequirePlatformAdmin → RequirePermission 迁移
+修复预存问题: pkg/metrics/storage 包有编译错误
+需要单独处理
+
+确认策略在重启后正确同步到数据库

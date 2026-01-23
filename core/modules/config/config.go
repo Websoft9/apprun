@@ -4,10 +4,12 @@ package config
 import (
 	auditmod "apprun/modules/audit"
 	authmod "apprun/modules/auth"
+	metricsmod "apprun/modules/metrics"
 	"apprun/pkg/cache"
 	"apprun/pkg/database"
 	"apprun/pkg/i18n"
 	"apprun/pkg/logger"
+	"apprun/pkg/metricstore"
 )
 
 // Config is the root configuration structure for the entire application.
@@ -38,4 +40,8 @@ type Config struct {
 	I18n   i18n.Config     `mapstructure:"i18n" json:"i18n" validate:"required" register:"auto" description:"Internationalization module (language and translations)"`
 	Auth   authmod.Config  `mapstructure:"auth" json:"auth" validate:"required" register:"auto" description:"Authentication module (includes JWT and security settings)"`
 	Audit  auditmod.Config `mapstructure:"audit" json:"audit" validate:"required" register:"auto" description:"Audit logging module (HTTP request auditing and action logging)"`
+
+	// Metrics and Storage configurations
+	Metricstore metricstore.Config `mapstructure:"metricstore" json:"metricstore" validate:"required" register:"auto" description:"Metrics storage backend configuration (BadgerDB, Prometheus)"`
+	Metrics     metricsmod.Config  `mapstructure:"metrics" json:"metrics" validate:"required" register:"auto" description:"Metrics collection and export configuration"`
 }

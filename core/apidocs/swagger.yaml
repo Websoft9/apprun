@@ -378,20 +378,6 @@ definitions:
     - StatusDegraded
     - StatusUnhealthy
     - StatusUnknown
-  metrics.HealthResponse:
-    properties:
-      backend:
-        type: string
-      disk_usage_mb:
-        type: number
-      metrics_count:
-        type: integer
-      stats:
-        additionalProperties: true
-        type: object
-      status:
-        type: string
-    type: object
   metrics.HistoryResponse:
     properties:
       count:
@@ -435,15 +421,6 @@ definitions:
       value:
         type: number
     type: object
-  metrics.IngestResponse:
-    properties:
-      message:
-        type: string
-      metric_id:
-        type: string
-      success:
-        type: boolean
-    type: object
   metrics.KeysResponse:
     properties:
       count:
@@ -452,19 +429,6 @@ definitions:
         items:
           $ref: '#/definitions/metrics.MetricKey'
         type: array
-    type: object
-  metrics.MetricData:
-    properties:
-      name:
-        type: string
-      tags:
-        additionalProperties:
-          type: string
-        type: object
-      timestamp:
-        type: string
-      value:
-        type: number
     type: object
   metrics.MetricKey:
     properties:
@@ -493,21 +457,6 @@ definitions:
         type: string
       value:
         type: number
-    type: object
-  metrics.QueryResponse:
-    properties:
-      count:
-        type: integer
-      end:
-        type: string
-      has_more:
-        type: boolean
-      metrics:
-        items:
-          $ref: '#/definitions/metrics.MetricData'
-        type: array
-      start:
-        type: string
     type: object
   metrics.ScopeDefinition:
     properties:
@@ -1807,142 +1756,6 @@ paths:
       security:
       - BearerAuth: []
       summary: Get Metrics Snapshot
-      tags:
-      - metrics
-  /api/metrics/storage/health:
-    get:
-      description: Check the health status of the metrics storage backend
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Healthy
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  $ref: '#/definitions/metrics.HealthResponse'
-              type: object
-        "503":
-          description: Unhealthy
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  $ref: '#/definitions/metrics.HealthResponse'
-              type: object
-      summary: Storage Health Check
-      tags:
-      - metrics
-  /api/metrics/storage/ingest:
-    post:
-      consumes:
-      - application/json
-      description: Store a metric with optional tags and timestamp
-      parameters:
-      - description: Metric data
-        in: body
-        name: metric
-        required: true
-        schema:
-          $ref: '#/definitions/metrics.IngestRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Success
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  $ref: '#/definitions/metrics.IngestResponse'
-              type: object
-        "400":
-          description: Bad Request - Invalid metric format
-          schema:
-            $ref: '#/definitions/response.Response'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.Response'
-        "403":
-          description: Forbidden - requires admin role
-          schema:
-            $ref: '#/definitions/response.Response'
-        "429":
-          description: Too Many Requests
-          schema:
-            $ref: '#/definitions/response.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/response.Response'
-      security:
-      - BearerAuth: []
-      summary: Ingest Metric
-      tags:
-      - metrics
-  /api/metrics/storage/query:
-    get:
-      description: Retrieve metrics by name and time range
-      parameters:
-      - description: Metric name
-        in: query
-        name: name
-        required: true
-        type: string
-      - default: 24h
-        description: Time range (e.g., 1h, 24h)
-        in: query
-        name: duration
-        type: string
-      - description: Start timestamp (RFC3339)
-        in: query
-        name: start
-        type: string
-      - description: End timestamp (RFC3339)
-        in: query
-        name: end
-        type: string
-      - default: 1000
-        description: Max results
-        in: query
-        name: limit
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Success
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  $ref: '#/definitions/metrics.QueryResponse'
-              type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/response.Response'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.Response'
-        "403":
-          description: Forbidden - requires admin role
-          schema:
-            $ref: '#/definitions/response.Response'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/response.Response'
-      security:
-      - BearerAuth: []
-      summary: Query Metrics
       tags:
       - metrics
   /api/profile:

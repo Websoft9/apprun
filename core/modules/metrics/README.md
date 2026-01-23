@@ -260,7 +260,7 @@ go test ./modules/metrics/... -race
 ## Architecture Decisions
 
 See related ADRs:
-- [ADR-009: Metrics Storage Anti-Corruption Layer](../../docs/architecture/adr/009-metrics-storage-acl.md)
+- [ADR-009: Metrics Storage Anti-Corruption Layer](../../specs/architecture/adr/009-metrics-storage-acl.md)
 
 ## Dependencies
 

@@ -518,7 +518,7 @@ POST /api/metrics/storage/ingest → 使用 /api/metrics/ingest
 
 ### 7. 相关文档
 
-- **Swagger 文档**: http://localhost:8080/api/docs/
+- **Swagger 文档**: http://localhost:8080/api/apidocs/
 - **重构说明**: [core/modules/metrics/REFACTORING.md](../core/modules/metrics/REFACTORING.md)
 - **Epic 9 - Observability**: [docs/epics/9-observability-epic.md](./epics/9-observability-epic.md)
 - **Story 9.1 - Metrics Exposure**: [docs/sprint-artifacts/sprint-3/9-1-metrics-exposure.md](./sprint-artifacts/sprint-3/9-1-metrics-exposure.md)

@@ -4,46 +4,93 @@
 
 # === LOGGER Module ===
 logger:
-  level:  # default: info, validate: oneof=debug info warn error, db: true
+  level:  # default: info, validate: required,oneof=debug info warn error, db: true
     info
-  output:
-    targets:  # default: stdout, validate: min=1,dive,oneof=stdout stderr file, db: true
+  output:  # validate: required
+    targets:  # default: stdout, validate: omitempty,min=1,dive,oneof=stdout stderr file, db: true
       stdout
+
+# === METRICSTORE Module ===
+metricstore:
+  storage:
+    backend:  # default: mock, validate: oneof=mock badger prometheus, db: false
+      mock
+    timeout:  # default: 5s, validate: gte=0, db: true
+      5s
+    retry:
+      enabled:  # default: true, db: true
+        true
+      max_attempts:  # default: 3, validate: gte=1, db: true
+        3
+      backoff:  # default: exponential, validate: oneof=exponential linear, db: true
+        exponential
+    retention:  # default: 24h, validate: gte=0, db: true
+      24h
+    : {}
+
+# === METRICS Module ===
+metrics:
+  collection:
+    enabled:  # default: true, db: true
+      true
+    interval:  # default: 15s, validate: gte=1s, db: true
+      15s
+    include_runtime:  # default: true, db: true
+      true
+  cache:
+    enabled:  # default: true, db: true
+      true
+    ttl:  # default: 1m, validate: gte=0, db: true
+      1m
+    key_prefix:  # default: metrics:, db: false
+      "metrics:"
+  export:
+    enabled:  # default: true, db: true
+      true
+    path:  # default: /metrics, validate: required,startswith=/, db: true
+      /metrics
+  rate_limit:
+    enabled:  # default: true, db: true
+      true
+    requests:  # default: 100, validate: gte=1, db: true
+      100
+    window:  # default: 1m, validate: gte=1s, db: true
+      1m
 
 # === I18N Module ===
 i18n:
   default_language:  # default: en-US, validate: required, db: true
     en-US
-  supported_languages:  # default: en-US,zh-CN, validate: required,min=1, db: true
+  supported_languages:  # default: en-US,zh-CN, validate: omitempty,min=1, db: true
     en-US,zh-CN
   translations_path:  # default: ./locales, validate: required, db: true
     ./locales
 
 # === AUTH Module ===
 auth:
-  jwt:
+  jwt:  # validate: required
     secret:  # validate: required,min=32, db: false
       ""  # TODO: Set value
-    access_token_expiration:  # default: 24h, validate: min=1h,max=168h, db: true
+    access_token_expiration:  # default: 24h, validate: omitempty,min=1h,max=168h, db: true
       24h
-    refresh_token_expiration:  # default: 168h, validate: min=24h,max=720h, db: true
+    refresh_token_expiration:  # default: 168h, validate: omitempty,min=24h,max=720h, db: true
       168h
     issuer:  # default: apprun-platform, validate: required, db: false
       apprun-platform
     audience:  # default: apprun-api, validate: required, db: false
       apprun-api
-    whitelist_paths:  # validate: min=1, db: true
+    whitelist_paths:  # validate: omitempty,min=1, db: true
       []
-  security:
-    bcrypt_cost:  # default: 10, validate: min=4,max=31, db: true
+  security:  # validate: required
+    bcrypt_cost:  # default: 10, validate: omitempty,min=4,max=31, db: true
       10
     failed_login_cache_enabled:  # default: true, db: true
       true
-    failed_login_cache_ttl:  # default: 5m, validate: min=1m,max=1h, db: true
+    failed_login_cache_ttl:  # default: 5m, validate: omitempty,min=1m,max=1h, db: true
       5m
-    max_failed_attempts:  # default: 5, validate: min=3,max=20, db: true
+    max_failed_attempts:  # default: 5, validate: omitempty,min=3,max=20, db: true
       5
-  init:
+  init:  # validate: required
     username:  # default: admin
       admin
     email:  # default: admin@example.com
@@ -87,6 +134,53 @@ cache:
     true
   tls_enabled:  # default: false, db: false
     false
+
+# === AUDIT Module ===
+audit:
+  service:
+    enabled:  # default: true, db: true
+      true
+    buffer_size:  # default: 1000, validate: omitempty,min=100,max=10000, db: true
+      1000
+    worker_count:  # default: 4, validate: omitempty,min=1,max=32, db: true
+      4
+    flush_interval:  # default: 5s, validate: omitempty,min=1s,max=60s, db: true
+      5s
+    fallback_file_path:  # default: /var/log/apprun/audit-fallback.log, db: true
+      /var/log/apprun/audit-fallback.log
+  middleware:
+    enabled:  # default: true, db: true
+      true
+    exclude_paths:  # db: true
+      []
+    sensitive_fields:  # db: true
+      []
+    include_request_body:  # default: false, db: true
+      false
+    include_response_body:  # default: false, db: true
+      false
+    max_body_size:  # default: 4096, validate: omitempty,min=0,max=65536, db: true
+      4096
+  storage:
+    type:  # default: database, validate: oneof=database file both, db: true
+      database
+    async_write:  # default: true, db: true
+      true
+    file_path:  # default: /var/log/apprun/audit.log, db: true
+      /var/log/apprun/audit.log
+    file_rotate_size:  # default: 100, validate: omitempty,min=1,max=1000, db: true
+      100
+    file_rotate_age:  # default: 7, validate: omitempty,min=1,max=365, db: true
+      7
+  retention:
+    enabled:  # default: false, db: true
+      false
+    days:  # default: 365, validate: omitempty,min=1,max=3650, db: true
+      365
+    archive_enabled:  # default: false, db: true
+      false
+    archive_path:  # default: /var/log/apprun/audit-archive, db: true
+      /var/log/apprun/audit-archive
 
 # === SERVER Module ===
 server:

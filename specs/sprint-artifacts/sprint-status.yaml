@@ -2,7 +2,7 @@
 # project: apprun
 # project_key: apprun
 # tracking_system: file-system
-# story_location: /data/cdl/apprun/docs/sprint-artifacts
+# story_location: /data/cdl/apprun/specs/sprint-artifacts
 
 # STATUS DEFINITIONS:
 # ==================
@@ -235,6 +235,10 @@ development_status:
     status: review
     title: Unify RequirePlatformAdmin to RequirePermission
     sprint: sprint-2
+  5-6-user-self-service:
+    status: done
+    title: User Self-Service (用户自我管理)
+    sprint: sprint-2
   5-7-platform-user-management:
     status: review
     title: Platform User Management (平台用户管理)
@@ -242,6 +246,14 @@ development_status:
   5-8-system-user-initialization:
     status: done
     title: 系统用户初始化支持
+    sprint: sprint-2
+  5-9-audit-logging:
+    status: review
+    title: 审计日志中间件
+    sprint: sprint-2
+  5-9-1-audit-integration:
+    status: not-started
+    title: Audit Integration (审计集成)
     sprint: sprint-2
   epic-5-retrospective:
     status: optional
@@ -320,13 +332,15 @@ development_status:
     title: Metrics Exposure (平台指标暴露)
     sprint: sprint-3
   9-2-metrics-storage-acl:
-    status: review
+    status: done
     title: Metrics Storage Anti-Corruption Layer
     sprint: sprint-3
+    notes: "Refactored APIs: storage/* → metrics/* | Config isolation: metricstore vs metrics"
   9-3-badgerdb-otel:
-    status: ready-for-dev
+    status: done
     title: BadgerDB Backend with OTEL Integration
     sprint: sprint-3
+    notes: "Storage APIs deprecated, integrated into 9-2"
   9-4-prometheus-adapter:
     status: backlog
     title: Prometheus Backend Adapter

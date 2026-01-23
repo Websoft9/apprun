@@ -85,7 +85,7 @@ func init() {
 	generateConfigCmd.Flags().BoolVar(&generateEnvOnly, "env-only", false, "Generate .env.example only")
 
 	// Add flags to generate openapi command
-	generateOpenAPICmd.Flags().StringVarP(&openapiOutputDir, "output", "o", "docs", "Output directory for OpenAPI documentation")
+	generateOpenAPICmd.Flags().StringVarP(&openapiOutputDir, "output", "o", "apidocs", "Output directory for OpenAPI documentation")
 	generateOpenAPICmd.Flags().StringVarP(&openapiMainFile, "main", "m", "internal/bootstrap/server.go", "Main file for API annotations")
 }
 
@@ -266,9 +266,9 @@ This command runs swag init to generate OpenAPI 2.0 (Swagger) documentation
 from Go annotations in your handler files.
 
 The generator produces:
-- docs/swagger.json - OpenAPI specification in JSON format
-- docs/swagger.yaml - OpenAPI specification in YAML format
-- docs/docs.go - Go code for serving the documentation
+- apidocs/swagger.json - OpenAPI specification in JSON format
+- apidocs/swagger.yaml - OpenAPI specification in YAML format
+- apidocs/docs.go - Go code for serving the documentation
 
 After generation, documentation is accessible at:
   http://localhost:8080/api/docs/
@@ -285,7 +285,7 @@ Annotation format:
 
 Examples:
   apprun generate openapi                                # Generate docs
-  apprun generate openapi --output docs                  # Custom output dir
+  apprun generate openapi --output apidocs               # Custom output dir
   apprun generate openapi --main internal/bootstrap/app.go  # Custom main file
   
 See also: https://github.com/swaggo/swag`,
@@ -322,6 +322,6 @@ func runGenerateOpenAPI(cmd *cobra.Command, args []string) error {
 	fmt.Printf("   - %s/swagger.json\n", openapiOutputDir)
 	fmt.Printf("   - %s/swagger.yaml\n", openapiOutputDir)
 	fmt.Printf("   - %s/docs.go\n", openapiOutputDir)
-	fmt.Println("💡 Access at: http://localhost:8080/api/docs/")
+	fmt.Println("💡 Access at: http://localhost:8080/api/apidocs/")
 	return nil
 }

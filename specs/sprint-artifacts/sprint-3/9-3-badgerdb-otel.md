@@ -41,10 +41,10 @@
 - [x] Memory usage < 100MB for typical workload
 - [x] Disk usage with compression enabled
 
-### API Endpoints
-- [x] `POST /api/metrics/storage/ingest` - Store metrics
-- [x] `GET /api/metrics/storage/query` - Query by name and time range
-- [x] `GET /api/metrics/storage/health` - Storage health check
+### API Endpoints (REFACTORED - See Story 9.5)
+- ~~`POST /api/metrics/storage/ingest`~~ → **Replaced by** `POST /api/metrics/ingest` (Story 9.5)
+- ~~`GET /api/metrics/storage/query`~~ → **Replaced by** `GET /api/metrics/history` (Story 9.5)
+- ~~`GET /api/metrics/storage/health`~~ → **Removed** (use `/health` global endpoint)
 
 ### Security Requirements
 - [x] API endpoints require authentication (admin role, reuse Story 9.1 auth)
@@ -65,9 +65,14 @@
 
 ## 📐 Technical Design
 
-### API Specification
+### API Specification (DEPRECATED - See Story 9.5)
 
-#### POST /api/metrics/storage/ingest
+> **⚠️ NOTICE**: The following API endpoints have been refactored in Story 9.5:
+> - Storage endpoints moved from `/api/metrics/storage/*` to `/api/metrics/*`
+> - Handler implementation moved from `storage_handler.go` to `handler.go`
+> - See [Story 9.5](./9-5-metrics-refactor.md) for current API specification
+
+#### POST /api/metrics/storage/ingest (DEPRECATED)
 **Authentication**: Required (admin role)
 
 **Request**:

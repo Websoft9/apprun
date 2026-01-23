@@ -560,9 +560,9 @@ kubectl scale deployment apprun-core --replicas=3
 
 | Document | Purpose |
 |----------|---------|
-| [Story 05a](./docs/sprint-artifacts/sprint-0/story-05a-database-migration.md) | Database migration decisions |
-| [devops-process.md](./docs/standards/devops-process.md) | DevOps workflows & standards |
-| [coding-standards.md](./docs/standards/coding-standards.md) | Code review guidelines |
+| [Story 05a](./specs/sprint-artifacts/sprint-0/story-05a-database-migration.md) | Database migration decisions |
+| [devops-process.md](./specs/standards/devops-process.md) | DevOps workflows & standards |
+| [coding-standards.md](./specs/standards/coding-standards.md) | Code review guidelines |
 
 ---
 

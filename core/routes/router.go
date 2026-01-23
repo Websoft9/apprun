@@ -324,24 +324,24 @@ func RegisterAdminUserRoutes(r chi.Router, dbClient *ent.Client) {
 // RegisterMetricsRoutes registers metrics routes (Story 9.1 - Observability)
 func RegisterMetricsRoutes(r chi.Router, dbClient *ent.Client, cacheClient cache.Client) {
 	// Initialize metrics storage repository (Story 9.1 - Storage integration)
-	metricsCfg, err := metricstore.LoadConfig()
-	if err != nil {
-		// Log error but continue - metrics will work without persistence
-		logger.L().Warn("Failed to load metrics config, persistence disabled", logger.Field{Key: "error", Value: err})
-		metricsCfg = nil
-	}
-
 	var metricsRepo *metricstore.Repository
-	if metricsCfg != nil {
-		storageBackend, err := storage.NewStorage(metricsCfg.ToStorageConfig())
-		if err != nil {
-			logger.L().Warn("Failed to initialize metrics storage, persistence disabled", logger.Field{Key: "error", Value: err})
-		} else {
-			metricsRepo = metricstore.NewRepository(storageBackend, metricsCfg)
-		}
+
+	// Try to initialize storage (optional feature - graceful degradation)
+	if metricsCfg, err := metricstore.LoadConfig(); err != nil {
+		logger.L().Warn("Metrics storage disabled: config load failed",
+			logger.Field{Key: "error", Value: err})
+	} else if storageBackend, err := storage.NewStorage(metricsCfg.ToStorageConfig()); err != nil {
+		logger.L().Warn("Metrics storage disabled: backend init failed",
+			logger.Field{Key: "error", Value: err},
+			logger.Field{Key: "backend", Value: metricsCfg.Storage.Backend})
+	} else {
+		metricsRepo = metricstore.NewRepository(storageBackend, metricsCfg)
+		logger.L().Info("Metrics storage initialized",
+			logger.Field{Key: "backend", Value: metricsCfg.Storage.Backend},
+			logger.Field{Key: "retention", Value: metricsCfg.Storage.Retention})
 	}
 
-	// Initialize metrics service and handlers
+	// Initialize metrics service and handlers (works with or without storage)
 	metricsService := metrics.NewMetricsService(dbClient, cacheClient, metricsRepo)
 	metricsHandler := metrics.NewMetricsHandler(metricsService)
 

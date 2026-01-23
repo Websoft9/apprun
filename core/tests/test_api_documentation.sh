@@ -8,7 +8,7 @@ echo "🧪 API 文档改进验证"
 echo "======================="
 echo ""
 
-SWAGGER_FILE="/data/cdl/apprun/core/docs/swagger.json"
+SWAGGER_FILE="/data/cdl/apprun/core/apidocs/swagger.json"
 
 if [ ! -f "$SWAGGER_FILE" ]; then
     echo "❌ Swagger 文档不存在: $SWAGGER_FILE"

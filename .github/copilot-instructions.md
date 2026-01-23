@@ -52,8 +52,8 @@ You can also mention agents directly in your messages:
 ### Core Documentation
 - Full agent definitions: `.bmad/bmm/agents/`
 - Workflow configurations: `.bmad/bmm/workflows/`
-- Project documentation: `docs/`
-- Sprint artifacts: `docs/sprint-artifacts/`
-- Standards (Developer Reference): `docs/standards/`
-- Architecture (System Design): `docs/architecture/`
+- Project documentation: `specs/`
+- Sprint artifacts: `specs/sprint-artifacts/`
+- Standards (Developer Reference): `specs/standards/`
+- Architecture (System Design): `specs/architecture/`
 - Product Documentation (User Guide): `docs/product/`

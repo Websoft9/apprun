@@ -35,7 +35,7 @@ make test
 ## 📋 Development Workflow
 
 ### 1. Find a Task
-- Check [`docs/sprint-artifacts/sprint-status.yaml`](docs/sprint-artifacts/sprint-status.yaml)
+- Check [`specs/sprint-artifacts/sprint-status.yaml`](specs/sprint-artifacts/sprint-status.yaml)
 - Look for issues tagged `good-first-issue` or `help-wanted`
 - Generate story index: `make story-index`
 
@@ -48,8 +48,8 @@ git checkout -b feature/story-XX-description
 
 **Load context into your AI agent**:
 ```bash
-@workspace /docs/standards/coding-standards.md
-@workspace /docs/standards/api-design.md
+@workspace /specs/standards/coding-standards.md
+@workspace /specs/standards/api-design.md
 ```
 
 **Ask AI**:
@@ -75,7 +75,7 @@ git commit -m "feat(module): brief description
 Ref: Sprint-X Story-XX"
 ```
 
-**Commit format**: See [devops-process.md](./docs/standards/devops-process.md#22-commit-message-规范)
+**Commit format**: See [devops-process.md](./specs/standards/devops-process.md#22-commit-message-规范)
 
 ### 6. Submit Pull Request
 - Title: `[Story-XX] Brief description`
@@ -96,10 +96,10 @@ Ref: Sprint-X Story-XX"
 **Activate**: In GitHub Copilot Chat, select agent from mode dropdown.
 
 ### Key Principles
-- **Documentation First**: Always reference [`docs/standards`](docs/standards ) before coding
+- **Documentation First**: Always reference [`specs/standards`](specs/standards ) before coding
 - **AI-Assisted**: Load project standards into AI agent
 - **Test-Driven**: Coverage > 80%
-- **Review Checklist**: Use [Code Review Checklist](./docs/standards/devops-process.md#33-code-review-清单)
+- **Review Checklist**: Use [Code Review Checklist](./specs/standards/devops-process.md#33-code-review-清单)
 
 ---
 
@@ -107,11 +107,11 @@ Ref: Sprint-X Story-XX"
 
 | Document | Purpose |
 |----------|---------|
-| [coding-standards.md](./docs/standards/coding-standards.md) | Code style & patterns |
-| [api-design.md](./docs/standards/api-design.md) | API decisions & formats |
-| [devops-process.md](./docs/standards/devops-process.md) | Commit format & reviews |
-| [Story 05a](./docs/sprint-artifacts/sprint-0/story-05a-database-migration.md) | Database migration details |
-| [sprint-artifacts/](./docs/sprint-artifacts/) | Current sprint stories |
+| [coding-standards.md](./specs/standards/coding-standards.md) | Code style & patterns |
+| [api-design.md](./specs/standards/api-design.md) | API decisions & formats |
+| [devops-process.md](./specs/standards/devops-process.md) | Commit format & reviews |
+| [Story 05a](./specs/sprint-artifacts/sprint-0/story-05a-database-migration.md) | Database migration details |
+| [sprint-artifacts/](./specs/sprint-artifacts/) | Current sprint stories |
 
 ---
 
@@ -163,7 +163,7 @@ make migrate-status
 
 - **Issues**: Tag `help-wanted` or `good-first-issue`
 - **Discussions**: [GitHub Discussions](https://github.com/Websoft9/apprun/discussions)
-- **Documentation**: Start with [`docs/standards/README.md`](docs/standards/README.md)
+- **Documentation**: Start with [`specs/standards/README.md`](specs/standards/README.md)
 
 ---
 

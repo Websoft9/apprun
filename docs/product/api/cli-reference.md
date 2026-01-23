@@ -641,7 +641,7 @@ apprun generate openapi --main cmd/api/main.go
    - docs/swagger.json
    - docs/swagger.yaml
    - docs/docs.go
-💡 Access at: http://localhost:8080/api/docs/
+💡 Access at: http://localhost:8080/api/apidocs/
 ```
 
 **Annotation Example:**

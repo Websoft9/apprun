@@ -14,27 +14,28 @@ import (
 	"apprun/pkg/metricstore/storage"
 )
 
-// Config holds the metrics module configuration.
+// Config holds the metricstore module configuration.
 // It can be loaded from config files and overridden by environment variables.
 type Config struct {
 	// Storage backend configuration
 	Storage StorageConfig `mapstructure:"storage" json:"storage" yaml:"storage"`
 }
 
-// StorageConfig holds storage backend configuration.
+// StorageConfig holds storage backend configuration for metricstore.
+// This is infrastructure-level configuration that defines where and how metrics are persisted.
 type StorageConfig struct {
 	// Backend type: "mock", "badger", or "prometheus"
-	Backend string `mapstructure:"backend" json:"backend" yaml:"backend"`
+	Backend string `mapstructure:"backend" json:"backend" yaml:"backend" default:"mock" db:"false" validate:"oneof=mock badger prometheus"`
 
 	// Timeout for storage operations (default: 5s)
-	Timeout time.Duration `mapstructure:"timeout" json:"timeout" yaml:"timeout"`
+	Timeout time.Duration `mapstructure:"timeout" json:"timeout" yaml:"timeout" default:"5s" db:"true" validate:"gte=0"`
 
 	// Retry configuration for failed operations
 	Retry RetryConfig `mapstructure:"retry" json:"retry" yaml:"retry"`
 
 	// Retention period for BadgerDB (default: 24h)
 	// Metrics older than this will be automatically purged
-	Retention time.Duration `mapstructure:"retention" json:"retention" yaml:"retention"`
+	Retention time.Duration `mapstructure:"retention" json:"retention" yaml:"retention" default:"24h" db:"true" validate:"gte=0"`
 
 	// Settings contains backend-specific configuration
 	// For BadgerDB: {"path": "/data/metrics"}
@@ -42,16 +43,16 @@ type StorageConfig struct {
 	Settings map[string]interface{} `mapstructure:",remain" json:"settings,omitempty" yaml:",inline"`
 }
 
-// RetryConfig defines retry behavior for failed operations.
+// RetryConfig defines retry behavior for failed storage operations.
 type RetryConfig struct {
-	// Enabled determines if retry is enabled
-	Enabled bool `mapstructure:"enabled" json:"enabled" yaml:"enabled"`
+	// Enabled determines if retry is enabled (default: true)
+	Enabled bool `mapstructure:"enabled" json:"enabled" yaml:"enabled" default:"true" db:"true"`
 
 	// MaxAttempts is the maximum number of retry attempts (default: 3)
-	MaxAttempts int `mapstructure:"max_attempts" json:"max_attempts" yaml:"max_attempts"`
+	MaxAttempts int `mapstructure:"max_attempts" json:"max_attempts" yaml:"max_attempts" default:"3" db:"true" validate:"gte=1"`
 
 	// Backoff strategy: "exponential" or "linear" (default: exponential)
-	Backoff string `mapstructure:"backoff" json:"backoff" yaml:"backoff"`
+	Backoff string `mapstructure:"backoff" json:"backoff" yaml:"backoff" default:"exponential" db:"true" validate:"oneof=exponential linear"`
 }
 
 // LoadConfig loads metrics configuration from file and environment variables.
@@ -84,17 +85,17 @@ func LoadConfig() (*Config, error) {
 	v.SetDefault("storage.retry.backoff", "exponential")
 
 	// Bind environment variables
-	v.SetEnvPrefix("METRICS")
+	v.SetEnvPrefix("METRICSTORE")
 	v.AutomaticEnv()
 
 	// Allow environment variable override for backend
-	if backend := os.Getenv("METRICS_STORAGE_BACKEND"); backend != "" {
+	if backend := os.Getenv("METRICSTORE_STORAGE_BACKEND"); backend != "" {
 		v.Set("storage.backend", backend)
 	}
-	if timeout := os.Getenv("METRICS_STORAGE_TIMEOUT"); timeout != "" {
+	if timeout := os.Getenv("METRICSTORE_STORAGE_TIMEOUT"); timeout != "" {
 		v.Set("storage.timeout", timeout)
 	}
-	if retention := os.Getenv("METRICS_STORAGE_RETENTION"); retention != "" {
+	if retention := os.Getenv("METRICSTORE_STORAGE_RETENTION"); retention != "" {
 		v.Set("storage.retention", retention)
 	}
 

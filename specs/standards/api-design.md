@@ -133,7 +133,7 @@ func (h *Handler) GetConfig(w http.ResponseWriter, r *http.Request) { ... }
 ```
 
 ### 开发流程
-1. 添加注解 → 2. `make swagger` → 3. 验证 `/api/docs/` → 4. 提交 `core/docs/`
+1. 添加注解 → 2. `make swagger` → 3. 验证 `/api/apidocs/` → 4. 提交 `core/apidocs/`
 
 详见: [Story 11](../sprint-artifacts/sprint-0/story-11-swagger-docs.md)
 

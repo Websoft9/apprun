@@ -676,7 +676,7 @@ Claude Sonnet 4.5 (GitHub Copilot)
 **Modified**:
 1. `/data/cdl/apprun/core/handlers/health_handler.go`
 2. `/data/cdl/apprun/core/routes/router.go`
-3. `/data/cdl/apprun/docs/sprint-artifacts/sprint-3/1-20-health-check-api.md`
+3. `/data/cdl/apprun/specs/sprint-artifacts/sprint-3/1-20-health-check-api.md`
 
 ---
 

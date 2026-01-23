@@ -476,27 +476,53 @@ auth:
 
 ### Story 5.9: 审计日志中间件 (Audit Logging Middleware)
 **优先级**: P1  
-**工作量**: 1 天  
+**工作量**: 1.5 天  
+**文件**: [5-9-audit-logging.md](../sprint-artifacts/sprint-2/5-9-audit-logging.md)  
 **依赖**: Story 5.3 (JWT 中间件)
 
-**目标**: 自动记录所有关键操作，支持安全审计和合规性要求
+**目标**: 实现审计日志基础设施，支持安全审计和合规性要求
 
 **功能要求**:
-- [ ] 实现 `AuditMiddleware` 自动记录 HTTP 请求
-- [ ] 实现 `AuditService.Log()` 和 `LogAction()` 方法
-- [ ] 捕获关键字段（时间戳、操作者、操作类型、目标资源、IP、User-Agent）
-- [ ] 支持异步写入（避免阻塞业务）
-- [ ] 创建 `AuditLog` 数据模型（Ent Schema）
-- [ ] 支持数据库和文件两种存储方式（可配置）
-- [ ] 自动记录认证事件、权限拒绝、资源变更、管理操作
-- [ ] 敏感字段自动脱敏（password, token, secret）
-- [ ] 编写单元测试和集成测试
+- [x] 实现 `AuditMiddleware` 自动记录 HTTP 请求
+- [x] 实现 `AuditService.Log()` 和 `LogAction()` 方法
+- [x] 捕获关键字段（时间戳、操作者、操作类型、目标资源、IP、User-Agent）
+- [x] 支持异步写入（避免阻塞业务）
+- [x] 创建 `AuditLog` 数据模型（Ent Schema）
+- [x] 支持数据库和文件两种存储方式（可配置）
+- [x] 敏感字段自动脱敏（password, token, secret）
+- [x] 编写单元测试和集成测试
 
 **验收标准**:
-- [ ] 所有 HTTP 请求自动记录（排除 /health, /metrics）
-- [ ] 日志写入延迟 < 50ms (P95)
-- [ ] 管理操作（Story 5.7）正确调用审计日志
-- [ ] 审计日志包含完整追溯信息
+- [x] 所有 HTTP 请求可自动记录（排除 /health, /metrics）
+- [x] 日志写入延迟 < 50ms (P95)
+- [x] 审计日志包含完整追溯信息
+- [x] 提供 Query API 查询审计日志
+
+**状态**: ✅ Review
+
+### Story 5.9.1: Audit Integration (审计集成)
+**优先级**: P1  
+**工作量**: 2 天  
+**文件**: [5-9-1-audit-integration.md](../sprint-artifacts/sprint-2/5-9-1-audit-integration.md)  
+**依赖**: Story 5.9 (审计日志中间件), Story 5.5.2 (RBAC API), Story 5.7 (Platform Admin)
+
+**目标**: 系统化地将审计日志集成到所有关键模块
+
+**集成模块**:
+- [ ] Auth 模块（Login, Register, Password Reset, Logout, Token Refresh）
+- [ ] RBAC 模块（Member add/remove, Role changes, Permission denials）
+- [ ] Platform Admin 模块（User management, Role assignments, Status changes）
+- [ ] User Self-Service 模块（Profile updates, Password changes）
+
+**验收标准**:
+- [ ] 所有安全敏感操作有审计日志
+- [ ] Failed operations 也被记录
+- [ ] 审计日志包含丰富业务上下文
+- [ ] 集成测试覆盖所有模块
+- [ ] 性能开销 < 5ms per request
+- [ ] 提供完整集成文档和示例
+
+**状态**: Not Started
 
 ---
 

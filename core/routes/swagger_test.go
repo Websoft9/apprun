@@ -52,7 +52,7 @@ func TestSwaggerRedirect(t *testing.T) {
 }
 
 // TestOpenAPISpec_Accessible tests that OpenAPI spec endpoint is registered
-// Note: Actual spec content requires docs package to be generated
+// Note: Actual spec content requires apidocs package to be generated
 func TestOpenAPISpec_Accessible(t *testing.T) {
 	r := chi.NewRouter()
 	RegisterSwagger(r)
@@ -68,9 +68,9 @@ func TestOpenAPISpec_Accessible(t *testing.T) {
 }
 
 // TestOpenAPISpec_Structure tests the structure of generated OpenAPI spec
-// This test requires the docs package to be generated with `make swagger`
+// This test requires the apidocs package to be generated with `make swagger`
 func TestOpenAPISpec_Structure(t *testing.T) {
-	t.Skip("Requires generated docs package - run `make swagger` first")
+	t.Skip("Requires generated apidocs package - run `make swagger` first")
 
 	r := chi.NewRouter()
 	RegisterSwagger(r)
@@ -109,9 +109,9 @@ func TestOpenAPISpec_Structure(t *testing.T) {
 }
 
 // TestOpenAPISpec_ConfigEndpoints tests that all 5 config endpoints are documented
-// This test requires the docs package to be generated with `make swagger`
+// This test requires the apidocs package to be generated with `make swagger`
 func TestOpenAPISpec_ConfigEndpoints(t *testing.T) {
-	t.Skip("Requires generated docs package - run `make swagger` first")
+	t.Skip("Requires generated apidocs package - run `make swagger` first")
 
 	r := chi.NewRouter()
 	RegisterSwagger(r)
@@ -163,9 +163,9 @@ func TestOpenAPISpec_ConfigEndpoints(t *testing.T) {
 }
 
 // TestOpenAPISpec_ErrorResponses tests that error responses are documented
-// This test requires the docs package to be generated with `make swagger`
+// This test requires the apidocs package to be generated with `make swagger`
 func TestOpenAPISpec_ErrorResponses(t *testing.T) {
-	t.Skip("Requires generated docs package - run `make swagger` first")
+	t.Skip("Requires generated apidocs package - run `make swagger` first")
 
 	r := chi.NewRouter()
 	RegisterSwagger(r)
@@ -193,7 +193,7 @@ func TestOpenAPISpec_ErrorResponses(t *testing.T) {
 // TestOpenAPISpec_NoHostBinding tests that host field is not hardcoded
 // This test requires the docs package to be generated with `make swagger`
 func TestOpenAPISpec_NoHostBinding(t *testing.T) {
-	t.Skip("Requires generated docs package - run `make swagger` first")
+	t.Skip("Requires generated apidocs package - run `make swagger` first")
 
 	r := chi.NewRouter()
 	RegisterSwagger(r)

@@ -8,7 +8,7 @@ import (
 	"log"
 	"time"
 
-	_ "apprun/docs" // Swagger docs (自动生成)
+	_ "apprun/apidocs" // Swagger docs (自动生成)
 	"apprun/ent"
 	"apprun/internal/jwt"
 	"apprun/internal/password"

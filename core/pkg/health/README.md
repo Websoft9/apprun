@@ -37,4 +37,4 @@ report := checker.CheckAll(ctx)
 **Non-critical**: cache, metrics_storage
 
 ---
-**Documentation**: See [Story 1-20](../../../docs/sprint-artifacts/sprint-3/1-20-health-check-api.md)
+**Documentation**: See [Story 1-20](../../../specs/sprint-artifacts/sprint-3/1-20-health-check-api.md)

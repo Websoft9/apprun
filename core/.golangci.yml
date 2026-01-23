@@ -76,7 +76,7 @@ linters:
     
     paths:
       - "^ent/"
-      - "^docs/"
+      - "^apidocs/"
 
     rules:
       # Exclude cmd/ from errcheck

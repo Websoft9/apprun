@@ -240,7 +240,7 @@ const history = await fetch(`/api/metrics/history?name=${selectedMetric}&duratio
 ## 下一步
 
 1. 更新 Swagger 文档: `make swagger`
-2. 更新 API 文档: `docs/api.md`
+2. 更新 API 文档: `specs/api.md`
 3. 前端适配新API
 4. 监控旧API的使用情况，逐步迁移
 

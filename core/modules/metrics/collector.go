@@ -3,6 +3,7 @@ package metrics
 
 import (
 	"context"
+	"os"
 	"runtime"
 	"time"
 
@@ -23,14 +24,38 @@ type MetricsCollector struct {
 	entClient *ent.Client
 	repo      *metricstore.Repository // Story 9.1: Storage integration
 	logger    logger.Logger
+	env       string // Environment identifier (production/staging/dev)
+	instance  string // Instance identifier (hostname)
+	hostname  string // Host name for system metrics
 }
 
 // NewMetricsCollector creates a new metrics collector instance
 func NewMetricsCollector(client *ent.Client, repo *metricstore.Repository) *MetricsCollector {
+	// Get hostname
+	hostname, err := os.Hostname()
+	if err != nil {
+		hostname = "unknown"
+	}
+
+	// Get environment from env var (default: production)
+	env := os.Getenv("METRICS_ENV")
+	if env == "" {
+		env = "production"
+	}
+
+	// Get instance ID from env var (default: hostname)
+	instance := os.Getenv("METRICS_INSTANCE_ID")
+	if instance == "" {
+		instance = hostname
+	}
+
 	return &MetricsCollector{
 		entClient: client,
 		repo:      repo,
 		logger:    logger.L(),
+		env:       env,
+		instance:  instance,
+		hostname:  hostname,
 	}
 }
 
@@ -225,27 +250,40 @@ func (c *MetricsCollector) CollectAllMetrics(ctx context.Context) (*AllMetrics, 
 // persistUserMetrics writes user metrics to storage asynchronously
 // Errors are logged but don't affect the real-time response (degradation strategy)
 func (c *MetricsCollector) persistUserMetrics(ctx context.Context, m *UserMetrics) {
-	systemTags := map[string]string{"source": "system"}
-	if err := c.repo.RecordMetric(ctx, MetricNameUserTotal, float64(m.TotalUsers), systemTags); err != nil {
+	// Story 9.1: Add comprehensive tags for user metrics
+	userTags := map[string]string{
+		"env":      c.env,
+		"instance": c.instance,
+		"source":   "database",
+	}
+
+	if err := c.repo.RecordMetric(ctx, MetricNameUserTotal, float64(m.TotalUsers), userTags); err != nil {
 		c.logger.Warn("Failed to persist user_count_total", logger.Field{Key: "error", Value: err})
 	}
-	if err := c.repo.RecordMetric(ctx, MetricNameUserActive, float64(m.ActiveUsers), systemTags); err != nil {
+	if err := c.repo.RecordMetric(ctx, MetricNameUserActive, float64(m.ActiveUsers), userTags); err != nil {
 		c.logger.Warn("Failed to persist user_count_active", logger.Field{Key: "error", Value: err})
 	}
-	if err := c.repo.RecordMetric(ctx, MetricNameUserAdmin, float64(m.AdminUsers), systemTags); err != nil {
+	if err := c.repo.RecordMetric(ctx, MetricNameUserAdmin, float64(m.AdminUsers), userTags); err != nil {
 		c.logger.Warn("Failed to persist user_count_admin", logger.Field{Key: "error", Value: err})
 	}
-	if err := c.repo.RecordMetric(ctx, MetricNameUserBanned, float64(m.BannedUsers), systemTags); err != nil {
+	if err := c.repo.RecordMetric(ctx, MetricNameUserBanned, float64(m.BannedUsers), userTags); err != nil {
 		c.logger.Warn("Failed to persist user_count_banned", logger.Field{Key: "error", Value: err})
 	}
-	if err := c.repo.RecordMetric(ctx, MetricNameUserNewToday, float64(m.NewUsersToday), systemTags); err != nil {
+	if err := c.repo.RecordMetric(ctx, MetricNameUserNewToday, float64(m.NewUsersToday), userTags); err != nil {
 		c.logger.Warn("Failed to persist user_count_new_today", logger.Field{Key: "error", Value: err})
 	}
 }
 
 // persistSystemMetrics writes system metrics to storage asynchronously
 func (c *MetricsCollector) persistSystemMetrics(ctx context.Context, m *SystemMetrics) {
-	systemTags := map[string]string{"source": "system"}
+	// Story 9.1: Add comprehensive tags for system metrics
+	systemTags := map[string]string{
+		"env":      c.env,
+		"instance": c.instance,
+		"host":     c.hostname,
+		"source":   "system",
+	}
+
 	if err := c.repo.RecordMetric(ctx, MetricNameSystemMemory, float64(m.MemoryUsageMB), systemTags); err != nil {
 		c.logger.Warn("Failed to persist system_memory_mb", logger.Field{Key: "error", Value: err})
 	}

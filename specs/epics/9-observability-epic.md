@@ -203,18 +203,24 @@ Build a comprehensive observability platform with a flexible storage backend to 
 - [Prometheus Documentation](https://prometheus.io/docs/)
 - [Grafana Best Practices](https://grafana.com/docs/)
 - [Metrics Implementation](../../core/modules/metrics/)
-- [Metrics Storage](../../core/pkg/metricstoretore/)
+- [Metrics Storage](../../core/pkg/metricstore/)
 
 ---
 
 ## Notes
 
 - **Package Structure**: 
-  - `modules/metrics`: Application-layer metrics handlers and services
-  - `pkg/metricstoretore`: Storage-layer repository and adapters (Anti-Corruption Layer)
-- **API Structure**:
-  - `/api/metrics/*`: Application metrics (users, system, performance)
-  - `/api/metrics/storage/*`: Storage operations (ingest, query, health)
+  - `modules/metrics`: Application-layer metrics collection, caching, and HTTP API
+  - `pkg/metricstore`: Storage-layer repository and adapters (Anti-Corruption Layer)
+- **API Structure** (Current):
+  - `/api/metrics/snapshot`: Aggregated metrics view
+  - `/api/metrics/history`: Historical time-series data
+  - `/api/metrics/ingest`: Batch metric ingestion
+  - `/api/metrics/keys`: Available metric names
+  - `/api/metrics/scopes`: Available snapshot scopes
+- **Configuration Separation**:
+  - `pkg/metricstore/config.go`: Storage backend configuration (where/how to persist)
+  - `modules/metrics/config.go`: Collection and API configuration (what/when to collect)
 - **MVP First**: Start with BadgerDB for rapid validation, minimize external dependencies
 - **Anti-Corruption Layer**: Critical for future-proofing and backend flexibility
 - **Migration Strategy**: Document clear upgrade path from MVP to Enterprise

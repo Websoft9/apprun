@@ -45,9 +45,9 @@
 - [ ] Query result caching for high-frequency queries
 
 ### API Compatibility (Story 9.3 Endpoints)
-- [ ] `POST /api/metrics/storage/ingest` - Writes via OTLP exporter
-- [ ] `GET /api/metrics/storage/query` - Queries Prometheus with PromQL translation
-- [ ] `GET /api/metrics/storage/health` - Reports Prometheus connectivity status
+- [ ] `POST /api/metrics/ingest` - Writes via OTLP exporter (API 已重构)
+- [ ] `GET /api/metrics/history` - Queries Prometheus with PromQL translation (API 已重构)
+- [ ] Storage health integrated into `/health` global endpoint (API 已重构)
 - [ ] Response format identical to BadgerDB backend
 - [ ] Error codes consistent with Story 9.3
 
@@ -269,13 +269,13 @@ metrics:
 
 All HTTP endpoints from Story 9.3 remain **unchanged** when switching to Prometheus backend:
 
-#### POST /api/metrics/storage/ingest
+#### POST /api/metrics/ingest (Updated API)
 - **Backend Behavior**: Metrics pushed to OTLP exporter → Prometheus remote write
 - **Adapter Method**: `Store()` is no-op, OTEL SDK handles export
 - **Response Format**: Identical to BadgerDB (returns metric_id)
 - **Dual-Write Mode**: Writes to both BadgerDB and Prometheus simultaneously
 
-#### GET /api/metrics/storage/query
+#### GET /api/metrics/history (Updated API)
 - **Backend Behavior**: Query translated to PromQL, executed against Prometheus
 - **PromQL Translation**: 
   - `name=http_requests_total` → `http_requests_total`
@@ -284,7 +284,7 @@ All HTTP endpoints from Story 9.3 remain **unchanged** when switching to Prometh
 - **Response Format**: Converted from Prometheus matrix to Story 9.3 format
 - **Fallback**: If Prometheus unavailable, query BadgerDB (if dual-write enabled)
 
-#### GET /api/metrics/storage/health
+#### Storage Health Check (Integrated into /health)
 - **Backend Behavior**: Checks Prometheus connectivity via API
 - **Health Criteria**:
   - ✅ Healthy: Prometheus responds < 5s

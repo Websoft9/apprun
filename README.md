@@ -82,7 +82,7 @@ make app-start
 ./bin/server                        # Symlink to apprun, still works
 ```
 
-For complete CLI reference, see [docs/cli-reference.md](./docs/cli-reference.md).
+For complete CLI reference, see [specs/cli-reference.md](./specs/cli-reference.md).
 
 ### Production Deployment
 
@@ -107,8 +107,8 @@ We follow the **BMad Method** for AI-assisted development.
 
 **Get started**:
 1. Read [CONTRIBUTING.md](./CONTRIBUTING.md)
-2. Check [Sprint Artifacts](./docs/sprint-artifacts/)
-3. Follow [Standards](./docs/standards/)
+2. Check [Sprint Artifacts](./specs/sprint-artifacts/)
+3. Follow [Standards](./specs/standards/)
 4. Submit Pull Request
 
 **For maintainers**: See [OWNER.md](./OWNER.md)
@@ -117,10 +117,10 @@ We follow the **BMad Method** for AI-assisted development.
 
 ## 📚 Documentation
 
-- [Product Requirements](./docs/prd.md)
-- [Architecture](./docs/architecture/)
-- [Technical Standards](./docs/standards/)
-- [Sprint Artifacts](./docs/sprint-artifacts/)
+- [Product Requirements](./specs/prd.md)
+- [Architecture](./specs/architecture/)
+- [Technical Standards](./specs/standards/)
+- [Sprint Artifacts](./specs/sprint-artifacts/)
 
 ---
 

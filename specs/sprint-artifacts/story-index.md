@@ -6,21 +6,21 @@
 
 ## Summary
 
-**Total Stories**: 60
+**Total Stories**: 64
 
 ### By Status
 
-- ✅ **Done**: 26
+- ✅ **Done**: 30
 - 🔄 **In Progress**: 3
-- 🟢 **Ready For Dev**: 11
+- 🟢 **Ready For Dev**: 10
 - 📋 **Backlog**: 17
 
 ### By Sprint
 
 - **Sprint-0**: 14 stories
 - **Sprint-1**: 16 stories
-- **Sprint-2**: 14 stories
-- **Sprint-3**: 4 stories
+- **Sprint-2**: 17 stories
+- **Sprint-3**: 5 stories
 - **Sprint-Unknown**: 12 stories
 
 ---
@@ -80,17 +80,21 @@
 | 5-5-1-rbac-advanced | RBAC 高级特性 | 🟢 ready-for-dev | Authentication & Authorization |
 | 5-5-3-casbin-db-migration | Casbin 数据库存储迁移 | ✅ done | Authentication & Authorization |
 | 5-5-4-middleware-unification | Unify RequirePlatformAdmin to RequirePermission | ❓ review | Authentication & Authorization |
+| 5-6-user-self-service | User Self-Service (用户自我管理) | ✅ done | Authentication & Authorization |
 | 5-7-platform-user-management | Platform User Management (平台用户管理) | ❓ review | Authentication & Authorization |
 | 5-8-system-user-initialization | 系统用户初始化支持 | ✅ done | Authentication & Authorization |
+| 5-9-1-audit-integration | Audit Integration (审计集成) | ❓ not-started | Authentication & Authorization |
+| 5-9-audit-logging | 审计日志中间件 | ❓ review | Authentication & Authorization |
 | 8-1-event-publishing | Event Publishing API | 🟢 ready-for-dev | Event Hub |
 
 ## Sprint 3
 
 | Story ID | Title | Status | Epic |
 |----------|-------|--------|------|
+| 1-20-health-check-api | Health Check API | ✅ done | Infrastructure & Foundation |
 | 9-1-metrics-exposure | Metrics Exposure (平台指标暴露) | ✅ done | Observability & Monitoring |
-| 9-2-metrics-storage-acl | Metrics Storage Anti-Corruption Layer | ❓ review | Observability & Monitoring |
-| 9-3-badgerdb-otel | BadgerDB Backend with OTEL Integration | 🟢 ready-for-dev | Observability & Monitoring |
+| 9-2-metrics-storage-acl | Metrics Storage Anti-Corruption Layer | ✅ done | Observability & Monitoring |
+| 9-3-badgerdb-otel | BadgerDB Backend with OTEL Integration | ✅ done | Observability & Monitoring |
 | 9-4-prometheus-adapter | Prometheus Backend Adapter | 📋 backlog | Observability & Monitoring |
 
 ## Sprint Unknown
@@ -112,4 +116,4 @@
 
 ---
 
-*Auto-generated from `sprint-status.yaml` on 2026-01-21 17:33:30*
+*Auto-generated from `sprint-status.yaml` on 2026-01-23 11:37:20*

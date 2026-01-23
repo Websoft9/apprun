@@ -19,8 +19,8 @@
 ## 🎯 Acceptance Criteria
 
 ### 1. Swagger UI 访问
-- [x] Swagger UI 可通过 `/api/docs/` 访问（自定义路径）
-- [x] OpenAPI spec 可通过 `/api/docs/doc.json` 获取
+- [x] Swagger UI 可通过 `/api/apidocs/` 访问（自定义路径）
+- [x] OpenAPI spec 可通过 `/api/apidocs/doc.json` 获取
 - [x] 页面加载完整，样式正常，可交互
 - [x] 支持"Try it out"功能在线测试 API（直接调用真实端点）
 
@@ -48,9 +48,9 @@
 ## 📦 Deliverables
 
 ### 1. Swagger 配置文件
-- `docs/docs.go` - 自动生成的嵌入式文档（编译进二进制）
-- `docs/swagger.yaml` - OpenAPI 规范（YAML 格式）
-- `docs/swagger.json` - OpenAPI 规范（JSON 格式）
+- `apidocs/docs.go` - 自动生成的嵌入式文档（编译进二进制）
+- `apidocs/swagger.yaml` - OpenAPI 规范（YAML 格式）
+- `apidocs/swagger.json` - OpenAPI 规范（JSON 格式）
 
 ### 2. Handler 注解
 - `core/modules/config/handler.go` - 添加 Swaggo 注解
@@ -67,8 +67,12 @@
   ```
 
 ### 3. Swagger 中间件
-- `core/routes/swagger.go` - Swagger UI 路由注册（挂载到 `/api/docs/`）
-- `cmd/server/main.go` - 导入生成的文档包（`import _ "apprun/docs"`）
+- `core/routes/swagger.go` - Swagger UI 路由注册（HTTP 访问: `/api/docs/`）
+- `cmd/server/main.go` - 导入生成的文档包（`import _ "apprun/apidocs"`）
+- **重要**: 物理目录 `core/apidocs/` 与 HTTP 路径 `/api/docs` 是分开的
+  - 物理存储: `core/apidocs/*.{go,json,yaml}`
+  - HTTP 访问: `/api/docs/` (保持稳定的对外 API)
+  - Go 包导入: `import _ "apprun/apidocs"`
 
 ### 4. 文档与脚本
 - `Makefile` - 添加 `swagger` target
@@ -116,8 +120,8 @@ core/
 **Swaggo 自动嵌入原理**（零部署依赖）：
 
 ```
-编译时: swag init → 生成 docs/docs.go（OpenAPI spec 转为 Go 常量）
-运行时: import _ "apprun/docs" → init() 注册到内存 → 单一二进制文件
+编译时: swag init -o apidocs → 生成 apidocs/docs.go（OpenAPI spec 转为 Go 常量）
+运行时: import _ "apprun/apidocs" → init() 注册到内存 → 单一二进制文件
 访问:   /api/docs/ → http-swagger 从内存提供 UI 和 spec
 ```
 
@@ -159,7 +163,7 @@ vim core/modules/config/handler.go
 make swagger
 
 # 3. 访问测试
-curl http://localhost:8080/api/docs/
+curl http://localhost:8080/api/apidocs/
 ```
 
 ---
@@ -176,9 +180,9 @@ curl http://localhost:8080/api/docs/
 ### 集成测试
 ```bash
 # CI 验证流程
-make swagger                    # 生成文档
-git diff --exit-code docs/      # 确保已提交
-curl /api/docs/doc.json | jq    # 验证 spec
+make swagger                       # 生成文档
+git diff --exit-code apidocs/      # 确保已提交
+curl /api/apidocs/doc.json | jq    # 验证 spec
 ```
 
 ---
@@ -193,7 +197,7 @@ curl /api/docs/doc.json | jq    # 验证 spec
 
 ### 提交规范
 - 每次修改 API 必须同步更新注解
-- 提交前运行 `make swagger` 并提交 `docs/` 目录
+- 提交前运行 `make swagger` 并提交 `apidocs/` 目录
 - CI 流程自动验证文档同步
 
 ---
@@ -202,13 +206,13 @@ curl /api/docs/doc.json | jq    # 验证 spec
 
 - [x] Swaggo 依赖包安装完成
 - [x] 配置模块 5 个端点添加完整注解
-- [x] Swagger UI 可通过 `/api/docs/` 访问
-- [x] OpenAPI spec 可通过 `/api/docs/doc.json` 获取
-- [x] `make swagger` 命令正常工作（生成 `docs/docs.go`）
+- [x] Swagger UI 可通过 `/api/apidocs/` 访问
+- [x] OpenAPI spec 可通过 `/api/apidocs/doc.json` 获取
+- [x] `make swagger` 命令正常工作（生成 `apidocs/docs.go`）
 - [x] 文档嵌入二进制，单一可执行文件部署
 - [x] 文档包含请求/响应示例
 - [x] 错误响应文档完整（400/404/500）
-- [x] `docs/` 目录生成并提交到 Git
+- [x] `apidocs/` 目录生成并提交到 Git
 - [x] `README.md` 更新 API 文档访问说明
 - [x] CI 流程验证文档同步
 - [x] 本地测试所有端点"Try it out"功能

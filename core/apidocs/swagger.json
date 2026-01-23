@@ -1539,233 +1539,6 @@
                 }
             }
         },
-        "/api/metrics/storage/health": {
-            "get": {
-                "description": "Check the health status of the metrics storage backend",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "metrics"
-                ],
-                "summary": "Storage Health Check",
-                "responses": {
-                    "200": {
-                        "description": "Healthy",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/metrics.HealthResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "503": {
-                        "description": "Unhealthy",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/metrics.HealthResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/api/metrics/storage/ingest": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Store a metric with optional tags and timestamp",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "metrics"
-                ],
-                "summary": "Ingest Metric",
-                "parameters": [
-                    {
-                        "description": "Metric data",
-                        "name": "metric",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/metrics.IngestRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Success",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/metrics.IngestResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request - Invalid metric format",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden - requires admin role",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    },
-                    "429": {
-                        "description": "Too Many Requests",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/metrics/storage/query": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Retrieve metrics by name and time range",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "metrics"
-                ],
-                "summary": "Query Metrics",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Metric name",
-                        "name": "name",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "default": "24h",
-                        "description": "Time range (e.g., 1h, 24h)",
-                        "name": "duration",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Start timestamp (RFC3339)",
-                        "name": "start",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "End timestamp (RFC3339)",
-                        "name": "end",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "default": 1000,
-                        "description": "Max results",
-                        "name": "limit",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Success",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/metrics.QueryResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden - requires admin role",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    }
-                }
-            }
-        },
         "/api/profile": {
             "get": {
                 "security": [
@@ -3263,27 +3036,6 @@
                 "StatusUnknown"
             ]
         },
-        "metrics.HealthResponse": {
-            "type": "object",
-            "properties": {
-                "backend": {
-                    "type": "string"
-                },
-                "disk_usage_mb": {
-                    "type": "number"
-                },
-                "metrics_count": {
-                    "type": "integer"
-                },
-                "stats": {
-                    "type": "object",
-                    "additionalProperties": true
-                },
-                "status": {
-                    "type": "string"
-                }
-            }
-        },
         "metrics.HistoryResponse": {
             "type": "object",
             "properties": {
@@ -3350,20 +3102,6 @@
                 }
             }
         },
-        "metrics.IngestResponse": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string"
-                },
-                "metric_id": {
-                    "type": "string"
-                },
-                "success": {
-                    "type": "boolean"
-                }
-            }
-        },
         "metrics.KeysResponse": {
             "type": "object",
             "properties": {
@@ -3375,26 +3113,6 @@
                     "items": {
                         "$ref": "#/definitions/metrics.MetricKey"
                     }
-                }
-            }
-        },
-        "metrics.MetricData": {
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string"
-                },
-                "tags": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
-                    }
-                },
-                "timestamp": {
-                    "type": "string"
-                },
-                "value": {
-                    "type": "number"
                 }
             }
         },
@@ -3436,29 +3154,6 @@
                 },
                 "value": {
                     "type": "number"
-                }
-            }
-        },
-        "metrics.QueryResponse": {
-            "type": "object",
-            "properties": {
-                "count": {
-                    "type": "integer"
-                },
-                "end": {
-                    "type": "string"
-                },
-                "has_more": {
-                    "type": "boolean"
-                },
-                "metrics": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/metrics.MetricData"
-                    }
-                },
-                "start": {
-                    "type": "string"
                 }
             }
         },

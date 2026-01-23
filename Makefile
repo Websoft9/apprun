@@ -479,11 +479,11 @@ check: lint test security
 swagger:
 	@echo "📚 Generating Swagger API documentation..."
 	@if [ ! -f core/bin/apprun ]; then \
-		echo "⚠️  bin/apprun not found, using swag directly..." && cd core && swag init -g internal/bootstrap/server.go -o docs; \
+		echo "⚠️  bin/apprun not found, using swag directly..." && cd core && swag init -g internal/bootstrap/server.go -o apidocs; \
 	else \
 		cd core && ./bin/apprun generate openapi; \
 	fi
-	@echo "💡 Access at: http://localhost:$${HTTP_PORT:-8080}/api/docs/"
+	@echo "💡 Access at: http://localhost:$${HTTP_PORT:-8080}/api/apidocs/"
 
 # Alias for swagger
 docs-api: swagger
@@ -587,7 +587,7 @@ clean-docker: docker-clean
 # Validate all Story documents
 docs-validate:
 	@echo "�🔍 Validating Story documents..."
-	@for file in docs/sprint-artifacts/sprint-*/story-*.md; do \
+	@for file in specs/sprint-artifacts/sprint-*/story-*.md; do \
 		if [ -f "$$file" ]; then \
 			./scripts/validate-story.sh "$$file" || exit 1; \
 		fi \

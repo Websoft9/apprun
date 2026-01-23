@@ -1,8 +1,11 @@
 package metrics
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -10,6 +13,21 @@ import (
 	"apprun/pkg/logger"
 	"apprun/pkg/response"
 )
+
+// metricNamePattern defines valid metric name format (alphanumeric, underscore, hyphen, dot)
+var metricNamePattern = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_.-]*$`)
+
+// validateMetricName validates metric name format to prevent injection attacks
+// Rules:
+// - Must start with a letter
+// - Can contain: letters, numbers, underscore, hyphen, dot
+// - Cannot contain: colon (used as key separator), special chars
+func validateMetricName(name string) error {
+	if !metricNamePattern.MatchString(name) {
+		return fmt.Errorf("invalid metric name format: must start with letter and contain only [a-zA-Z0-9_.-]")
+	}
+	return nil
+}
 
 // MetricsHandler handles metrics HTTP requests
 type MetricsHandler struct {
@@ -131,13 +149,25 @@ func (h *MetricsHandler) GetScopes(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} response.Response "Internal Server Error"
 // @Router /api/metrics/history [get]
 func (h *MetricsHandler) GetHistory(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	// Set query timeout (10s for history queries)
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
 	log := logger.L()
 
 	// Validate required parameter
 	name := r.URL.Query().Get("name")
 	if name == "" {
 		response.ErrorWithRequest(w, r, 400, "INVALID_REQUEST", "Metric name is required")
+		return
+	}
+
+	// Validate metric name format and length
+	if err := validateMetricName(name); err != nil {
+		response.ErrorWithRequest(w, r, 400, "INVALID_REQUEST", err.Error())
+		return
+	}
+	if len(name) > 256 {
+		response.ErrorWithRequest(w, r, 400, "INVALID_REQUEST", "Metric name too long (max 256 characters)")
 		return
 	}
 
@@ -166,13 +196,20 @@ func (h *MetricsHandler) GetHistory(w http.ResponseWriter, r *http.Request) {
 		if durationStr == "" {
 			durationStr = "24h"
 		}
-		duration, err := time.ParseDuration(durationStr) //nolint:govet  //nolint:govet 
+		duration, err := time.ParseDuration(durationStr) //nolint:govet // Shadow err is acceptable in multi-return
 		if err != nil {
 			response.ErrorWithRequest(w, r, 400, "INVALID_DURATION", "Invalid duration format")
 			return
 		}
 		end = time.Now()
 		start = end.Add(-duration)
+	}
+
+	// Validate time range (max 30 days)
+	maxDuration := 30 * 24 * time.Hour
+	if end.Sub(start) > maxDuration {
+		response.ErrorWithRequest(w, r, 400, "INVALID_REQUEST", "Time range too large (max 30 days)")
+		return
 	}
 
 	// Parse limit (default 1000)
