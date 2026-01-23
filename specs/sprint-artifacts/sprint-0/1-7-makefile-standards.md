@@ -61,11 +61,26 @@ gen-configs   # 生成配置示例
 ```
 
 ### 3. Testing (测试)
+
+**⚠️ 测试前提**: 需要外部服务（如数据库、API服务）的测试，请测试人员自行启动服务，测试命令不会自动启动服务。
+
 ```makefile
-test             # 运行所有测试
-test-unit        # 单元测试
-test-integration # 集成测试
-test-cover       # 生成覆盖率报告
+# 基础测试命令
+test-unit                      # 运行所有单元测试
+test-integration-code          # 运行所有白盒集成测试（模块代码侧）
+test-integration-api           # 运行所有模块的黑盒集成测试（相当于 m=all）
+test-integration-api m=auth    # 运行指定模块的黑盒集成测试
+test-e2e                       # 运行所有端到端测试
+test-e2e t=TestCompleteAuthFlow_E2E  # 运行指定的端到端测试用例
+
+# 组合测试命令
+test-fast        # 快速测试：单元测试 + 白盒集成测试
+test             # 标准测试：单元 + 白盒集成 + 黑盒集成
+test-all         # 完整测试：单元 + 白盒集成 + 黑盒集成 + E2E
+
+# 覆盖率报告
+test-cover       # 生成覆盖率报告：test-unit-cover + test-integration-cover
+test-full-cover  # 完整覆盖率：test-cover + test-e2e-cover
 ```
 
 ### 4. Code Quality (代码质量)

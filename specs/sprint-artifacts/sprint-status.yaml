@@ -1,4 +1,4 @@
-# generated: 2026-01-19
+# generated: 2026-01-23
 # project: apprun
 # project_key: apprun
 # tracking_system: file-system
@@ -26,11 +26,11 @@
 #   - optional: Can be completed but not required
 #   - done: Retrospective has been completed
 
-generated: '2026-01-19'
+generated: '2026-01-23'
 project: apprun
 project_key: apprun
 tracking_system: file-system
-story_location: /data/cdl/apprun/docs/sprint-artifacts
+story_location: /data/cdl/apprun/specs/sprint-artifacts
 
 development_status:
   # Epic 1: Infrastructure & Foundation

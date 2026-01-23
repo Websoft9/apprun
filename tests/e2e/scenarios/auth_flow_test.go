@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Websoft9/apprun/tests/fixtures"
+	// "github.com/Websoft9/apprun/tests/fixtures" // TODO: Fixtures removed, use testutils instead
 	"github.com/Websoft9/apprun/tests/testutils"
 	"github.com/stretchr/testify/require"
 )

@@ -1,4 +1,3 @@
-package auth
 // Package auth_test provides black-box integration tests for advanced auth scenarios
 package auth_test
 
